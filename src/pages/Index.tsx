@@ -79,18 +79,35 @@ const Index = () => {
               {welcome.subheadline}
             </p>
             <div className="flex flex-wrap gap-4 mt-8 justify-center md:justify-start">
-              {socialLinks.map(link => (
-                <a
-                  href={link.url}
-                  key={link.label}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`inline-flex items-center px-6 py-3 rounded-full font-medium shadow hover:scale-105 transition-all duration-200 ${link.color} text-white`}
-                >
-                  {link.icon}
-                  {link.label}
-                </a>
-              ))}
+              {/* Instagram-Button */}
+              <a
+                href={siteConfig.social.instagram}
+                key="Instagram"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-6 py-3 rounded-full font-medium shadow hover:scale-105 transition-all duration-200 bg-gradient-to-r from-pink-400 via-red-400 to-yellow-400 text-white"
+              >
+                <Instagram className="w-5 h-5 mr-2" />
+                Instagram
+              </a>
+              {/* NewsletterSignup Feld als zweiter "Button" */}
+              <div className="flex items-center px-4 py-3 rounded-full font-medium shadow bg-sage-600 text-white">
+                <NewsletterSignup compact />
+              </div>
+              {/* Pinterest-Button */}
+              <a
+                href={siteConfig.social.pinterest}
+                key="Pinterest"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-6 py-3 rounded-full font-medium shadow hover:scale-105 transition-all duration-200 bg-rose-200 text-rose-800"
+              >
+                {/* ...Pinterest SVG... */}
+                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12,2C6.5,2,2,6.6,2,12.1c0,4.1,2.5,7.7,6,9V17.2c-1.3-1.7-1.4-4.5-0.1-6.2c1.1-1.6,2.8-2,4.4-2c2,0,4.1,0.5,4.1,2.5   c0,1.6-1.6,2.3-2.6,2.4c-0.6,0-1-0.2-1.1,0.5c-0.2,1.2-0.8,2.6-0.3,2.6c0.9,0,1.7-1.1,3.7-1.1c2.5,0,3.7,1.8,3.7,3.6   c0,2.2-2.3,3.3-4.6,3.3c-5.9,0-7.1-5.2-7.1-9.2c0-5,4.5-9.1,9.7-9.1c5.2,0,9.4,4.1,9.4,9.3C22,17.9,20.1,20,15.4,20c-1.2,0-2.6-0.2-3.5-0.7C13,19.9,14.7,20,16.5,20C21,20,22,17.3,22,13.4C22,8.4,17.5,4,12,4z"/>
+                </svg>
+                Pinterest
+              </a>
             </div>
           </div>
           <div className="flex-1 flex items-center justify-center">

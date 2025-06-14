@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 const AuthPage = () => {
@@ -12,6 +13,7 @@ const AuthPage = () => {
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [newsletter, setNewsletter] = useState(false);
   const navigate = useNavigate();
   const [session, setSession] = useState<any>(null);
 
@@ -52,6 +54,24 @@ const AuthPage = () => {
         toast.error("Registrierung fehlgeschlagen: " + error.message);
       } else {
         toast.success("Bitte E-Mail bestätigen, dann kannst du dich einloggen!");
+        // Newsletter-Anmeldung auslösen, falls Box angehakt
+        if (newsletter && email) {
+          try {
+            const res = await fetch("/functions/v1/send-newsletter-confirmation", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+              toast.info("Newsletter: Bitte bestätige deine Anmeldung via Mail.");
+            } else {
+              toast.error("Newsletter: " + (data?.error || "Anmeldung nicht möglich."));
+            }
+          } catch {
+            toast.error("Newsletter: Anmeldung aktuell nicht möglich.");
+          }
+        }
         setIsLogin(true);
       }
     }
@@ -72,6 +92,13 @@ const AuthPage = () => {
           <Label htmlFor="pw">Passwort</Label>
           <Input id="pw" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
         </div>
+        {/* Newsletter-Checkbox bei Registrierung */}
+        {!isLogin && (
+          <div className="flex items-center gap-2">
+            <Checkbox id="newsletter" checked={newsletter} onCheckedChange={v => setNewsletter(!!v)} />
+            <Label htmlFor="newsletter" className="cursor-pointer">Für Newsletter anmelden?</Label>
+          </div>
+        )}
         <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Bitte warten..." : isLogin ? "Login" : "Registrieren"}
         </Button>
