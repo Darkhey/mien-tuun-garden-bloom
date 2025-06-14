@@ -24,8 +24,6 @@ const fetchRecipeBySlug = async (slug: string) => {
   return data;
 };
 
-const SUPABASE_STORAGE_URL = "https://ublbxvpmoccmegtwaslh.supabase.co/storage/v1/object/public/recipe-images/";
-
 const RecipeDetail = () => {
   const { id: slug } = useParams();
   const { data: recipe, isLoading, error } = useQuery({
@@ -69,14 +67,6 @@ const RecipeDetail = () => {
     fetchRating();
   }, [slug]);
 
-  function parseArray(val: any): any[] {
-    if (Array.isArray(val)) return val;
-    if (typeof val === "string") {
-      try { const arr = JSON.parse(val); if(Array.isArray(arr)) return arr;} catch {}
-    }
-    return [];
-  }
-
   // Remove usage of recipe.servings (db has no such column)
   const [servings, setServings] = useState(1);
   const { toast } = useToast();
@@ -103,11 +93,6 @@ const RecipeDetail = () => {
       toast({ title: "Fehler", description: "Alternative konnte nicht geladen werden" });
     }
     setLoadingAlt(null);
-  }
-
-  function getRecipeImageUrl(imagePath: string | null): string {
-    if (!imagePath) return "/placeholder.svg";
-    return SUPABASE_STORAGE_URL + imagePath;
   }
 
   if (isLoading)
