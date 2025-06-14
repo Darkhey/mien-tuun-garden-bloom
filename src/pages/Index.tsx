@@ -1,5 +1,4 @@
 import React from 'react';
-import Layout from '@/components/Layout';
 import { siteConfig } from '@/config/site.config';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Flower, Calendar, User, Instagram } from 'lucide-react';
@@ -64,7 +63,7 @@ const socialLinks = [
 
 const Index = () => {
   return (
-    <Layout>
+    <div>
       {/* HERO */}
       <section className="relative overflow-hidden bg-gradient-to-br from-sage-50 via-cream to-accent-50 py-20 px-4">
         <div className="absolute -z-10 inset-0 opacity-15 pointer-events-none">
@@ -257,7 +256,7 @@ const Index = () => {
           </div>
         </div>
       </section>
-    </Layout>
+    </div>
   );
 };
 
