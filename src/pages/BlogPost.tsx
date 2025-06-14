@@ -11,6 +11,7 @@ import RelatedBlogPostsCarousel from "@/components/blog/RelatedBlogPostsCarousel
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { BlogPost } from '@/types/content';
+import BlogComments from "@/components/blog/BlogComments";
 
 const BlogPostPage = () => {
   const { slug } = useParams();
@@ -30,6 +31,20 @@ const BlogPostPage = () => {
     },
     enabled: !!slug,
   });
+
+  // Session holen für UserId (nur für Kommentare relevant)
+  // (Wir holen die Session synchron, weil der Blogpost public ist, und nur Kommentare Auth brauchen)
+  const [userId, setUserId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUserId(data.session?.user.id ?? null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user.id ?? null);
+    });
+    return () => { listener?.subscription.unsubscribe(); };
+  }, []);
 
   if (isLoading) {
     return (
@@ -105,6 +120,9 @@ const BlogPostPage = () => {
           tags={post.tags}
         />
         {/* ----- End Related Carousel ----- */}
+
+        {/* Blog Kommentare */}
+        <BlogComments blogSlug={post.slug} userId={userId} />
       </article>
     </Layout>
   );
