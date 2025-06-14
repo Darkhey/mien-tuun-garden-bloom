@@ -8,7 +8,7 @@ import AdSenseSlot from "./AdSenseSlot";
 import AdPlaceholder from "./AdPlaceholder";
 
 // Monetarisierung aus siteConfig
-const analyticsId = "G-XXXXXXXXXX"; // <--- Später anpassen!
+const analyticsId = "G-ABCDE123456"; // <--- DEINE Google Analytics-ID hier eintragen!
 const adsEnabled = siteConfig.monetization.adsEnabled;
 
 // Hilfsfunktion: Ist ein echter Publisher-Key gesetzt?

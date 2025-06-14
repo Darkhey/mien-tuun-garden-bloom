@@ -102,9 +102,8 @@ export const siteConfig: SiteConfig = {
   ],
   
   monetization: {
-    adsEnabled: false, // initial deaktiviert
-    // Ergänzung: Optional AdSense Publisher-ID in config
-    adsenseClientId: "", // <--- Hier ggf. echten Wert eintragen!
+    adsEnabled: true, // <-- Aktiviert Werbung!
+    adsenseClientId: "ca-pub-1234567890123456", // <-- DEINE AdSense-ID hier eintragen!
     affiliateEnabled: true,
     donationEnabled: true,
     donationLink: "https://ko-fi.com/mientuun"
