@@ -84,7 +84,7 @@ export const siteConfig: SiteConfig = {
   },
   
   social: {
-    instagram: "https://instagram.com/mientuun",
+    instagram: "https://instagram.com/mientuun.garten",  // <-- HIER aktualisiert
     pinterest: "https://pinterest.com/mientuun", 
     facebook: "https://facebook.com/mientuun",
     email: "hallo@mien-tuun.de",
