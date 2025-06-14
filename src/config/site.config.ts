@@ -38,7 +38,7 @@ export interface SiteConfig {
   monetization: {
     adsEnabled: boolean;
     // Ergänzung: Optional AdSense Publisher-ID in config
-    adsenseClientId: "", // <--- Hier ggf. echten Wert eintragen!
+    adsenseClientId: string; // <--- Korrigiere Typ auf string, statt ""
     affiliateEnabled: boolean;
     donationEnabled: boolean;
     donationLink?: string;
@@ -103,7 +103,7 @@ export const siteConfig: SiteConfig = {
   
   monetization: {
     adsEnabled: true, // <-- Aktiviert Werbung!
-    adsenseClientId: "ca-pub-1234567890123456", // <-- DEINE AdSense-ID hier eintragen!
+    adsenseClientId: "ca-pub-1234567890123456", // <-- Beispiel-ID, hier deine echte AdSense-ID eintragen!
     affiliateEnabled: true,
     donationEnabled: true,
     donationLink: "https://ko-fi.com/mientuun"
