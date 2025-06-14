@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +14,7 @@ import About from "./pages/About";
 import Links from "./pages/Links";
 import NotFound from "./pages/NotFound";
 import ProfilePage from "./pages/ProfilePage";
-import AuthPage from "./pages/AuthPage";
+// import AuthPage from "./pages/AuthPage"; // Entfernt, da Datei nicht mehr existiert
 import AdminDashboard from "./pages/AdminDashboard";
 import ContactPage from "./pages/ContactPage";
 import NewsletterConfirmPage from "./pages/NewsletterConfirmPage";
@@ -40,7 +41,7 @@ function App() {
             <Route path="/datenschutz" element={<About />} />
             <Route path="/impressum" element={<About />} />
             <Route path="/profil" element={<ProfilePage />} />
-            <Route path="/auth" element={<AuthPage />} />
+            {/* <Route path="/auth" element={<AuthPage />} /> // Entfernt, da AuthPage nicht mehr existiert */}
             <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
             <Route path="/kontakt" element={<ContactPage />} />
             <Route path="/newsletter-confirm" element={<NewsletterConfirmPage />} />
@@ -96,3 +97,4 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export default App;
+
