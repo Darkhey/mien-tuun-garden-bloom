@@ -1,4 +1,3 @@
-
 export interface BlogPost {
   id: string;
   slug: string;
@@ -19,6 +18,18 @@ export interface BlogPost {
   };
   featured?: boolean;
   published: boolean;
+  /**
+   * Optionales Feld für automatisch generierte strukturierte Daten (JSON-LD) für Rich Snippets.
+   */
+  structuredData?: string; // JSON-LD als string (z.B. für HowTo/FAQ/Recipe)
+  /**
+   * Original-Titel (z.B. für interne Zwecke)
+   */
+  originalTitle?: string;
+  /**
+   * Optional: alternatives Social Media Bild (OpenGraph override)
+   */
+  ogImage?: string;
 }
 
 export interface Recipe {
