@@ -7,7 +7,7 @@ import RecipeCard from "@/components/recipes/RecipeCard";
 import RecipeFilter from "@/components/recipes/RecipeFilter";
 import { supabase } from "@/integrations/supabase/client";
 import type { Recipe } from '@/types/content';
-import { getRecipeImageUrl } from "@/utils/recipe";
+import { getRecipeImageUrl, parseJsonArray } from "@/utils/recipe";
 
 // Die Kategorien, Saisons und Schwierigkeitsgrade
 const categories = ['Alle', 'Süßes & Kuchen', 'Suppen & Eintöpfe', 'Salate & Vorspeisen', 'Konservieren'];
@@ -26,32 +26,35 @@ const fetchRecipes = async () => {
 
 // Hilfsfunktion: Supabase-RecipeRow zu Frontend-Recipe mit Defaults mappen
 function mapRowToRecipe(row: any): Recipe {
+  const prepTime = row.prep_time_minutes || 0;
+  const cookTime = row.cook_time_minutes || 0;
+
   return {
     id: row.id,
     slug: row.slug,
     title: row.title,
     description: row.description || '',
     image: getRecipeImageUrl(row.image_url),
-    prepTime: 0, // Supabase kennt dieses Feld noch nicht
-    cookTime: 0,
-    totalTime: 0,
-    servings: 1,
-    difficulty: 'einfach', // Default
-    category: 'Unbekannt', // Default
-    season: 'ganzjährig', // Default
-    tags: [],
-    ingredients: Array.isArray(row.ingredients) ? row.ingredients : [],
-    instructions: Array.isArray(row.instructions) ? row.instructions : [],
+    prepTime: prepTime,
+    cookTime: cookTime,
+    totalTime: prepTime + cookTime,
+    servings: row.servings || 1,
+    difficulty: row.difficulty || 'einfach',
+    category: row.category || 'Unbekannt',
+    season: row.season || 'ganzjährig',
+    tags: row.tags || [],
+    ingredients: parseJsonArray(row.ingredients),
+    instructions: parseJsonArray(row.instructions),
     nutrition: undefined,
     tips: [],
     relatedRecipes: [],
     publishedAt: row.created_at,
-    author: 'Unbekannt',
+    author: row.author || 'Unbekannt',
     featured: false,
     seo: {
       title: row.title,
       description: row.description || '',
-      keywords: [],
+      keywords: row.tags || [],
     }
   }
 }

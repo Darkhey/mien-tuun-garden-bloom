@@ -230,38 +230,62 @@ export type Database = {
       }
       recipes: {
         Row: {
+          author: string | null
+          category: string | null
+          cook_time_minutes: number | null
           created_at: string
           description: string | null
+          difficulty: string | null
           id: string
           image_url: string | null
           ingredients: Json | null
           instructions: Json | null
+          prep_time_minutes: number | null
+          season: string | null
+          servings: number | null
           slug: string
           source_blog_slug: string | null
+          tags: string[] | null
           title: string
           user_id: string | null
         }
         Insert: {
+          author?: string | null
+          category?: string | null
+          cook_time_minutes?: number | null
           created_at?: string
           description?: string | null
+          difficulty?: string | null
           id?: string
           image_url?: string | null
           ingredients?: Json | null
           instructions?: Json | null
+          prep_time_minutes?: number | null
+          season?: string | null
+          servings?: number | null
           slug: string
           source_blog_slug?: string | null
+          tags?: string[] | null
           title: string
           user_id?: string | null
         }
         Update: {
+          author?: string | null
+          category?: string | null
+          cook_time_minutes?: number | null
           created_at?: string
           description?: string | null
+          difficulty?: string | null
           id?: string
           image_url?: string | null
           ingredients?: Json | null
           instructions?: Json | null
+          prep_time_minutes?: number | null
+          season?: string | null
+          servings?: number | null
           slug?: string
           source_blog_slug?: string | null
+          tags?: string[] | null
           title?: string
           user_id?: string | null
         }

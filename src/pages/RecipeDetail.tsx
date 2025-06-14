@@ -67,11 +67,16 @@ const RecipeDetail = () => {
     fetchRating();
   }, [slug]);
 
-  // Remove usage of recipe.servings (db has no such column)
-  const [servings, setServings] = useState(1);
+  const [servings, setServings] = useState(recipe?.servings || 1);
   const { toast } = useToast();
   const [loadingAlt, setLoadingAlt] = useState<string | null>(null);
   const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    if (recipe?.servings) {
+        setServings(recipe.servings);
+    }
+  }, [recipe?.servings]);
 
   async function handleAskAlternative(ingredient: string) {
     setLoadingAlt(ingredient);
@@ -155,6 +160,32 @@ const RecipeDetail = () => {
               <SaveRecipeButton recipeSlug={slug!} userId={userId} />
             </div>
           </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-200/70 border-t border-gray-200/70">
+            { ((recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)) > 0 && (
+            <div className="bg-white p-3 text-center">
+                <p className="font-bold text-earth-700">{(recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)} min</p>
+                <p className="text-gray-500 text-sm">Gesamt</p>
+            </div>
+            )}
+            { recipe.servings && (
+            <div className="bg-white p-3 text-center">
+                <p className="font-bold text-earth-700">{recipe.servings}</p>
+                <p className="text-gray-500 text-sm">Portionen</p>
+            </div>
+            )}
+            { recipe.difficulty && (
+            <div className="bg-white p-3 text-center">
+                <p className="font-bold text-earth-700 capitalize">{recipe.difficulty}</p>
+                <p className="text-gray-500 text-sm">Niveau</p>
+            </div>
+            )}
+            { recipe.season && (
+            <div className="bg-white p-3 text-center">
+                <p className="font-bold text-earth-700 capitalize">{recipe.season}</p>
+                <p className="text-gray-500 text-sm">Saison</p>
+            </div>
+            )}
+          </div>
         </Card>
         {/* Zutatenrechner */}
         {zutaten.length > 0 && (
@@ -180,7 +211,7 @@ const RecipeDetail = () => {
             <IngredientList
               ingredients={zutaten}
               servings={servings}
-              baseServings={1}
+              baseServings={recipe.servings || 1}
               onAskAlternative={handleAskAlternative}
             />
             {loadingAlt && (

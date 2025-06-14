@@ -2,22 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Clock, Users, ChefHat } from "lucide-react";
-
-type Recipe = {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  image: string;
-  prepTime: number;
-  cookTime: number;
-  totalTime: number;
-  servings: number;
-  difficulty: string;
-  category: string;
-  season: string;
-  tags: string[];
-};
+import type { Recipe } from "@/types/content";
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -40,67 +25,72 @@ function getDifficultyColor(difficulty: string) {
 function getSeasonColor(season: string) {
   switch (season) {
     case "frühling":
-      return "bg-green-100 text-green-800";
+      return "border-green-200 bg-green-50 text-green-800";
     case "sommer":
-      return "bg-yellow-100 text-yellow-800";
+      return "border-yellow-200 bg-yellow-50 text-yellow-800";
     case "herbst":
-      return "bg-orange-100 text-orange-800";
+      return "border-orange-200 bg-orange-50 text-orange-800";
     case "winter":
-      return "bg-blue-100 text-blue-800";
+      return "border-blue-200 bg-blue-50 text-blue-800";
     default:
-      return "bg-sage-100 text-sage-800";
+      return "border-sage-200 bg-sage-50 text-sage-800";
   }
 }
 
 const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, index = 0 }) => (
   <article
-    className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden animate-fade-in"
+    className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden flex flex-col animate-fade-in"
     style={{ animationDelay: `${index * 0.1}s` }}
   >
     <div className="relative">
-      <img src={recipe.image} alt={recipe.title} className="w-full h-48 object-cover" />
-      <div className="absolute top-4 left-4 flex gap-2">
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeasonColor(recipe.season)}`}>
-          {recipe.season}
-        </span>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(recipe.difficulty)}`}>
-          {recipe.difficulty}
-        </span>
+      <Link to={`/rezepte/${recipe.slug}`} className="block">
+        <img src={recipe.image} alt={recipe.title} className="w-full h-48 object-cover" />
+      </Link>
+      <div className="absolute top-3 left-3 flex gap-2">
+        {recipe.season && (
+          <span className={`px-3 py-1 border rounded-full text-xs font-semibold shadow-sm ${getSeasonColor(recipe.season)} capitalize`}>
+            {recipe.season}
+          </span>
+        )}
       </div>
     </div>
-    <div className="p-6">
-      <div className="mb-2">
-        <span className="text-sage-600 text-sm font-medium">{recipe.category}</span>
-      </div>
-      <h3 className="text-xl font-serif font-bold text-earth-800 mb-3 line-clamp-2">{recipe.title}</h3>
-      <p className="text-earth-600 mb-4 line-clamp-2">{recipe.description}</p>
-      <div className="grid grid-cols-3 gap-4 mb-4 text-sm text-earth-500">
-        <div className="flex items-center">
-          <Clock className="h-4 w-4 mr-1" />
-          {recipe.totalTime}m
+    <div className="p-5 flex flex-col flex-grow">
+      {recipe.category && (
+        <p className="text-sage-600 text-sm font-medium mb-1">{recipe.category}</p>
+      )}
+      <h3 className="text-xl font-serif font-bold text-earth-800 mb-2 h-14 line-clamp-2">
+        <Link to={`/rezepte/${recipe.slug}`} className="hover:text-sage-700 transition-colors">
+          {recipe.title}
+        </Link>
+      </h3>
+      <p className="text-earth-600 mb-4 text-sm line-clamp-3 flex-grow">{recipe.description}</p>
+      
+      <div className="grid grid-cols-3 gap-2 my-2 text-sm text-earth-600 border-t border-b border-gray-100 py-3">
+        <div className="flex flex-col items-center text-center">
+          <Clock className="h-5 w-5 mb-1 text-sage-500" />
+          <span className="font-semibold">{recipe.totalTime > 0 ? `${recipe.totalTime} min` : 'N/A'}</span>
+          <span className="text-xs text-gray-500">Gesamt</span>
         </div>
-        <div className="flex items-center">
-          <Users className="h-4 w-4 mr-1" />
-          {recipe.servings}
+        <div className="flex flex-col items-center text-center">
+          <Users className="h-5 w-5 mb-1 text-sage-500" />
+          <span className="font-semibold">{recipe.servings > 0 ? `${recipe.servings}` : 'N/A'}</span>
+           <span className="text-xs text-gray-500">Portionen</span>
         </div>
-        <div className="flex items-center">
-          <ChefHat className="h-4 w-4 mr-1" />
-          {recipe.difficulty}
+        <div className="flex flex-col items-center text-center">
+          <ChefHat className="h-5 w-5 mb-1 text-sage-500" />
+          <span className="font-semibold capitalize">{recipe.difficulty}</span>
+          <span className="text-xs text-gray-500">Niveau</span>
         </div>
       </div>
-      <div className="flex flex-wrap gap-1 mb-4">
-        {recipe.tags?.slice(0, 3).map((tag) => (
-          <span key={tag} className="bg-sage-50 text-sage-700 px-2 py-1 rounded text-xs">
-            {tag}
-          </span>
-        ))}
+      
+      <div className="mt-auto pt-2">
+        <Link
+          to={`/rezepte/${recipe.slug}`}
+          className="block w-full bg-sage-600 text-white text-center py-2.5 rounded-lg font-semibold hover:bg-sage-700 transition-colors duration-200"
+        >
+          Zum Rezept
+        </Link>
       </div>
-      <Link
-        to={`/rezepte/${recipe.slug}`}
-        className="block w-full bg-sage-600 text-white text-center py-3 rounded-lg font-medium hover:bg-sage-700 transition-colors"
-      >
-        Rezept anzeigen
-      </Link>
     </div>
   </article>
 );
