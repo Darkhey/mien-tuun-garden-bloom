@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,7 +41,7 @@ const LayoutRoutes = () => (
       <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
       <Route path="/kontakt" element={<ContactPage />} />
       <Route path="/newsletter-confirm" element={<NewsletterConfirmPage />} />
-      {/* Kein Catch-All */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   </Layout>
 );
@@ -93,7 +92,6 @@ function App() {
       <BrowserRouter>
         <TooltipProvider>
           <Routes>
-            <Route path="*" element={<NotFound />} />
             <Route path="/*" element={<LayoutRoutes />} />
           </Routes>
         </TooltipProvider>
