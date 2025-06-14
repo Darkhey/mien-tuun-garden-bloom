@@ -1,11 +1,20 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { siteConfig } from '@/config/site.config';
 import { Menu, X, Flower, Search } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [session, setSession] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => { listener?.subscription.unsubscribe(); };
+  }, []);
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -46,6 +55,15 @@ const Header: React.FC = () => {
             <button className="p-2 text-earth-700 hover:text-sage-600 transition-colors">
               <Search className="h-5 w-5" />
             </button>
+            {/* Profil-Link für eingeloggte User */}
+            {session?.user && (
+              <Link
+                to="/profil"
+                className="ml-4 px-4 py-2 rounded-lg bg-sage-100 text-sage-700 hover:bg-sage-200 font-medium transition-colors"
+              >
+                Mein Profil
+              </Link>
+            )}
           </nav>
 
           {/* Mobile menu button */}
@@ -71,6 +89,15 @@ const Header: React.FC = () => {
                   {item.name}
                 </Link>
               ))}
+              {session?.user && (
+                <Link
+                  to="/profil"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="mt-2 text-sage-700 bg-sage-100 hover:bg-sage-200 font-medium px-3 py-2 rounded-lg transition-colors"
+                >
+                  Mein Profil
+                </Link>
+              )}
             </nav>
           </div>
         )}
