@@ -8,6 +8,7 @@ import BlogOverview from "./pages/BlogOverview";
 import BlogPost from "./pages/BlogPost";
 import RecipeOverview from "./pages/RecipeOverview";
 import RecipeDetail from "./pages/RecipeDetail";
+import RecipeBook from "./pages/RecipeBook";
 import About from "./pages/About";
 import Links from "./pages/Links";
 import NotFound from "./pages/NotFound";
@@ -29,7 +30,8 @@ function App() {
             <Route path="/blog" element={<BlogOverview />} />
             <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/rezepte" element={<RecipeOverview />} />
-            <Route path="/rezepte/:slug" element={<RecipeDetail />} />
+            <Route path="/rezepte/:id" element={<RecipeDetail />} />
+            <Route path="/rezeptebuch" element={<RecipeBook />} />
             <Route path="/garten" element={<BlogOverview />} />
             <Route path="/about" element={<About />} />
             <Route path="/links" element={<Links />} />

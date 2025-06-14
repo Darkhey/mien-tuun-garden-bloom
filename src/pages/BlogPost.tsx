@@ -1,9 +1,12 @@
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { Calendar, User, ArrowLeft, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader } from "lucide-react";
 
 const BlogPost = () => {
   const { slug } = useParams();
@@ -34,6 +37,59 @@ const BlogPost = () => {
     readingTime: 8,
     category: 'Garten & Pflanzen',
     tags: ['Kräuter', 'Garten', 'Anfänger', 'DIY']
+  };
+
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  const handleSaveRecipe = async () => {
+    setSaving(true);
+    try {
+      // KI aufrufen
+      const resp = await fetch(
+        `https://ublbxvpmoccmegtwaslh.functions.supabase.co/blog-to-recipe`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: post.title,
+            content: post.content,
+            image: post.featuredImage,
+          }),
+        }
+      );
+      if (!resp.ok) throw new Error("Fehler beim Aufruf der KI.");
+      const { recipe } = await resp.json();
+
+      // Speichern ins Rezeptebuch
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) throw new Error("Nicht eingeloggt!");
+
+      const { error } = await supabase.from("recipes").insert([
+        {
+          user_id: user.data.user.id,
+          title: recipe.title,
+          image_url: recipe.image || post.featuredImage,
+          description: recipe.description || "",
+          ingredients: recipe.ingredients,
+          instructions: recipe.instructions,
+          source_blog_slug: post.slug,
+        },
+      ]);
+      if (error) throw error;
+
+      toast({
+        title: "Rezept gespeichert!",
+        description: "Das Rezept wurde in dein Rezeptbuch übernommen.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Fehler",
+        description: String(err.message || err),
+        variant: "destructive",
+      });
+    }
+    setSaving(false);
   };
 
   return (
@@ -101,6 +157,18 @@ const BlogPost = () => {
           className="prose prose-lg max-w-none prose-earth prose-headings:font-serif prose-headings:text-earth-800 prose-p:text-earth-600 prose-li:text-earth-600 prose-strong:text-earth-800"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
+
+        {/* KI-Button */}
+        <div className="max-w-4xl mx-auto px-4 mt-8 flex">
+          <button
+            onClick={handleSaveRecipe}
+            disabled={saving}
+            className="bg-sage-600 text-white px-6 py-2 rounded-full hover:bg-sage-700 transition-colors flex items-center gap-2"
+          >
+            {saving && <Loader className="animate-spin h-4 w-4" />}
+            Als Rezept speichern
+          </button>
+        </div>
 
         {/* Share Section */}
         <div className="mt-12 pt-8 border-t border-sage-200">
