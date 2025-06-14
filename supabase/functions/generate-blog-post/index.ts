@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -16,6 +15,7 @@ serve(async (req) => {
 
   try {
     const { prompt } = await req.json();
+    console.log("[generate-blog-post] Eingehender Prompt:", prompt);
 
     const messages = [
       { role: "system", content: "Du bist eine hilfreiche deutschsprachige Bloggerin für Garten & Küche und schreibst inspirierende, SEO-optimierte Blogartikel. Schreibe zu folgender Idee einen passenden Artikelentwurf als Markdown:" },
@@ -37,6 +37,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const error = await response.text();
+      console.error("[generate-blog-post] Fehler beim OpenAI Request:", error);
       return new Response(JSON.stringify({ error }), {
         status: response.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -46,10 +47,12 @@ serve(async (req) => {
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
 
+    console.log("[generate-blog-post] Antwort von OpenAI erhalten.");
     return new Response(JSON.stringify({ content }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   } catch (err) {
+    console.error("[generate-blog-post] Allgemeiner Fehler:", err);
     return new Response(JSON.stringify({ error: String(err?.message ?? err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import TagSelector from "./TagSelector";
+import BlogMetaForm from "./BlogMetaForm";
 
 const CATEGORY_OPTIONS = [
   { value: "garten", label: "Garten" },
@@ -179,55 +180,22 @@ const KIBlogCreator: React.FC = () => {
   return (
     <div className="bg-white p-5 rounded-xl shadow max-w-xl mx-auto">
       <h2 className="font-bold text-lg mb-4">KI Blogartikel Generator</h2>
-      {/* Auswahlfelder (neu) */}
-      <div className="mb-2 grid grid-cols-2 gap-2">
-        <div>
-          <label className="block text-xs mb-1">Kategorie</label>
-          <select
-            className="border rounded px-2 py-1 w-full"
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-            disabled={loading}
-          >
-            <option value="">Keine Auswahl</option>
-            {CATEGORY_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs mb-1">Schwierigkeitsgrad</label>
-          <select
-            className="border rounded px-2 py-1 w-full"
-            value={difficulty}
-            onChange={e => setDifficulty(e.target.value)}
-            disabled={loading}
-          >
-            <option value="">Keine Auswahl</option>
-            {DIFFICULTY.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs mb-1">Saison (optional)</label>
-          <select
-            className="border rounded px-2 py-1 w-full"
-            value={season}
-            onChange={e => setSeason(e.target.value)}
-            disabled={loading}
-          >
-            <option value="">Keine Auswahl</option>
-            {SEASONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="col-span-2">
-          <label className="block text-xs mb-1">Tags (Mehrfachauswahl)</label>
-          <TagSelector options={TAG_OPTIONS} selected={tags} setSelected={setTags} disabled={loading} />
-        </div>
-      </div>
+      {/* Meta-Formular als eigene Komponente */}
+      <BlogMetaForm
+        category={category}
+        setCategory={setCategory}
+        difficulty={difficulty}
+        setDifficulty={setDifficulty}
+        season={season}
+        setSeason={setSeason}
+        tags={tags}
+        setTags={setTags}
+        excerpt={excerpt}
+        setExcerpt={setExcerpt}
+        imageUrl={imageUrl}
+        setImageUrl={setImageUrl}
+        disabled={loading}
+      />
       {/* Themenvorschlag */}
       <div className="flex gap-2 mb-2">
         <input
