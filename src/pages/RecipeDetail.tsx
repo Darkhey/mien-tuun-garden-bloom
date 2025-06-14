@@ -78,6 +78,11 @@ const RecipeDetail = () => {
     }
   }, [recipe?.servings]);
 
+  // State für KI-Alternativen "Speech Bubble"
+  const [alternativeBubbles, setAlternativeBubbles] = useState<{
+    [ingredient: string]: { alternative: string | null; explanation: string | null } | undefined;
+  }>({});
+
   async function handleAskAlternative(ingredient: string) {
     setLoadingAlt(ingredient);
     try {
@@ -87,17 +92,26 @@ const RecipeDetail = () => {
         body: JSON.stringify({ ingredient }),
       });
       const data = await res.json();
-      toast({
-        title: data.alternative
-          ? `"${ingredient}" Alternative`
-          : "Keine Alternative",
-        description: data.alternative || "Es wurde keine Alternative gefunden.",
-        duration: 6000,
-      });
+      // KI-Antwort als Bubble an die jeweilige Zutat
+      setAlternativeBubbles((prev) => ({
+        ...prev,
+        [ingredient]: {
+          alternative: data.alternative,
+          explanation: data.explanation,
+        },
+      }));
     } catch (e) {
       toast({ title: "Fehler", description: "Alternative konnte nicht geladen werden" });
     }
     setLoadingAlt(null);
+  }
+
+  function handleCloseBubble(ingredient: string) {
+    setAlternativeBubbles((prev) => {
+      const nu = { ...prev };
+      delete nu[ingredient];
+      return nu;
+    });
   }
 
   if (isLoading)
@@ -213,6 +227,9 @@ const RecipeDetail = () => {
               servings={servings}
               baseServings={recipe.servings || 1}
               onAskAlternative={handleAskAlternative}
+              alternativeBubbles={alternativeBubbles}
+              onCloseBubble={handleCloseBubble}
+              loadingAlt={loadingAlt}
             />
             {loadingAlt && (
               <div className="text-xs text-sage-500">Alternative für "{loadingAlt}" wird gesucht ...</div>
