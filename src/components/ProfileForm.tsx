@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,17 @@ interface ProfileFormProps {
   onUpdate: (profile: any) => void;
 }
 
+// Hilfsfunktion: Prüfe Admin-Status (für Badge)
+async function isAdmin(userId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .single();
+  return !!data;
+}
+
 const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
   const [form, setForm] = useState({
     display_name: profile.display_name ?? "",
@@ -26,6 +37,13 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
     custom_role: profile.custom_role ?? "",
   });
   const [loading, setLoading] = useState(false);
+  const [admin, setAdmin] = useState(false);
+  const [showValidation, setShowValidation] = useState(false);
+
+  useEffect(() => {
+    // Prüfe, ob aktueller User Admin ist
+    isAdmin(profile.id).then(setAdmin);
+  }, [profile.id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -37,6 +55,14 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setShowValidation(true);
+
+    // Validierung
+    if (!form.display_name || form.display_name.trim().length < 2) {
+      toast.error("Bitte gib einen Namen mit mindestens 2 Zeichen ein.");
+      return;
+    }
+
     setLoading(true);
     const { error, data } = await supabase
       .from("profiles")
@@ -62,7 +88,12 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
       <div>
-        <Label htmlFor="display_name">Dein Name</Label>
+        <div className="flex items-center mb-2 gap-2">
+          <Label htmlFor="display_name">Dein Name</Label>
+          {admin && (
+            <span className="inline-block bg-amber-100 text-amber-900 px-2 py-0.5 rounded text-xs ml-2 font-semibold">Admin</span>
+          )}
+        </div>
         <Input
           name="display_name"
           id="display_name"
@@ -70,7 +101,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
           value={form.display_name}
           onChange={handleChange}
           required
+          className={showValidation && (!form.display_name || form.display_name.trim().length < 2) ? "border-red-500" : ""}
         />
+        {showValidation && (!form.display_name || form.display_name.trim().length < 2) && (
+          <div className="text-red-600 text-xs mt-1">Name muss mindestens 2 Zeichen lang sein.</div>
+        )}
       </div>
       <div>
         <Label htmlFor="avatar_url">Avatar Bild-URL</Label>
@@ -81,7 +116,15 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
           value={form.avatar_url}
           onChange={handleChange}
         />
-        {/* In einer späteren Version: Direktes Hochladen als Feature */}
+        {form.avatar_url && form.avatar_url.startsWith("http") && (
+          <img
+            src={form.avatar_url}
+            alt="Avatar-Vorschau"
+            className="h-16 w-16 object-cover mt-2 rounded-full border border-sage-200"
+            onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+          />
+        )}
+        {/* Später: Direktes Hochladen als Feature */}
       </div>
       <div>
         <Label htmlFor="custom_role">Deine selbstgewählte Rolle</Label>
