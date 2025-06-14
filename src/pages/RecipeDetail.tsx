@@ -33,7 +33,8 @@ const RecipeDetail = () => {
     return [];
   }
 
-  const [servings, setServings] = useState(recipe.servings || 1);
+  // Remove usage of recipe.servings (db has no such column)
+  const [servings, setServings] = useState(1);
   const { toast } = useToast();
   const [loadingAlt, setLoadingAlt] = useState<string | null>(null);
 
@@ -135,7 +136,7 @@ const RecipeDetail = () => {
             <IngredientList
               ingredients={zutaten}
               servings={servings}
-              baseServings={recipe.servings || 1}
+              baseServings={1}
               onAskAlternative={handleAskAlternative}
             />
             {loadingAlt && (
