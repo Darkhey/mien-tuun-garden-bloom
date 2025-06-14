@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Loader } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -29,32 +28,49 @@ const KIRecipeCreator: React.FC = () => {
   const [manualRecipe, setManualRecipe] = useState<any>(null);
   const { toast } = useToast();
 
-  // Zusätzliche auswählbare Felder
+  // Zusätzliche auswählbare Felder (vorher!)
   const [diet, setDiet] = useState("");
   const [meal, setMeal] = useState("");
   const [tags, setTags] = useState<string[]>([]);
 
-  // KI Rezept generieren
+  // Hilfsfunktion für tag input
+  const handleTagsInput = (val: string) => {
+    setTags(val.split(",").map(s => s.trim()).filter(Boolean));
+  };
+
+  // KI Rezept generieren (Nutzt jetzt die Felder im Prompt/Body)
   const handleGenerate = async () => {
     setLoading(true);
     setResult(null);
     setIsEditing(false);
     setManualRecipe(null);
     try {
+      // Baue für die KI einen Prompt/Request, der ALLE Angaben enthält
+      const combinedPrompt = [
+        input,
+        diet ? `Ernährungsform: ${diet}.` : "",
+        meal ? `Mahlzeit: ${meal}.` : "",
+        tags.length > 0 ? `Tags: ${tags.join(", ")}.` : ""
+      ].filter(Boolean).join(" ");
+
       const resp = await fetch("https://ublbxvpmoccmegtwaslh.functions.supabase.co/blog-to-recipe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: input, content: input, image: "" }),
+        body: JSON.stringify({ 
+          title: combinedPrompt, 
+          content: combinedPrompt, 
+          image: "" 
+        }),
       });
       if (!resp.ok) throw new Error("Fehler bei der KI");
       const { recipe } = await resp.json();
       setResult(recipe);
-      // Starte Bearbeitungsmodus direkt mit generiertem Rezept
+      // Starte Bearbeitungsmodus mit VORGABEN (übernehme Felder aus Auswahl)
       setManualRecipe({
         ...recipe,
-        diet: "",
-        meal: "",
-        tags: [],
+        diet: diet,
+        meal: meal,
+        tags: tags,
       });
       setIsEditing(true);
     } catch (err: any) {
@@ -63,7 +79,7 @@ const KIRecipeCreator: React.FC = () => {
     setLoading(false);
   };
 
-  // Rezept nach Editing speichern
+  // Rezept nach Editing speichern (ohne Änderung)
   const handleSave = async () => {
     if (!manualRecipe?.title) return;
     setLoading(true);
@@ -110,15 +126,51 @@ const KIRecipeCreator: React.FC = () => {
     setLoading(false);
   };
 
-  // Hilfsfunktion für tag input (kommasepariert)
-  const handleTagsInput = (val: string) => {
-    setTags(val.split(",").map(s => s.trim()).filter(Boolean));
-    setManualRecipe((prev: any) => ({ ...prev, tags: val.split(",").map(s => s.trim()).filter(Boolean) }));
-  };
-
   return (
     <div className="bg-white p-5 rounded-xl shadow max-w-xl mx-auto">
-      <h2 className="font-bold text-lg mb-2">KI Rezept erstellen</h2>
+      <h2 className="font-bold text-lg mb-3">KI Rezept erstellen</h2>
+      {/* Auswahlfelder stehen jetzt VORNE */}
+      <div className="mb-2 flex gap-2">
+        <div>
+          <label className="block text-xs mb-1">Ernährungsform</label>
+          <select
+            className="border rounded px-2 py-1"
+            value={diet}
+            onChange={e => setDiet(e.target.value)}
+            disabled={loading || isEditing}
+          >
+            <option value="">Keine Auswahl</option>
+            {DIETS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs mb-1">Mahlzeit</label>
+          <select
+            className="border rounded px-2 py-1"
+            value={meal}
+            onChange={e => setMeal(e.target.value)}
+            disabled={loading || isEditing}
+          >
+            <option value="">Keine Auswahl</option>
+            {MEALS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="mb-2">
+        <label className="block text-xs mb-1">Tags (Komma getrennt)</label>
+        <input
+          className="w-full border rounded p-2"
+          value={tags.join(", ")}
+          onChange={e => handleTagsInput(e.target.value)}
+          disabled={loading || isEditing}
+          placeholder="z.B. Marmelade, Sommer, Dessert"
+        />
+      </div>
+      {/* Input für die Rezeptbeschreibung */}
       <textarea
         className="w-full border rounded p-2 mb-2"
         rows={3}
@@ -134,7 +186,7 @@ const KIRecipeCreator: React.FC = () => {
       >
         {loading && <Loader className="h-4 w-4 animate-spin" />} Rezept generieren
       </button>
-      {/* Bearbeitbares Rezept-Formular nach Generierung */}
+      {/* Nach wie vor: Rezept kann editiert und gespeichert werden */}
       {isEditing && manualRecipe && (
         <form
           className="mt-4 border-t pt-4"
