@@ -1,6 +1,5 @@
 
 import React from 'react';
-import Layout from '@/components/Layout';
 import { siteConfig } from '@/config/site.config';
 import { Heart, Flower, Leaf, Sun, Sprout } from 'lucide-react';
 
@@ -9,7 +8,7 @@ const marianneImage =
 
 const About = () => {
   return (
-    <Layout title={`Über Marianne - ${siteConfig.title}`}>
+    <>
       {/* Hero */}
       <section className="bg-gradient-to-br from-sage-50 to-accent-50 py-16 px-4">
         <div className="max-w-3xl mx-auto text-center flex flex-col items-center">
@@ -125,7 +124,7 @@ const About = () => {
           <Sprout className="w-8 h-8 text-sage-500" />
         </div>
       </section>
-    </Layout>
+    </>
   );
 };
 
