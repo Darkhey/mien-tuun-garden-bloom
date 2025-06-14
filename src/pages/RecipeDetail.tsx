@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import RecipeStructuredData from "@/components/recipe/RecipeStructuredData";
 import RecipeRating from "@/components/recipe/RecipeRating";
 import RecipeComments from "@/components/recipe/RecipeComments";
+import SaveRecipeButton from "@/components/recipe/SaveRecipeButton";
 
 const fetchRecipeBySlug = async (slug: string) => {
   const { data, error } = await supabase
@@ -163,7 +164,10 @@ const RecipeDetail = () => {
               {recipe.title}
             </h1>
             <p className="text-earth-600 mb-3">{recipe.description}</p>
-            <RecipeRating recipeId={slug!} userId={userId} />
+            <div className="flex items-center gap-4">
+              <RecipeRating recipeId={slug!} userId={userId} />
+              <SaveRecipeButton recipeSlug={slug!} userId={userId} />
+            </div>
           </div>
         </Card>
         {/* Zutatenrechner */}
