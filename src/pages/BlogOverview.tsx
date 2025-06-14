@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import Layout from '@/components/Layout';
+// Layout-Import entfällt
 import { siteConfig } from '@/config/site.config';
 import BlogPostCard from "@/components/blog/BlogPostCard";
 import BlogFilter from "@/components/blog/BlogFilter";
@@ -73,7 +73,7 @@ const BlogOverview = () => {
   }, [posts, selectedCategory, searchTerm]);
 
   return (
-    <Layout title={`Blog - ${siteConfig.title}`}>
+    <>
       <section className="bg-gradient-to-br from-sage-50 to-accent-50 py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-serif font-bold text-earth-800 mb-6">
@@ -123,8 +123,9 @@ const BlogOverview = () => {
           )}
         </div>
       </section>
-    </Layout>
+    </>
   );
 };
 
 export default BlogOverview;
+

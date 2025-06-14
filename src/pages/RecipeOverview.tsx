@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import Layout from '@/components/Layout';
 import { siteConfig } from '@/config/site.config';
@@ -99,7 +98,7 @@ const RecipeOverview = () => {
   }, [recipes, selectedCategory, selectedSeason, selectedDifficulty, searchTerm]);
 
   return (
-    <Layout title={`Rezepte - ${siteConfig.title}`}>
+    <>
       {/* Header */}
       <section className="bg-gradient-to-br from-accent-50 to-sage-50 py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
@@ -147,7 +146,7 @@ const RecipeOverview = () => {
           )}
         </div>
       </section>
-    </Layout>
+    </>
   );
 };
 
