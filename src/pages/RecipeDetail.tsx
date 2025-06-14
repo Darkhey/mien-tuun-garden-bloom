@@ -12,6 +12,7 @@ import RecipeStructuredData from "@/components/recipe/RecipeStructuredData";
 import RecipeRating from "@/components/recipe/RecipeRating";
 import RecipeComments from "@/components/recipe/RecipeComments";
 import SaveRecipeButton from "@/components/recipe/SaveRecipeButton";
+import { parseJsonArray, getRecipeImageUrl } from "@/utils/recipe";
 
 const fetchRecipeBySlug = async (slug: string) => {
   const { data, error } = await supabase
@@ -130,11 +131,11 @@ const RecipeDetail = () => {
       </Layout>
     );
 
-  const zutaten = parseArray(recipe.ingredients);
-  const schritte = parseArray(recipe.instructions);
+  const zutaten = parseJsonArray(recipe.ingredients);
+  const schritte = parseJsonArray(recipe.instructions);
   let tipps: string[] = [];
   if ('tips' in recipe && (Array.isArray((recipe as any).tips) || typeof (recipe as any).tips === "string")) {
-    tipps = parseArray((recipe as any).tips);
+    tipps = parseJsonArray((recipe as any).tips);
   }
 
   return (

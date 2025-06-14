@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,8 +6,7 @@ import { Link } from "react-router-dom";
 import { BookOpen } from "lucide-react";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
-
-const SUPABASE_STORAGE_URL = "https://ublbxvpmoccmegtwaslh.supabase.co/storage/v1/object/public/recipe-images/";
+import SavedRecipeCard from "@/components/recipe/SavedRecipeCard";
 
 const fetchSavedRecipes = async (userId: string) => {
     const { data: saved, error: savedError } = await supabase
@@ -95,45 +93,7 @@ const RecipeBook = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             {recipes.map((r) => {
               if (!r) return null;
-              const [imgError, setImgError] = React.useState(false);
-              return (
-                <Link
-                  key={r.id}
-                  to={`/rezepte/${r.slug}`}
-                  className="transition-transform transform hover:-translate-y-1"
-                >
-                  <Card className="p-0 overflow-hidden rounded-2xl shadow group bg-white/90 hover:shadow-lg">
-                    <img
-                      src={imgError ? "/placeholder.svg" : getRecipeImageUrl(r.image_url)}
-                      alt={r.title}
-                      className="h-40 w-full object-cover group-hover:scale-105 duration-200"
-                      onError={() => setImgError(true)}
-                    />
-                    <div className="p-5">
-                      <h2 className="font-bold text-lg mb-2 font-serif text-earth-800">
-                        {r.title}
-                      </h2>
-                      <div className="text-sage-600 mb-2 line-clamp-2 text-sm">
-                        {r.description}
-                      </div>
-                      <div className="flex gap-2 text-xs text-sage-400 mt-2">
-                        <span>
-                          {getIngredientsCount(r.ingredients) > 1
-                            ? `${getIngredientsCount(r.ingredients)} Zutaten`
-                            : getIngredientsCount(r.ingredients) === 1
-                            ? "1 Zutat"
-                            : "Keine Zutaten"}
-                        </span>
-                        {r.source_blog_slug && (
-                          <span className="ml-auto bg-accent-50 px-2 rounded-full">
-                            KI-generiert
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                </Link>
-              );
+              return <SavedRecipeCard key={r.id} recipe={r} />;
             })}
           </div>
         );
