@@ -1,4 +1,3 @@
-
 export interface SiteConfig {
   // Grundlegende Site-Informationen
   name: string;
@@ -38,6 +37,8 @@ export interface SiteConfig {
   // Monetarisierung
   monetization: {
     adsEnabled: boolean;
+    // Ergänzung: Optional AdSense Publisher-ID in config
+    adsenseClientId: "", // <--- Hier ggf. echten Wert eintragen!
     affiliateEnabled: boolean;
     donationEnabled: boolean;
     donationLink?: string;
@@ -102,6 +103,8 @@ export const siteConfig: SiteConfig = {
   
   monetization: {
     adsEnabled: false, // initial deaktiviert
+    // Ergänzung: Optional AdSense Publisher-ID in config
+    adsenseClientId: "", // <--- Hier ggf. echten Wert eintragen!
     affiliateEnabled: true,
     donationEnabled: true,
     donationLink: "https://ko-fi.com/mientuun"

@@ -1,5 +1,10 @@
 
 import React, { useEffect } from "react";
+import { siteConfig } from "@/config/site.config";
+
+// Beziehe Publisher-ID aus siteConfig (falls gepflegt)
+const ADSENSE_CLIENT_ID =
+  siteConfig.monetization.adsenseClientId || "ca-pub-XXXXXXXXXXXXXXX";
 
 interface AdSenseSlotProps {
   slot: string;
@@ -8,14 +13,11 @@ interface AdSenseSlotProps {
   className?: string;
 }
 
-// Der publisher (data-ad-client) Wert ist als Platzhalter hinterlegt!
-const ADSENSE_CLIENT_ID = "ca-pub-XXXXXXXXXXXXXXX"; // <-- Bitte ersetzen!
-
 const AdSenseSlot: React.FC<AdSenseSlotProps> = ({
   slot,
   format = "auto",
   responsive = true,
-  className = ""
+  className = "",
 }) => {
   useEffect(() => {
     try {

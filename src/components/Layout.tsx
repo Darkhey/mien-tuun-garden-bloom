@@ -4,10 +4,18 @@ import { siteConfig } from '@/config/site.config';
 import Header from './Header';
 import Footer from './Footer';
 import GoogleAnalytics from './GoogleAnalytics';
+import AdSenseSlot from "./AdSenseSlot";
+import AdPlaceholder from "./AdPlaceholder";
 
 // Monetarisierung aus siteConfig
 const analyticsId = "G-XXXXXXXXXX"; // <--- Später anpassen!
 const adsEnabled = siteConfig.monetization.adsEnabled;
+
+// Hilfsfunktion: Ist ein echter Publisher-Key gesetzt?
+function hasAdsensePublisherId() {
+  const id = siteConfig.monetization.adsenseClientId;
+  return !!id && id !== "ca-pub-XXXXXXXXXXXXXXX";
+}
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,16 +23,17 @@ interface LayoutProps {
   description?: string;
 }
 
-const Layout: React.FC<LayoutProps> = ({ 
-  children, 
+const Layout: React.FC<LayoutProps> = ({
+  children,
   title = siteConfig.title,
-  description = siteConfig.description 
+  description = siteConfig.description,
 }) => {
   return (
     <div className="min-h-screen bg-cream">
       {/* Theme-Part */}
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
           :root {
             --primary-color: ${siteConfig.theme.primaryColor};
             --secondary-color: ${siteConfig.theme.secondaryColor};
@@ -33,21 +42,24 @@ const Layout: React.FC<LayoutProps> = ({
             --text-color: ${siteConfig.theme.textColor};
             --muted-color: ${siteConfig.theme.mutedColor};
           }
-        `
-      }} />
-      
+        `,
+        }}
+      />
+
       {/* Google Analytics */}
       <GoogleAnalytics trackingId={analyticsId} />
 
       <Header />
       <main className="flex-1">
         {children}
-        {/* Beispiel für Werbung */}
-        {/* {adsEnabled && (
-          <div className="my-8 flex justify-center">
+        {/* Werbung/Platzhalter sichtbar */}
+        <div className="my-8 flex justify-center">
+          {adsEnabled && hasAdsensePublisherId() ? (
             <AdSenseSlot slot="1234567890" />
-          </div>
-        )} */}
+          ) : (
+            <AdPlaceholder />
+          )}
+        </div>
       </main>
       <Footer />
     </div>
