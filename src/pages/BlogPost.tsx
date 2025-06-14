@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -8,6 +7,7 @@ import BlogPostImage from "@/components/blog/BlogPostImage";
 import BlogPostContent from "@/components/blog/BlogPostContent";
 import BlogPostToRecipeSection from "@/components/blog/BlogPostToRecipeSection";
 import BlogPostShareSection from "@/components/blog/BlogPostShareSection";
+import RelatedBlogPostsCarousel from "@/components/blog/RelatedBlogPostsCarousel";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { BlogPost } from '@/types/content';
@@ -98,6 +98,13 @@ const BlogPostPage = () => {
         <BlogPostContent html={post.content} />
         <BlogPostToRecipeSection post={post} />
         <BlogPostShareSection />
+        {/* ----- Start Related Carousel ----- */}
+        <RelatedBlogPostsCarousel
+          currentSlug={post.slug}
+          category={post.category}
+          tags={post.tags}
+        />
+        {/* ----- End Related Carousel ----- */}
       </article>
     </Layout>
   );
