@@ -7,6 +7,7 @@ import RecipeCard from "@/components/recipes/RecipeCard";
 import RecipeFilter from "@/components/recipes/RecipeFilter";
 import { supabase } from "@/integrations/supabase/client";
 import type { Recipe } from '@/types/content';
+import { getRecipeImageUrl } from "@/utils/recipe";
 
 // Die Kategorien, Saisons und Schwierigkeitsgrade
 const categories = ['Alle', 'Süßes & Kuchen', 'Suppen & Eintöpfe', 'Salate & Vorspeisen', 'Konservieren'];
@@ -30,7 +31,7 @@ function mapRowToRecipe(row: any): Recipe {
     slug: row.slug,
     title: row.title,
     description: row.description || '',
-    image: row.image_url || '/placeholder.svg',
+    image: getRecipeImageUrl(row.image_url),
     prepTime: 0, // Supabase kennt dieses Feld noch nicht
     cookTime: 0,
     totalTime: 0,

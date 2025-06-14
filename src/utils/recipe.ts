@@ -16,5 +16,8 @@ export function parseJsonArray(val: any): any[] {
 
 export function getRecipeImageUrl(imagePath: string | null): string {
   if (!imagePath) return "/placeholder.svg";
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
   return SUPABASE_STORAGE_URL + imagePath;
 }
