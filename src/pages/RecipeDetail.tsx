@@ -5,6 +5,10 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, BookOpen, ChefHat, Check } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import IngredientList from "@/components/IngredientList";
+import RecipeStep from "@/components/RecipeStep";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const fetchRecipe = async (id: string) => {
   const { data, error } = await supabase.from("recipes").select("*").eq("id", id).maybeSingle();
@@ -27,6 +31,32 @@ const RecipeDetail = () => {
       try { const arr = JSON.parse(val); if(Array.isArray(arr)) return arr;} catch {}
     }
     return [];
+  }
+
+  const [servings, setServings] = useState(recipe.servings || 1);
+  const { toast } = useToast();
+  const [loadingAlt, setLoadingAlt] = useState<string | null>(null);
+
+  async function handleAskAlternative(ingredient: string) {
+    setLoadingAlt(ingredient);
+    try {
+      const res = await fetch("/functions/ingredient-alternatives", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ingredient }),
+      });
+      const data = await res.json();
+      toast({
+        title: data.alternative
+          ? `"${ingredient}" Alternative`
+          : "Keine Alternative",
+        description: data.alternative || "Es wurde keine Alternative gefunden.",
+        duration: 6000,
+      });
+    } catch (e) {
+      toast({ title: "Fehler", description: "Alternative konnte nicht geladen werden" });
+    }
+    setLoadingAlt(null);
   }
 
   if (isLoading)
@@ -81,23 +111,36 @@ const RecipeDetail = () => {
             <p className="text-earth-600 mb-3">{recipe.description}</p>
           </div>
         </Card>
-        {/* Zutaten dynamisch */}
+        {/* Zutatenrechner */}
         {zutaten.length > 0 && (
           <div>
-            <h2 className="text-2xl font-serif font-bold text-earth-800 mb-4 flex items-center gap-2">
-              <span><svg className="w-6 h-6 text-sage-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318A4.5 4.5 0 018.5 4.5h7A4.5 4.5 0 0120 8.5v7a4.5 4.5 0 01-4.5 4.5h-7A4.5 4.5 0 014 15.5v-7c0-1.123.409-2.142 1.106-2.929z"></path></svg></span>
+            <h2 className="text-2xl font-serif font-bold text-earth-800 mb-2 flex items-center gap-2">
+              <span>
+                <svg className="w-6 h-6 text-sage-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318A4.5 4.5 0 018.5 4.5h7A4.5 4.5 0 0120 8.5v7a4.5 4.5 0 01-4.5 4.5h-7A4.5 4.5 0 014 15.5v-7c0-1.123.409-2.142 1.106-2.929z"></path></svg>
+              </span>
               Zutaten
+              <div className="ml-auto flex items-center gap-2 bg-sage-50 rounded-full px-3">
+                <span className="text-sm text-sage-700">Portionen:</span>
+                <button
+                  className="px-2 py-0.5 rounded-l bg-sage-100 hover:bg-sage-200 font-bold"
+                  onClick={() => setServings(Math.max(servings - 1, 1))}
+                >-</button>
+                <span className="px-2">{servings}</span>
+                <button
+                  className="px-2 py-0.5 rounded-r bg-sage-100 hover:bg-sage-200 font-bold"
+                  onClick={() => setServings(servings + 1)}
+                >+</button>
+              </div>
             </h2>
-            <ul className="space-y-3 mb-6">
-              {zutaten.map((ing: any, i: number) => (
-                <li key={i} className="flex items-center gap-3">
-                  <span className="bg-sage-100 rounded-full w-8 h-8 flex justify-center items-center font-semibold text-sage-800">
-                    {ing.amount !== undefined ? `${ing.amount} ${ing.unit || ""}` : ""}
-                  </span>
-                  <span className="text-earth-700">{ing.name || ing}</span>
-                </li>
-              ))}
-            </ul>
+            <IngredientList
+              ingredients={zutaten}
+              servings={servings}
+              baseServings={recipe.servings || 1}
+              onAskAlternative={handleAskAlternative}
+            />
+            {loadingAlt && (
+              <div className="text-xs text-sage-500">Alternative für "{loadingAlt}" wird gesucht ...</div>
+            )}
           </div>
         )}
         {/* Zubereitung */}
@@ -108,12 +151,7 @@ const RecipeDetail = () => {
             </h2>
             <ol className="space-y-4">
               {schritte.map((step: any, i: number) => (
-                <li key={i} className="flex items-start gap-4">
-                  <span className="w-8 h-8 bg-sage-600 text-white rounded-full flex items-center justify-center font-bold text-base mt-1">
-                    {i + 1}
-                  </span>
-                  <p className="text-earth-700 leading-relaxed">{typeof step === "string" ? step : (step.text || JSON.stringify(step))}</p>
-                </li>
+                <RecipeStep step={step} stepNumber={i + 1} key={i} />
               ))}
             </ol>
           </div>
