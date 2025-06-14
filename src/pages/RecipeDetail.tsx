@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
@@ -8,7 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import IngredientList from "@/components/IngredientList";
 import RecipeStep from "@/components/RecipeStep";
 import { useToast } from "@/hooks/use-toast";
-import { useState as useStateHook } from "react";
+import RecipeStructuredData from "@/components/recipe/RecipeStructuredData";
+import RecipeRating from "@/components/recipe/RecipeRating";
+import RecipeComments from "@/components/recipe/RecipeComments";
 
 const fetchRecipeBySlug = async (slug: string) => {
   const { data, error } = await supabase
@@ -29,6 +31,41 @@ const RecipeDetail = () => {
     queryFn: () => fetchRecipeBySlug(slug!),
     enabled: !!slug,
   });
+
+  const [userId, setUserId] = useState<string | null>(null);
+  const [recipeRating, setRecipeRating] = useState<{
+    average: number | null;
+    count: number;
+  }>({ average: null, count: 0 });
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUserId(data.session?.user.id ?? null);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user.id ?? null);
+    });
+    return () => { listener?.subscription.unsubscribe(); };
+  }, []);
+  
+  useEffect(() => {
+    if (!slug) return;
+    const fetchRating = async () => {
+      const { data, count } = await supabase
+        .from("recipe_ratings")
+        .select("rating", { count: "exact" })
+        .eq("recipe_id", slug);
+      
+      if (data && data.length > 0) {
+        const sum = data.reduce((acc, cur) => acc + cur.rating, 0);
+        const avg = Math.round((sum / data.length) * 10) / 10;
+        setRecipeRating({ average: avg, count: count || data.length });
+      } else {
+        setRecipeRating({ average: null, count: 0 });
+      }
+    };
+    fetchRating();
+  }, [slug]);
 
   function parseArray(val: any): any[] {
     if (Array.isArray(val)) return val;
@@ -101,6 +138,11 @@ const RecipeDetail = () => {
 
   return (
     <Layout title={recipe.title}>
+      <RecipeStructuredData 
+        recipe={recipe} 
+        averageRating={recipeRating.average ?? undefined}
+        ratingCount={recipeRating.count}
+      />
       <section className="max-w-3xl mx-auto px-4 py-10">
         <Link
           to="/rezeptebuch"
@@ -121,6 +163,7 @@ const RecipeDetail = () => {
               {recipe.title}
             </h1>
             <p className="text-earth-600 mb-3">{recipe.description}</p>
+            <RecipeRating recipeId={slug!} userId={userId} />
           </div>
         </Card>
         {/* Zutatenrechner */}
@@ -185,6 +228,9 @@ const RecipeDetail = () => {
             </ul>
           </div>
         )}
+      </section>
+      <section className="max-w-3xl mx-auto px-4 pb-16">
+        <RecipeComments recipeId={slug!} userId={userId} />
       </section>
     </Layout>
   );
