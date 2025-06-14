@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,20 +54,6 @@ const RecipeBook = () => {
     queryFn: () => fetchSavedRecipes(userId!),
     enabled: !!userId,
   });
-
-  function getIngredientsCount(ingredients: any): number {
-    if (Array.isArray(ingredients)) return ingredients.length;
-    try {
-      const parsed = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
-      if (Array.isArray(parsed)) return parsed.length;
-    } catch (e) {}
-    return 0;
-  }
-
-  function getRecipeImageUrl(imagePath: string | null): string {
-    if (!imagePath) return "/placeholder.svg";
-    return SUPABASE_STORAGE_URL + imagePath;
-  }
   
   const renderContent = () => {
     if (authLoading || (isLoading && userId)) {
