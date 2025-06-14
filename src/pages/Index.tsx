@@ -3,6 +3,7 @@ import Layout from '@/components/Layout';
 import { siteConfig } from '@/config/site.config';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Flower, Calendar, User, Instagram } from 'lucide-react';
+import NewsletterSignup from "@/components/NewsletterSignup";
 
 // Foto-Quellen und zentrale Werte aus siteConfig für maximale Flexibilität:
 const mainHeroImage =
@@ -227,15 +228,7 @@ const Index = () => {
             Teile deine Gartentipps & Rezepterlebnisse mit @mientuun auf Instagram – oder melde dich zu unserem Newsletter an.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href={siteConfig.social.newsletter}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center bg-white text-sage-600 px-8 py-4 rounded-full font-medium hover:bg-sage-50 transition-colors"
-            >
-              Newsletter abonnieren
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </a>
+            <NewsletterSignup />
             <a
               href={siteConfig.social.instagram}
               target="_blank"

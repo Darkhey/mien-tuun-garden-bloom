@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { siteConfig } from '@/config/site.config';
 import { Flower, Heart } from 'lucide-react';
+import NewsletterSignup from "./NewsletterSignup";
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -102,14 +103,7 @@ const Footer: React.FC = () => {
             <p className="text-earth-600 text-sm mb-4">
               Erhalte saisonale Rezepte und Gartentipps direkt in dein Postfach.
             </p>
-            {siteConfig.social.newsletter && (
-              <a
-                href={siteConfig.social.newsletter}
-                className="inline-block bg-sage-600 text-white px-4 py-2 rounded-lg hover:bg-sage-700 transition-colors text-sm font-medium"
-              >
-                Jetzt anmelden
-              </a>
-            )}
+            <NewsletterSignup compact />
           </div>
         </div>
 
