@@ -4,6 +4,7 @@ import { siteConfig } from '@/config/site.config';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Flower, Calendar, User, Instagram } from 'lucide-react';
 import NewsletterSignup from "@/components/NewsletterSignup";
+import NewsletterInlineCard from "@/components/NewsletterInlineCard";
 
 // Foto-Quellen und zentrale Werte aus siteConfig für maximale Flexibilität:
 const mainHeroImage =
@@ -90,10 +91,8 @@ const Index = () => {
                 <Instagram className="w-5 h-5 mr-2" />
                 Instagram
               </a>
-              {/* NewsletterSignup Feld als zweiter "Button" */}
-              <div className="flex items-center px-4 py-3 rounded-full font-medium shadow bg-sage-600 text-white">
-                <NewsletterSignup compact />
-              </div>
+              {/* Hübsche Newsletter-Karte */}
+              <NewsletterInlineCard />
               {/* Pinterest-Button */}
               <a
                 href={siteConfig.social.pinterest}

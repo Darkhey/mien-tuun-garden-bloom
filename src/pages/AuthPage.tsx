@@ -94,9 +94,14 @@ const AuthPage = () => {
         </div>
         {/* Newsletter-Checkbox bei Registrierung */}
         {!isLogin && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 rounded-lg bg-sage-100 px-2 py-2">
             <Checkbox id="newsletter" checked={newsletter} onCheckedChange={v => setNewsletter(!!v)} />
-            <Label htmlFor="newsletter" className="cursor-pointer">Für Newsletter anmelden?</Label>
+            <Label htmlFor="newsletter" className="cursor-pointer text-sage-800 select-none">
+              Für Garten-Newsletter anmelden?
+              <span className="block text-xs text-sage-600 font-normal">
+                Monatliche Tipps, Ideen & Aktionen. Kein Spam!
+              </span>
+            </Label>
           </div>
         )}
         <Button type="submit" disabled={loading} className="w-full">
