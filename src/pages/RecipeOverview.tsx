@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { siteConfig } from '@/config/site.config';
@@ -70,6 +69,7 @@ const recipes = [
 ];
 
 const RecipeOverview = () => {
+  // Keine lokalen Rezepte (Backend-Anbindung erforderlich)
   const [selectedCategory, setSelectedCategory] = useState<string>('Alle');
   const [selectedSeason, setSelectedSeason] = useState<string>('Alle');
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>('Alle');
@@ -79,17 +79,8 @@ const RecipeOverview = () => {
   const seasons = ['Alle', 'frühling', 'sommer', 'herbst', 'winter', 'ganzjährig'];
   const difficulties = ['Alle', 'einfach', 'mittel', 'schwer'];
 
-  const filteredRecipes = recipes.filter(recipe => {
-    const matchesCategory = selectedCategory === 'Alle' || recipe.category === selectedCategory;
-    const matchesSeason = selectedSeason === 'Alle' || recipe.season === selectedSeason;
-    const matchesDifficulty = selectedDifficulty === 'Alle' || recipe.difficulty === selectedDifficulty;
-    const matchesSearch = searchTerm === '' || 
-      recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recipe.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recipe.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return matchesCategory && matchesSeason && matchesDifficulty && matchesSearch;
-  });
+  // Es gibt keine Rezepte mehr (liste ist leer)
+  const filteredRecipes: any[] = [];
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -121,7 +112,6 @@ const RecipeOverview = () => {
           <p className="text-xl text-earth-600 mb-8">
             Entdecke köstliche Rezepte mit frischen Zutaten aus Garten und Region
           </p>
-          
           {/* Search */}
           <div className="max-w-md mx-auto relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-earth-400 h-5 w-5" />
@@ -135,7 +125,6 @@ const RecipeOverview = () => {
           </div>
         </div>
       </section>
-
       {/* Filters */}
       <section className="py-8 px-4 bg-white border-b border-sage-100">
         <div className="max-w-6xl mx-auto">
@@ -156,7 +145,6 @@ const RecipeOverview = () => {
                 ))}
               </select>
             </div>
-
             {/* Season Filter */}
             <div>
               <label className="block text-sm font-medium text-earth-700 mb-2">
@@ -174,7 +162,6 @@ const RecipeOverview = () => {
                 ))}
               </select>
             </div>
-
             {/* Difficulty Filter */}
             <div>
               <label className="block text-sm font-medium text-earth-700 mb-2">
@@ -195,7 +182,6 @@ const RecipeOverview = () => {
           </div>
         </div>
       </section>
-
       {/* Recipes Grid */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">

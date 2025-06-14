@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { siteConfig } from '@/config/site.config';
@@ -66,19 +65,11 @@ const BlogOverview = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const categories = ['Alle', ...siteConfig.categories];
-  
-  const filteredPosts = blogPosts.filter(post => {
-    const matchesCategory = selectedCategory === 'Alle' || post.category === selectedCategory;
-    const matchesSearch = searchTerm === '' || 
-      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return matchesCategory && matchesSearch;
-  });
 
-  const featuredPost = filteredPosts.find(post => post.featured);
-  const regularPosts = filteredPosts.filter(post => !post.featured);
+  // Es gibt keine Blogdaten (liste leer)
+  const filteredPosts: any[] = [];
+  const featuredPost = null;
+  const regularPosts: any[] = [];
 
   return (
     <Layout title={`Blog - ${siteConfig.title}`}>
@@ -128,140 +119,16 @@ const BlogOverview = () => {
       </section>
 
       {/* Featured Post */}
-      {featuredPost && (
-        <section className="py-16 px-4 bg-gradient-to-r from-accent-50 to-sage-50">
-          <div className="max-w-6xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className="grid md:grid-cols-2 gap-0">
-                <div className="relative">
-                  <img
-                    src={featuredPost.featuredImage}
-                    alt={featuredPost.title}
-                    className="w-full h-full object-cover min-h-80"
-                  />
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-accent-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                      Featured
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="p-8 md:p-12 flex flex-col justify-center">
-                  <div className="mb-4">
-                    <span className="text-sage-600 text-sm font-medium">
-                      {featuredPost.category}
-                    </span>
-                  </div>
-                  
-                  <h2 className="text-3xl md:text-4xl font-serif font-bold text-earth-800 mb-4">
-                    {featuredPost.title}
-                  </h2>
-                  
-                  <p className="text-earth-600 text-lg mb-6">
-                    {featuredPost.excerpt}
-                  </p>
-                  
-                  <div className="flex items-center text-sm text-earth-500 mb-6">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    <span className="mr-4">
-                      {new Date(featuredPost.publishedAt).toLocaleDateString('de-DE')}
-                    </span>
-                    <User className="h-4 w-4 mr-2" />
-                    <span className="mr-4">{featuredPost.author}</span>
-                    <span>{featuredPost.readingTime} Min Lesezeit</span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {featuredPost.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="bg-sage-100 text-sage-700 px-2 py-1 rounded text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  
-                  <Link
-                    to={`/blog/${featuredPost.slug}`}
-                    className="inline-flex items-center bg-sage-600 text-white px-6 py-3 rounded-full font-medium hover:bg-sage-700 transition-colors w-fit"
-                  >
-                    Artikel lesen
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+      {/* Zeige nichts an, da keine Daten vorhanden sind */}
 
       {/* Regular Posts Grid */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          {regularPosts.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {regularPosts.map((post, index) => (
-                <article
-                  key={post.id}
-                  className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden animate-fade-in"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="relative">
-                    <img
-                      src={post.featuredImage}
-                      alt={post.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute top-4 left-4">
-                      <span className="bg-white/90 text-earth-700 px-3 py-1 rounded-full text-xs font-medium">
-                        {post.category}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6">
-                    <h3 className="text-xl font-serif font-bold text-earth-800 mb-3 line-clamp-2">
-                      {post.title}
-                    </h3>
-                    <p className="text-earth-600 mb-4 line-clamp-3">
-                      {post.excerpt}
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      {post.tags.slice(0, 3).map((tag) => (
-                        <span
-                          key={tag}
-                          className="bg-sage-50 text-sage-700 px-2 py-1 rounded text-xs"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-sm text-earth-500 mb-4">
-                      <span>{new Date(post.publishedAt).toLocaleDateString('de-DE')}</span>
-                      <span>{post.readingTime} Min</span>
-                    </div>
-                    
-                    <Link
-                      to={`/blog/${post.slug}`}
-                      className="inline-flex items-center text-sage-600 font-medium hover:text-sage-700 transition-colors"
-                    >
-                      Weiterlesen
-                      <ArrowRight className="ml-1 h-4 w-4" />
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-earth-500 text-lg">
-                Keine Artikel gefunden. Versuche eine andere Kategorie oder Suchbegriff.
-              </p>
-            </div>
-          )}
+          <div className="text-center py-12">
+            <p className="text-earth-500 text-lg">
+              Keine Artikel gefunden. Versuche eine andere Kategorie oder Suchbegriff.
+            </p>
+          </div>
         </div>
       </section>
     </Layout>
