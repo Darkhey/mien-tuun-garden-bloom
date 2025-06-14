@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Loader } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +44,25 @@ const TAG_OPTIONS = [
 const SUGGESTION_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/suggest-blog-topics";
 const GENERATE_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/generate-blog-post";
 
+// Dynamische Trend-Tags pro Kategorie/Saison (Beispielbasis)
+const TREND_TAGS = {
+  gartenplanung: ["Permakultur", "No-Dig", "Biogarten", "Hochbeet"],
+  "saisonale-kueche": ["Meal Prep", "Zero Waste", "Fermentieren", "One Pot"],
+  nachhaltigkeit: ["Plastikfrei", "Regenerativ", "Naturgarten"],
+  "diY-projekte": ["Upcycling", "Balkonideen"],
+  ernte: ["Haltbarmachen", "Kräutergarten", "Vorrat"],
+  selbstversorgung: ["Unabhängigkeit", "Microgreens", "Wildkräuter"],
+  "tipps-tricks": ["Tool Hacks", "Schädlingskontrolle"],
+  sonstiges: ["Inspiration"],
+  default: ["Nachhaltig", "DIY", "Tipps"]
+};
+
+function getTrendTags(category: string, season: string) {
+  const catTags = TREND_TAGS[category as keyof typeof TREND_TAGS] || TREND_TAGS.default;
+  const seasonTag = season ? [season.charAt(0).toUpperCase() + season.slice(1)] : [];
+  return Array.from(new Set([...catTags, ...seasonTag]));
+}
+
 const KIBlogCreator: React.FC = () => {
   const [topicInput, setTopicInput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -64,6 +82,7 @@ const KIBlogCreator: React.FC = () => {
   const [contentType, setContentType] = useState<string[]>([]);
   const [excerpt, setExcerpt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
+  const [dynamicTags, setDynamicTags] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Themenvorschlag per Edge Function holen
@@ -92,26 +111,36 @@ const KIBlogCreator: React.FC = () => {
     setIsSuggesting(false);
   };
 
+  // Dynamische Tag-Sammlung je nach Kategorie & Saison
+  useEffect(() => {
+    // Dynamische Tag-Sammlung je nach Kategorie & Saison
+    const trendTags = getTrendTags(category, season);
+    setDynamicTags(Array.from(new Set([...TAG_OPTIONS, ...trendTags])));
+  }, [category, season]);
+
   // Prompt automatisch verbessern
   const handleImprovePrompt = async () => {
     setLoading(true);
     try {
-      // Prompt wird mit Kontext aus Feldern aufgewertet
+      // Kontext verstärkt durch Trends, Saison, Kategorie, Zielgruppen etc.
       const contextParts = [
         category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
         season ? `Saison: ${SEASONS.find(s => s.value === season)?.label ?? season}.` : "",
         audiences.length ? `Zielgruppe: ${audiences.join(", ")}.` : "",
         contentType.length ? `Art des Beitrags: ${contentType.join(", ")}.` : "",
         tags.length ? `Tags: ${tags.join(", ")}.` : "",
+        dynamicTags.length ? `Trend-Tags: ${dynamicTags.join(", ")}.` : "",
         excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
         imageUrl ? `Bild: ${imageUrl}` : "",
+        // Kleiner SEO-Anker: Füge Trend-Schlagworte und saisonales Flair hinzu!
+        "Der Artikel soll SEO-optimiert sein und aktuelle Trends sowie Saisonbezug aufgreifen."
       ];
       const fullPrompt = [input, ...contextParts].filter(Boolean).join(" ");
       const response = await fetch(GENERATE_FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `Formuliere diesen Blogartikel-Idee/Prompt samt Kontext noch einmal so, dass eine KI daraus einen inspirierenden, ausführlichen und suchmaschinenoptimierten Artikel verfassen kann. Kontext/Details:\n${fullPrompt}\nGib NUR den verbesserten Prompt zurück.`
+          prompt: `Formuliere diesen Blogartikel-Idee/Prompt samt Kontext so, dass eine KI einen inspirierenden, ausführlichen und suchmaschinenoptimierten Artikel verfassen kann. Kontext/Details:\n${fullPrompt}\nGib NUR den verbesserten Prompt zurück.`
         }),
       });
       const data = await response.json();
@@ -134,7 +163,7 @@ const KIBlogCreator: React.FC = () => {
         category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
         season ? `Saison: ${SEASONS.find(s => s.value === season)?.label ?? season}.` : "",
         audiences.length ? `Zielgruppe: ${audiences.join(", ")}.` : "",
-        contentType.length ? `Art des Beitrags: ${contentType.join(", ")}.` : "",
+        contentType.length ? `Artikel-Typ/Format: ${contentType.join(", ")}.` : "",
         tags.length ? `Tags: ${tags.join(", ")}.` : "",
         excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
         imageUrl ? `Bild: ${imageUrl}` : "",
@@ -271,11 +300,11 @@ const KIBlogCreator: React.FC = () => {
             disabled={loading}
           />
         </div>
-        {/* Tags */}
+        {/* Tags dynamisch inkl. Trend-Tags anbieten */}
         <div>
-          <label className="block text-xs mb-1">Tags (optional, mehrere möglich)</label>
+          <label className="block text-xs mb-1">Tags (optional, mehrere möglich – Vorschläge werden angepasst)</label>
           <TagSelector
-            options={TAG_OPTIONS}
+            options={dynamicTags}
             selected={tags}
             setSelected={setTags}
             disabled={loading}
@@ -388,4 +417,3 @@ const KIBlogCreator: React.FC = () => {
 };
 
 export default KIBlogCreator;
-
