@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -6,6 +5,20 @@ import { Calendar, User, ArrowLeft, Tag, Loader } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+
+// Hilfsfunktion zum Slugifizieren eines Strings (einfache deutsche Variante)
+function slugify(text: string) {
+  return text
+    .toString()
+    .toLowerCase()
+    .replace(/ä/g, 'ae')
+    .replace(/ö/g, 'oe')
+    .replace(/ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-');
+}
 
 const BlogPost = () => {
   const { slug } = useParams();
@@ -94,20 +107,28 @@ const BlogPost = () => {
         recipe = data.recipe;
       }
 
+      // Slug generieren: zuerst bevorzugt KI-Response nutzen, sonst aus Titel generieren
+      const recipeSlug =
+        (recipe && typeof recipe.slug === 'string' && recipe.slug.length > 0)
+          ? recipe.slug
+          : slugify(recipe?.title || post.title);
+
       const user = await supabase.auth.getUser();
       if (!user.data.user) throw new Error("Nicht eingeloggt!");
 
-      const { error } = await supabase.from("recipes").insert([
-        {
-          user_id: user.data.user.id,
-          title: recipe.title,
-          image_url: recipe.image || post.featuredImage,
-          description: recipe.description || "",
-          ingredients: recipe.ingredients ?? null,
-          instructions: recipe.instructions ?? null,
-          source_blog_slug: post.slug,
-        },
-      ]);
+      // ingredients und instructions robust als JSON speichern
+      const insertObj = {
+        user_id: user.data.user.id,
+        title: recipe.title,
+        slug: recipeSlug,
+        image_url: recipe.image || post.featuredImage,
+        description: recipe.description || "",
+        ingredients: recipe.ingredients ?? null,
+        instructions: recipe.instructions ?? null,
+        source_blog_slug: post.slug,
+      };
+
+      const { error } = await supabase.from("recipes").insert([insertObj]);
       if (error) throw error;
 
       toast({
