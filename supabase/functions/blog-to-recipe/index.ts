@@ -14,6 +14,7 @@ serve(async (req) => {
 
   try {
     const { title, content, image } = await req.json();
+    console.log("[blog-to-recipe] Request empfangen:", { title, truncatedContent: content?.slice?.(0, 160), image });
 
     // Prompt: Extrahiere ein Rezept als strukturiertes JSON
     const systemPrompt = `
@@ -33,37 +34,104 @@ Inhalt:
 ${content}
 `.trim();
 
-    const chatResp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${openAIApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemPrompt },
-        ],
-        temperature: 0.1,
-        max_tokens: 1024,
-        response_format: { type: "json_object" },
-      }),
-    });
+    console.log("[blog-to-recipe] Prompt für KI gebaut (Länge):", systemPrompt.length);
 
-    const data = await chatResp.json();
+    // OpenAI API Aufruf
+    let chatResp: Response;
+    try {
+      chatResp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${openAIApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: systemPrompt },
+          ],
+          temperature: 0.1,
+          max_tokens: 1024,
+          response_format: { type: "json_object" },
+        }),
+      });
+    } catch (fetchErr) {
+      console.error("[blog-to-recipe] OpenAI-Request fehlgeschlagen:", fetchErr);
+      return new Response(
+        JSON.stringify({
+          error: "OpenAI request failed",
+          code: "openai_network_error",
+          details: String(fetchErr?.message ?? fetchErr)
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!chatResp.ok) {
+      const chatErr = await chatResp.text();
+      console.error("[blog-to-recipe] Fehlerhafte Antwort von OpenAI:", chatErr);
+      return new Response(
+        JSON.stringify({
+          error: "OpenAI API error",
+          code: "openai_error",
+          status: chatResp.status,
+          openai: chatErr,
+        }),
+        { status: chatResp.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    let data;
+    try {
+      data = await chatResp.json();
+    } catch (parseErr) {
+      console.error("[blog-to-recipe] Fehler beim Parsen der OpenAI-Antwort:", parseErr);
+      return new Response(
+        JSON.stringify({
+          error: "Antwort von OpenAI konnte nicht geparst werden",
+          code: "openai_json_parse_error",
+          details: String(parseErr?.message ?? parseErr)
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     if (!data.choices?.[0]?.message?.content) {
-      throw new Error("Keine KI-Antwort erhalten.");
+      console.error("[blog-to-recipe] Keine 'content'-Antwort von OpenAI erhalten:", data);
+      return new Response(
+        JSON.stringify({
+          error: "Keine KI-Antwort erhalten",
+          code: "no_content",
+          data,
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
-    // Parse das JSON-Objekt aus der KI-Antwort
-    const recipe = JSON.parse(data.choices[0].message.content);
 
-    return new Response(JSON.stringify({ recipe }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    try {
+      const recipe = JSON.parse(data.choices[0].message.content);
+      console.log("[blog-to-recipe] Rezept erfolgreich extrahiert, Titel:", recipe?.title || "<kein Titel>");
+      return new Response(JSON.stringify({ recipe }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch (jsonErr) {
+      console.error("[blog-to-recipe] Fehler beim JSON.parse der KI-Antwort:", data.choices[0].message.content, jsonErr);
+      return new Response(
+        JSON.stringify({
+          error: "KI-Antwort konnte nicht als JSON geparst werden",
+          code: "json_parse_error",
+          content: data.choices[0].message.content,
+          details: String(jsonErr?.message ?? jsonErr)
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
   } catch (err) {
-    console.error("KI Rezept Extraktion Fehler:", err);
-    return new Response(JSON.stringify({ error: err.message || err.toString() }), {
+    console.error("[blog-to-recipe] Allgemeiner Fehler:", err);
+    return new Response(JSON.stringify({
+      error: String(err?.message ?? err),
+      code: "unhandled_error",
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
