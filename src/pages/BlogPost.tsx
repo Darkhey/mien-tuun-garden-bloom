@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { BlogPost } from '@/types/content';
 import BlogComments from "@/components/blog/BlogComments";
+import BlogStructuredData from "@/components/blog/BlogStructuredData";
 
 const BlogPostPage = () => {
   const { slug } = useParams();
@@ -35,6 +36,11 @@ const BlogPostPage = () => {
   // Session holen für UserId (nur für Kommentare relevant)
   // (Wir holen die Session synchron, weil der Blogpost public ist, und nur Kommentare Auth brauchen)
   const [userId, setUserId] = React.useState<string | null>(null);
+  // Bewertung state
+  const [blogRating, setBlogRating] = React.useState<{
+    average: number | null;
+    count: number;
+  }>({ average: null, count: 0 });
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -45,6 +51,24 @@ const BlogPostPage = () => {
     });
     return () => { listener?.subscription.unsubscribe(); };
   }, []);
+
+  // Lese Bewertungsdaten aus Supabase für strukturierte Daten
+  React.useEffect(() => {
+    if (!slug) return;
+    supabase
+      .from("blog_ratings")
+      .select("rating", { count: "exact" })
+      .eq("blog_slug", slug)
+      .then(({ data, count }) => {
+        if (!data || data.length === 0) {
+          setBlogRating({ average: null, count: 0 });
+        } else {
+          const sum = data.reduce((acc, cur) => acc + cur.rating, 0);
+          const avg = Math.round((sum / data.length) * 10) / 10;
+          setBlogRating({ average: avg, count: data.length });
+        }
+      });
+  }, [slug]);
 
   if (isLoading) {
     return (
@@ -90,6 +114,15 @@ const BlogPostPage = () => {
 
   return (
     <Layout title={`${post.title} - Blog`}>
+      {/* Structured Data for Google */}
+      <BlogStructuredData
+        title={post.title}
+        slug={post.slug}
+        publishedAt={post.publishedAt}
+        author={post.author}
+        averageRating={blogRating.average === null ? undefined : blogRating.average}
+        ratingCount={blogRating.count}
+      />
       {/* Back Button */}
       <div className="max-w-4xl mx-auto px-4 pt-8">
         <Link
