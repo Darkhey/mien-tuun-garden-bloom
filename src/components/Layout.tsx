@@ -17,16 +17,18 @@ const Layout: React.FC<LayoutProps> = ({
 }) => {
   return (
     <div className="min-h-screen bg-cream">
-      <style jsx global>{`
-        :root {
-          --primary-color: ${siteConfig.theme.primaryColor};
-          --secondary-color: ${siteConfig.theme.secondaryColor};
-          --accent-color: ${siteConfig.theme.accentColor};
-          --background-color: ${siteConfig.theme.backgroundColor};
-          --text-color: ${siteConfig.theme.textColor};
-          --muted-color: ${siteConfig.theme.mutedColor};
-        }
-      `}</style>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          :root {
+            --primary-color: ${siteConfig.theme.primaryColor};
+            --secondary-color: ${siteConfig.theme.secondaryColor};
+            --accent-color: ${siteConfig.theme.accentColor};
+            --background-color: ${siteConfig.theme.backgroundColor};
+            --text-color: ${siteConfig.theme.textColor};
+            --muted-color: ${siteConfig.theme.mutedColor};
+          }
+        `
+      }} />
       
       <Header />
       
