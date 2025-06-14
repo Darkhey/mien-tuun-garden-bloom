@@ -1,5 +1,4 @@
-
-import React from "react";
+import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import IngredientList from "@/components/IngredientList";
 import RecipeStep from "@/components/RecipeStep";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState as useStateHook } from "react";
 
 const fetchRecipeBySlug = async (slug: string) => {
   const { data, error } = await supabase
@@ -20,6 +19,8 @@ const fetchRecipeBySlug = async (slug: string) => {
   if (error) throw error;
   return data;
 };
+
+const SUPABASE_STORAGE_URL = "https://ublbxvpmoccmegtwaslh.supabase.co/storage/v1/object/public/recipe-images/";
 
 const RecipeDetail = () => {
   const { id: slug } = useParams();
@@ -41,6 +42,7 @@ const RecipeDetail = () => {
   const [servings, setServings] = useState(1);
   const { toast } = useToast();
   const [loadingAlt, setLoadingAlt] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
 
   async function handleAskAlternative(ingredient: string) {
     setLoadingAlt(ingredient);
@@ -62,6 +64,11 @@ const RecipeDetail = () => {
       toast({ title: "Fehler", description: "Alternative konnte nicht geladen werden" });
     }
     setLoadingAlt(null);
+  }
+
+  function getRecipeImageUrl(imagePath: string | null): string {
+    if (!imagePath) return "/placeholder.svg";
+    return SUPABASE_STORAGE_URL + imagePath;
   }
 
   if (isLoading)
@@ -104,9 +111,10 @@ const RecipeDetail = () => {
         </Link>
         <Card className="p-0 overflow-hidden bg-white shadow rounded-2xl mb-8">
           <img
-            src={recipe.image_url || "/placeholder.svg"}
+            src={imgError ? "/placeholder.svg" : getRecipeImageUrl(recipe.image_url)}
             alt={recipe.title}
             className="w-full h-64 object-cover"
+            onError={() => setImgError(true)}
           />
           <div className="px-8 py-6">
             <h1 className="text-3xl font-serif font-bold text-earth-800 mb-3">
