@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,31 +16,33 @@ import ProfilePage from "./pages/ProfilePage";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/blog" element={<BlogOverview />} />
-          <Route path="/blog/:slug" element={<BlogPost />} />
-          <Route path="/rezepte" element={<RecipeOverview />} />
-          <Route path="/rezepte/:slug" element={<RecipeDetail />} />
-          <Route path="/garten" element={<BlogOverview />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/links" element={<Links />} />
-          <Route path="/datenschutz" element={<About />} />
-          <Route path="/impressum" element={<About />} />
-          {/* Profil-Seite hinzufügen */}
-          <Route path="/profil" element={<ProfilePage />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <TooltipProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/blog" element={<BlogOverview />} />
+            <Route path="/blog/:slug" element={<BlogPost />} />
+            <Route path="/rezepte" element={<RecipeOverview />} />
+            <Route path="/rezepte/:slug" element={<RecipeDetail />} />
+            <Route path="/garten" element={<BlogOverview />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/links" element={<Links />} />
+            <Route path="/datenschutz" element={<About />} />
+            <Route path="/impressum" element={<About />} />
+            {/* Profil-Seite hinzufügen */}
+            <Route path="/profil" element={<ProfilePage />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </QueryClientProvider>
+  );
+}
 
 export default App;
