@@ -127,7 +127,7 @@ const KIBlogCreator: React.FC = () => {
         category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
         season ? `Saison: ${SEASONS.find(s => s.value === season)?.label ?? season}.` : "",
         audiences.length ? `Zielgruppe: ${audiences.join(", ")}.` : "",
-        contentType.length ? `Art des Beitrags: ${contentType.join(", ")}.` : "",
+        contentType.length ? `Artikel-Typ/Format: ${contentType.join(", ")}.` : "",
         tags.length ? `Tags: ${tags.join(", ")}.` : "",
         dynamicTags.length ? `Trend-Tags: ${dynamicTags.join(", ")}.` : "",
         excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
@@ -211,7 +211,8 @@ const KIBlogCreator: React.FC = () => {
         reading_time: 5,
         difficulty: "",
         season: season ? SEASONS.find(s => s.value === season)?.label ?? season : "",
-        // Extras wie Zielgruppe, ContentType könnten künftig als eigene Felder gespeichert werden!
+        audiences: audiences,
+        content_types: contentType,
       }]);
       if (error) throw error;
       toast({ title: "Erstellt!", description: "Der Blogartikel wurde angelegt." });

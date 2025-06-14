@@ -35,9 +35,11 @@ export type Database = {
       }
       blog_posts: {
         Row: {
+          audiences: string[]
           author: string
           category: string
           content: string
+          content_types: string[]
           excerpt: string
           featured: boolean
           featured_image: string
@@ -57,9 +59,11 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          audiences?: string[]
           author: string
           category: string
           content: string
+          content_types?: string[]
           excerpt: string
           featured?: boolean
           featured_image: string
@@ -79,9 +83,11 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          audiences?: string[]
           author?: string
           category?: string
           content?: string
+          content_types?: string[]
           excerpt?: string
           featured?: boolean
           featured_image?: string
