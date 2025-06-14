@@ -33,6 +33,75 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_posts: {
+        Row: {
+          author: string
+          category: string
+          content: string
+          excerpt: string
+          featured: boolean
+          featured_image: string
+          id: string
+          og_image: string | null
+          original_title: string | null
+          published: boolean
+          published_at: string
+          reading_time: number
+          seo_description: string
+          seo_keywords: string[]
+          seo_title: string
+          slug: string
+          structured_data: string | null
+          tags: string[]
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          author: string
+          category: string
+          content: string
+          excerpt: string
+          featured?: boolean
+          featured_image: string
+          id?: string
+          og_image?: string | null
+          original_title?: string | null
+          published?: boolean
+          published_at?: string
+          reading_time: number
+          seo_description: string
+          seo_keywords?: string[]
+          seo_title: string
+          slug: string
+          structured_data?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          author?: string
+          category?: string
+          content?: string
+          excerpt?: string
+          featured?: boolean
+          featured_image?: string
+          id?: string
+          og_image?: string | null
+          original_title?: string | null
+          published?: boolean
+          published_at?: string
+          reading_time?: number
+          seo_description?: string
+          seo_keywords?: string[]
+          seo_title?: string
+          slug?: string
+          structured_data?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       blog_ratings: {
         Row: {
           blog_slug: string
