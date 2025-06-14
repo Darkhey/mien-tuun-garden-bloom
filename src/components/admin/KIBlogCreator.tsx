@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Loader } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
@@ -7,19 +8,27 @@ import { Button } from "@/components/ui/button";
 import TagSelector from "./TagSelector";
 import BlogMetaForm from "./BlogMetaForm";
 
-const CATEGORY_OPTIONS = [
-  { value: "garten", label: "Garten" },
-  { value: "küche", label: "Küche" },
+const BLOG_CATEGORIES = [
+  { value: "gartenplanung", label: "Gartenplanung" },
+  { value: "saisonale-kueche", label: "Saisonale Küche" },
+  { value: "nachhaltigkeit", label: "Nachhaltigkeit" },
+  { value: "diY-projekte", label: "DIY Projekte" },
   { value: "ernte", label: "Ernte" },
   { value: "selbstversorgung", label: "Selbstversorgung" },
-  { value: "alltag", label: "Alltag" },
+  { value: "tipps-tricks", label: "Tipps & Tricks" },
   { value: "sonstiges", label: "Sonstiges" },
 ];
-const DIFFICULTY = [
-  { value: "leicht", label: "Leicht" },
-  { value: "mittel", label: "Mittel" },
-  { value: "schwer", label: "Schwer" },
+
+// Zielgruppen für Blogartikel
+const AUDIENCE_OPTIONS = [
+  "Anfänger", "Fortgeschrittene", "Familien", "Singles", "Kinder", "Senioren"
 ];
+
+// Content-Typen für Blogartikel
+const CONTENT_TYPE_OPTIONS = [
+  "Anleitung", "Inspiration", "Ratgeber", "Checkliste", "Rezeptsammlung"
+];
+
 const SEASONS = [
   { value: "frühling", label: "Frühling" },
   { value: "sommer", label: "Sommer" },
@@ -27,29 +36,32 @@ const SEASONS = [
   { value: "winter", label: "Winter" },
   { value: "ganzjährig", label: "Ganzjährig" },
 ];
+
 const TAG_OPTIONS = [
-  "Schnell", "Kinder", "Tipps", "DIY", "Low Budget", "Bio", "Natur", "Regional", "Saisonal", "Nachhaltig", "Praktisch", "Dekor", "Haushalt"
+  "Schnell", "Kinder", "Tipps", "DIY", "Low Budget", "Bio", "Natur", "Regional", "Saisonal", "Nachhaltig", "Praktisch", "Dekor", "Haushalt",
+  "Step-by-Step", "Checkliste", "Inspiration"
 ];
 
 const SUGGESTION_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/suggest-blog-topics";
 const GENERATE_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/generate-blog-post";
 
 const KIBlogCreator: React.FC = () => {
-  const [topicInput, setTopicInput] = useState(""); // Benutzer kann Oberbegriff eingeben
+  const [topicInput, setTopicInput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
 
   const [input, setInput] = useState(""); // Themenwahl oder Prompt
-  const [prompt, setPrompt] = useState(""); // Optimierter Prompt
+  const [prompt, setPrompt] = useState("");
   const [isPromptImproved, setIsPromptImproved] = useState(false);
 
-  const [generated, setGenerated] = useState<string | null>(null); // Rohentwurf KI
-  const [editing, setEditing] = useState<string>(""); // Editor
+  const [generated, setGenerated] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [category, setCategory] = useState("");
-  const [difficulty, setDifficulty] = useState("");
+  const [category, setCategory] = useState(""); // Artikel-Kategorie
   const [season, setSeason] = useState("");
   const [tags, setTags] = useState<string[]>([]);
+  const [audiences, setAudiences] = useState<string[]>([]);
+  const [contentType, setContentType] = useState<string[]>([]);
   const [excerpt, setExcerpt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const { toast } = useToast();
@@ -80,21 +92,21 @@ const KIBlogCreator: React.FC = () => {
     setIsSuggesting(false);
   };
 
-  // Prompt automatisch verbessern (optional, kann nochmals nachbearbeitet werden)
+  // Prompt automatisch verbessern
   const handleImprovePrompt = async () => {
     setLoading(true);
     try {
       // Prompt wird mit Kontext aus Feldern aufgewertet
       const contextParts = [
-        category ? `Kategorie: ${category}.` : "",
-        difficulty ? `Schwierigkeitsgrad: ${difficulty}.` : "",
-        season ? `Saison: ${season}.` : "",
+        category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
+        season ? `Saison: ${SEASONS.find(s => s.value === season)?.label ?? season}.` : "",
+        audiences.length ? `Zielgruppe: ${audiences.join(", ")}.` : "",
+        contentType.length ? `Art des Beitrags: ${contentType.join(", ")}.` : "",
         tags.length ? `Tags: ${tags.join(", ")}.` : "",
         excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
         imageUrl ? `Bild: ${imageUrl}` : "",
       ];
       const fullPrompt = [input, ...contextParts].filter(Boolean).join(" ");
-      // prompt verbessern lassen
       const response = await fetch(GENERATE_FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,11 +130,11 @@ const KIBlogCreator: React.FC = () => {
     setGenerated(null);
     setEditing("");
     try {
-      // Kontextprompt um weitere Felder ergänzen
       const contextParts = [
-        category ? `Kategorie: ${category}.` : "",
-        difficulty ? `Schwierigkeitsgrad: ${difficulty}.` : "",
-        season ? `Saison: ${season}.` : "",
+        category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
+        season ? `Saison: ${SEASONS.find(s => s.value === season)?.label ?? season}.` : "",
+        audiences.length ? `Zielgruppe: ${audiences.join(", ")}.` : "",
+        contentType.length ? `Art des Beitrags: ${contentType.join(", ")}.` : "",
         tags.length ? `Tags: ${tags.join(", ")}.` : "",
         excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
         imageUrl ? `Bild: ${imageUrl}` : "",
@@ -163,11 +175,14 @@ const KIBlogCreator: React.FC = () => {
         seo_description: "",
         seo_keywords: tags,
         tags,
-        category: category || "Sonstiges",
+        category: category 
+          ? BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category
+          : "Sonstiges",
         published_at: new Date().toISOString(),
         reading_time: 5,
-        difficulty,
-        season,
+        difficulty: "",
+        season: season ? SEASONS.find(s => s.value === season)?.label ?? season : "",
+        // Extras wie Zielgruppe, ContentType könnten künftig als eigene Felder gespeichert werden!
       }]);
       if (error) throw error;
       toast({ title: "Erstellt!", description: "Der Blogartikel wurde angelegt." });
@@ -180,22 +195,94 @@ const KIBlogCreator: React.FC = () => {
   return (
     <div className="bg-white p-5 rounded-xl shadow max-w-xl mx-auto">
       <h2 className="font-bold text-lg mb-4">KI Blogartikel Generator</h2>
-      {/* Meta-Formular als eigene Komponente */}
-      <BlogMetaForm
-        category={category}
-        setCategory={setCategory}
-        difficulty={difficulty}
-        setDifficulty={setDifficulty}
-        season={season}
-        setSeason={setSeason}
-        tags={tags}
-        setTags={setTags}
-        excerpt={excerpt}
-        setExcerpt={setExcerpt}
-        imageUrl={imageUrl}
-        setImageUrl={setImageUrl}
-        disabled={loading}
-      />
+      {/* Meta-Formular */}
+      <div className="mb-2 grid gap-2">
+        {/* Kategorie */}
+        <div>
+          <label className="block text-xs mb-1">Kategorie (optional)</label>
+          <select
+            className="w-full border rounded p-2"
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">–</option>
+            {BLOG_CATEGORIES.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        {/* Saison */}
+        <div>
+          <label className="block text-xs mb-1">Saison (optional)</label>
+          <select
+            className="w-full border rounded p-2"
+            value={season}
+            onChange={e => setSeason(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">–</option>
+            {SEASONS.map(s => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+        {/* Zielgruppe */}
+        <div>
+          <label className="block text-xs mb-1">Zielgruppe (optional, mehrere möglich)</label>
+          <TagSelector
+            options={AUDIENCE_OPTIONS}
+            selected={audiences}
+            setSelected={setAudiences}
+            disabled={loading}
+          />
+        </div>
+        {/* Content Typ */}
+        <div>
+          <label className="block text-xs mb-1">Artikel-Typ/Format (optional, mehrere möglich)</label>
+          <TagSelector
+            options={CONTENT_TYPE_OPTIONS}
+            selected={contentType}
+            setSelected={setContentType}
+            disabled={loading}
+          />
+        </div>
+        {/* Excerpt */}
+        <div>
+          <label className="block text-xs mb-1">Kurz-Teaser oder Excerpt (optional)</label>
+          <Textarea
+            value={excerpt}
+            onChange={e => setExcerpt(e.target.value)}
+            rows={2}
+            className="mb-2"
+            placeholder="Kurze Einleitung oder Vorschau für den Artikel …"
+            disabled={loading}
+          />
+        </div>
+        {/* Artikelbild */}
+        <div>
+          <label className="block text-xs mb-1">Artikelbild (URL, optional)</label>
+          <input
+            type="url"
+            className="w-full border rounded p-2"
+            placeholder="https://beispiel.de/bild.jpg"
+            value={imageUrl}
+            onChange={e => setImageUrl(e.target.value)}
+            disabled={loading}
+          />
+        </div>
+        {/* Tags */}
+        <div>
+          <label className="block text-xs mb-1">Tags (optional, mehrere möglich)</label>
+          <TagSelector
+            options={TAG_OPTIONS}
+            selected={tags}
+            setSelected={setTags}
+            disabled={loading}
+          />
+        </div>
+      </div>
+
       {/* Themenvorschlag */}
       <div className="flex gap-2 mb-2">
         <input
@@ -266,30 +353,6 @@ const KIBlogCreator: React.FC = () => {
         </div>
       )}
 
-      {/* Extra Felder */}
-      <div className="mb-2">
-        <label className="block text-xs mb-1">Kurz-Teaser oder Excerpt (optional)</label>
-        <Textarea
-          value={excerpt}
-          onChange={e => setExcerpt(e.target.value)}
-          rows={2}
-          className="mb-2"
-          placeholder="Kurze Einleitung oder Vorschau für den Artikel …"
-          disabled={loading}
-        />
-      </div>
-      <div className="mb-2">
-        <label className="block text-xs mb-1">Artikelbild (URL, optional)</label>
-        <input
-          type="url"
-          className="w-full border rounded p-2"
-          placeholder="https://beispiel.de/bild.jpg"
-          value={imageUrl}
-          onChange={e => setImageUrl(e.target.value)}
-          disabled={loading}
-        />
-      </div>
-
       {/* Artikel generieren */}
       <Button
         onClick={handleGenerate}
@@ -325,3 +388,4 @@ const KIBlogCreator: React.FC = () => {
 };
 
 export default KIBlogCreator;
+
