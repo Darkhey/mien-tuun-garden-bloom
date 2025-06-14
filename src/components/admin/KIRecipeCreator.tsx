@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Loader } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 // Auswahloptionen (erweitert)
@@ -62,23 +62,23 @@ function TagSelector({ selected, setSelected, disabled }: { selected: string[], 
 }
 
 const KIRecipeCreator: React.FC = () => {
-  // Auswahlfelder
+  // Auswahlfelder & State
   const [diet, setDiet] = useState("");
   const [meal, setMeal] = useState("");
   const [difficulty, setDifficulty] = useState("");
   const [season, setSeason] = useState("");
   const [servings, setServings] = useState(2);
   const [tags, setTags] = useState<string[]>([]);
-  const [input, setInput] = useState(""); // Optional Freitext
+  const [input, setInput] = useState(""); // Freitext
 
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<any[]>([]); // 3 Vorschläge
+  const [results, setResults] = useState<any[]>([]); // KI-Vorschläge (max. 3)
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [manualRecipe, setManualRecipe] = useState<any>(null);
   const { toast } = useToast();
 
-  // Rezeptvorschläge generieren
+  // Rezeptvorschläge generieren (immer genau 3)
   const handleGenerate = async () => {
     setLoading(true);
     setResults([]);
@@ -95,7 +95,7 @@ const KIRecipeCreator: React.FC = () => {
         season ? `Saison: ${season}.` : "",
         servings ? `Portionen: ${servings}.` : "",
         tags.length > 0 ? `Tags: ${tags.join(", ")}.` : "",
-        "Bitte schlage mir 3 verschiedene, passende Rezepte mit Zutatenliste und Zubereitungsschritten als JSON-Liste vor.",
+        "Bitte schlage mir 3 verschiedene, passende Rezepte mit Zutatenliste und Zubereitungsschritten als JSON-Liste vor."
       ]
         .filter(Boolean)
         .join(" ");
@@ -115,12 +115,12 @@ const KIRecipeCreator: React.FC = () => {
       const { recipe } = await resp.json();
 
       let proposed: any[] = [];
-      // Falls die Antwort ein Array ist (explizit Liste mit 3 Vorschlägen) oder nur einzelnes Rezept
+      // Antwort kann Array oder Einzelobjekt sein
       if (Array.isArray(recipe)) proposed = recipe;
       else if (recipe && recipe.title) proposed = [recipe];
       else throw new Error("Konnte keine Rezepte extrahieren");
 
-      // Fallback: max. 3 anzeigen
+      // Immer max. 3 anzeigen
       setResults(proposed.slice(0, 3));
     } catch (err: any) {
       toast({
@@ -132,7 +132,7 @@ const KIRecipeCreator: React.FC = () => {
     setLoading(false);
   };
 
-  // Nach Auswahl eines Vorschlags - zum Editieren übergeben
+  // Vorschlag auswählen & bearbeiten
   const handleChooseForEdit = (recipe: any) => {
     setManualRecipe({
       ...recipe,
@@ -198,7 +198,6 @@ const KIRecipeCreator: React.FC = () => {
   return (
     <div className="bg-white p-5 rounded-xl shadow max-w-xl mx-auto">
       <h2 className="font-bold text-lg mb-3">KI Rezepte vorschlagen</h2>
-      {/* Auswahlfelder */}
       <div className="mb-3 grid grid-cols-2 gap-2">
         <div>
           <label className="block text-xs mb-1">Ernährungsform</label>
@@ -268,7 +267,7 @@ const KIRecipeCreator: React.FC = () => {
           />
         </div>
         <div className="col-span-2">
-          <label className="block text-xs mb-1">Tags</label>
+          <label className="block text-xs mb-1">Tags (Mehrfachauswahl)</label>
           <TagSelector selected={tags} setSelected={setTags} disabled={loading || isEditing} />
         </div>
       </div>
@@ -290,6 +289,7 @@ const KIRecipeCreator: React.FC = () => {
       >
         {loading && <Loader className="h-4 w-4 animate-spin" />} Rezepte vorschlagen
       </button>
+
       {/* Vorschläge */}
       {results.length > 0 && !isEditing && (
         <div className="mt-2 space-y-4">
@@ -319,6 +319,7 @@ const KIRecipeCreator: React.FC = () => {
           ))}
         </div>
       )}
+
       {/* Rezept in Bearbeitung */}
       {isEditing && manualRecipe && (
         <form
