@@ -26,6 +26,30 @@ const ProfilePage: React.FC = () => {
         .select("*")
         .eq("id", sessionData.session.user.id)
         .maybeSingle();
+
+      if (!data) {
+        // Profil existiert nicht – manuell anlegen
+        const defaultName =
+          sessionData.session.user.email?.split("@")[0] || "Nutzer";
+        const { data: inserted, error: insertError } = await supabase
+          .from("profiles")
+          .insert([
+            {
+              id: sessionData.session.user.id,
+              display_name: defaultName,
+            },
+          ])
+          .select()
+          .maybeSingle();
+        if (insertError) {
+          setProfile(null);
+        } else {
+          setProfile(inserted);
+        }
+        setLoading(false);
+        return;
+      }
+
       setProfile(data);
       setLoading(false);
     };
@@ -56,3 +80,4 @@ const ProfilePage: React.FC = () => {
 };
 
 export default ProfilePage;
+
