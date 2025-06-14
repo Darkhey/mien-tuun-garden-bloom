@@ -43,7 +43,7 @@ const Header: React.FC = () => {
     await supabase.auth.signOut();
     setSession(null);
     setIsAdmin(false);
-    navigate("/auth");
+    navigate("/"); // Nach Logout zur Startseite leiten
   };
 
   const navigation = [
