@@ -1,12 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { siteConfig } from '@/config/site.config';
-import { Menu, X, Flower, Search } from 'lucide-react';
+import { Menu, X, Flower, Search, LogOut, Shield } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [session, setSession] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
@@ -15,6 +19,31 @@ const Header: React.FC = () => {
     });
     return () => { listener?.subscription.unsubscribe(); };
   }, []);
+
+  // Check admin role whenever session changes
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (session?.user) {
+        const { data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .eq("role", "admin")
+          .single();
+        setIsAdmin(!!data);
+      } else {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+  }, [session]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setIsAdmin(false);
+    navigate("/auth");
+  };
 
   const navigation = [
     { name: 'Home', href: '/' },
@@ -51,21 +80,43 @@ const Header: React.FC = () => {
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-sage-500 transition-all group-hover:w-full"></span>
               </Link>
             ))}
-            
             <button className="p-2 text-earth-700 hover:text-sage-600 transition-colors">
               <Search className="h-5 w-5" />
             </button>
-            {/* Profil-Link für eingeloggte User */}
-            {session?.user && (
+            {/* Auth Links */}
+            {!session?.user && (
               <Link
-                to="/profil"
+                to="/auth"
                 className="ml-4 px-4 py-2 rounded-lg bg-sage-100 text-sage-700 hover:bg-sage-200 font-medium transition-colors"
               >
-                Mein Profil
+                Login/Registrieren
               </Link>
             )}
+            {session?.user && (
+              <>
+                <Link
+                  to="/profil"
+                  className="ml-4 px-4 py-2 rounded-lg bg-sage-100 text-sage-700 hover:bg-sage-200 font-medium transition-colors"
+                >
+                  Mein Profil
+                </Link>
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="ml-2 px-3 py-2 rounded-lg bg-amber-200 text-amber-900 hover:bg-amber-300 font-medium transition-colors flex items-center gap-1"
+                  >
+                    <Shield className="w-4 h-4 mr-1" /> Admin
+                  </Link>
+                )}
+                <button
+                  onClick={handleLogout}
+                  className="ml-4 px-3 py-2 flex items-center gap-2 text-red-700 bg-red-100 hover:bg-red-200 rounded-lg font-medium"
+                >
+                  <LogOut className="w-4 h-4" /> Logout
+                </button>
+              </>
+            )}
           </nav>
-
           {/* Mobile menu button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -74,7 +125,6 @@ const Header: React.FC = () => {
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
-
         {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden border-t border-sage-200 py-4">
@@ -89,14 +139,40 @@ const Header: React.FC = () => {
                   {item.name}
                 </Link>
               ))}
-              {session?.user && (
+              {!session?.user && (
                 <Link
-                  to="/profil"
+                  to="/auth"
                   onClick={() => setIsMenuOpen(false)}
                   className="mt-2 text-sage-700 bg-sage-100 hover:bg-sage-200 font-medium px-3 py-2 rounded-lg transition-colors"
                 >
-                  Mein Profil
+                  Login/Registrieren
                 </Link>
+              )}
+              {session?.user && (
+                <>
+                  <Link
+                    to="/profil"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="mt-2 text-sage-700 bg-sage-100 hover:bg-sage-200 font-medium px-3 py-2 rounded-lg transition-colors"
+                  >
+                    Mein Profil
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="mt-2 text-amber-900 bg-amber-200 hover:bg-amber-300 font-medium px-3 py-2 rounded-lg transition-colors flex items-center gap-1"
+                    >
+                      <Shield className="w-4 h-4 mr-1" /> Admin
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => { setIsMenuOpen(false); handleLogout(); }}
+                    className="mt-2 text-red-700 bg-red-100 hover:bg-red-200 px-3 py-2 rounded-lg font-medium flex items-center gap-1"
+                  >
+                    <LogOut className="w-4 h-4" /> Logout
+                  </button>
+                </>
               )}
             </nav>
           </div>

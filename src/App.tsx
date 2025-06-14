@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,8 @@ import About from "./pages/About";
 import Links from "./pages/Links";
 import NotFound from "./pages/NotFound";
 import ProfilePage from "./pages/ProfilePage";
+import AuthPage from "./pages/AuthPage";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -34,9 +35,9 @@ function App() {
             <Route path="/links" element={<Links />} />
             <Route path="/datenschutz" element={<About />} />
             <Route path="/impressum" element={<About />} />
-            {/* Profil-Seite hinzufügen */}
             <Route path="/profil" element={<ProfilePage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>
@@ -44,5 +45,48 @@ function App() {
     </QueryClientProvider>
   );
 }
+
+// AdminProtectedRoute: Nur Admins erlaubt (kleine Hilfskomponente)
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+
+const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isAllowed, setIsAllowed] = useState<null | boolean>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let isMounted = true;
+    const check = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        navigate("/auth");
+        return;
+      }
+      const userId = sessionData.session.user.id;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .single();
+      if (isMounted) setIsAllowed(!!data);
+      if (!data) navigate("/profil");
+    };
+    check();
+    return () => { isMounted = false };
+  }, [navigate]);
+
+  if (isAllowed === null) {
+    return (
+      <div className="flex items-center justify-center h-60">
+        {/* ...bisschen Loader UI... */}
+        <span>Prüfe Admin-Rechte...</span>
+      </div>
+    );
+  }
+  if (!isAllowed) return null;
+  return <>{children}</>;
+};
 
 export default App;
