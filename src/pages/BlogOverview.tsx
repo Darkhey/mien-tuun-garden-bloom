@@ -3,6 +3,8 @@ import Layout from '@/components/Layout';
 import { siteConfig } from '@/config/site.config';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Search, Calendar, User, Tag } from 'lucide-react';
+import BlogPostCard from "@/components/blog/BlogPostCard";
+import BlogFilter from "@/components/blog/BlogFilter";
 
 // Mock Daten - später aus API/CMS
 const blogPosts = [
@@ -73,7 +75,6 @@ const BlogOverview = () => {
 
   return (
     <Layout title={`Blog - ${siteConfig.title}`}>
-      {/* Header */}
       <section className="bg-gradient-to-br from-sage-50 to-accent-50 py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-serif font-bold text-earth-800 mb-6">
@@ -82,53 +83,31 @@ const BlogOverview = () => {
           <p className="text-xl text-earth-600 mb-8">
             Entdecke saisonale Rezepte, nachhaltige Gartentipps und Inspiration für ein bewusstes Leben
           </p>
-          
-          {/* Search */}
-          <div className="max-w-md mx-auto relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-earth-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder="Artikel durchsuchen..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-sage-200 rounded-full focus:ring-2 focus:ring-sage-300 focus:border-transparent"
-            />
-          </div>
+          {/* Search & Kategorie-Filter ausgelagert */}
+          <BlogFilter
+            categories={categories}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+          />
         </div>
       </section>
-
-      {/* Categories */}
-      <section className="py-8 px-4 bg-white border-b border-sage-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-wrap gap-2 justify-center">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === category
-                    ? 'bg-sage-600 text-white'
-                    : 'bg-sage-50 text-sage-700 hover:bg-sage-100'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Post */}
-      {/* Zeige nichts an, da keine Daten vorhanden sind */}
-
-      {/* Regular Posts Grid */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center py-12">
-            <p className="text-earth-500 text-lg">
-              Keine Artikel gefunden. Versuche eine andere Kategorie oder Suchbegriff.
-            </p>
-          </div>
+          {filteredPosts.length ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredPosts.map((post) => (
+                <BlogPostCard post={post} key={post.id} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-earth-500 text-lg">
+                Keine Artikel gefunden. Versuche eine andere Kategorie oder Suchbegriff.
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </Layout>

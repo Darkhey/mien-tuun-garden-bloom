@@ -3,6 +3,8 @@ import Layout from '@/components/Layout';
 import { siteConfig } from '@/config/site.config';
 import { Link } from 'react-router-dom';
 import { Clock, Users, ChefHat, Search, Filter } from 'lucide-react';
+import RecipeCard from "@/components/recipes/RecipeCard";
+import RecipeFilter from "@/components/recipes/RecipeFilter";
 
 // Mock Rezept-Daten
 const recipes = [
@@ -112,74 +114,20 @@ const RecipeOverview = () => {
           <p className="text-xl text-earth-600 mb-8">
             Entdecke köstliche Rezepte mit frischen Zutaten aus Garten und Region
           </p>
-          {/* Search */}
-          <div className="max-w-md mx-auto relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-earth-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder="Rezepte durchsuchen..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-sage-200 rounded-full focus:ring-2 focus:ring-sage-300 focus:border-transparent"
-            />
-          </div>
-        </div>
-      </section>
-      {/* Filters */}
-      <section className="py-8 px-4 bg-white border-b border-sage-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Category Filter */}
-            <div>
-              <label className="block text-sm font-medium text-earth-700 mb-2">
-                <Filter className="h-4 w-4 inline mr-1" />
-                Kategorie
-              </label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full p-2 border border-sage-200 rounded-lg focus:ring-2 focus:ring-sage-300 focus:border-transparent"
-              >
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
-            {/* Season Filter */}
-            <div>
-              <label className="block text-sm font-medium text-earth-700 mb-2">
-                Saison
-              </label>
-              <select
-                value={selectedSeason}
-                onChange={(e) => setSelectedSeason(e.target.value)}
-                className="w-full p-2 border border-sage-200 rounded-lg focus:ring-2 focus:ring-sage-300 focus:border-transparent"
-              >
-                {seasons.map(season => (
-                  <option key={season} value={season}>
-                    {season === 'Alle' ? season : season.charAt(0).toUpperCase() + season.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {/* Difficulty Filter */}
-            <div>
-              <label className="block text-sm font-medium text-earth-700 mb-2">
-                Schwierigkeit
-              </label>
-              <select
-                value={selectedDifficulty}
-                onChange={(e) => setSelectedDifficulty(e.target.value)}
-                className="w-full p-2 border border-sage-200 rounded-lg focus:ring-2 focus:ring-sage-300 focus:border-transparent"
-              >
-                {difficulties.map(difficulty => (
-                  <option key={difficulty} value={difficulty}>
-                    {difficulty === 'Alle' ? difficulty : difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          {/* Search & Filter ausgelagert */}
+          <RecipeFilter
+            categories={categories}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            seasons={seasons}
+            selectedSeason={selectedSeason}
+            setSelectedSeason={setSelectedSeason}
+            difficulties={difficulties}
+            selectedDifficulty={selectedDifficulty}
+            setSelectedDifficulty={setSelectedDifficulty}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+          />
         </div>
       </section>
       {/* Recipes Grid */}
@@ -188,76 +136,7 @@ const RecipeOverview = () => {
           {filteredRecipes.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredRecipes.map((recipe, index) => (
-                <article
-                  key={recipe.id}
-                  className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden animate-fade-in"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="relative">
-                    <img
-                      src={recipe.image}
-                      alt={recipe.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeasonColor(recipe.season)}`}>
-                        {recipe.season}
-                      </span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(recipe.difficulty)}`}>
-                        {recipe.difficulty}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6">
-                    <div className="mb-2">
-                      <span className="text-sage-600 text-sm font-medium">
-                        {recipe.category}
-                      </span>
-                    </div>
-                    
-                    <h3 className="text-xl font-serif font-bold text-earth-800 mb-3 line-clamp-2">
-                      {recipe.title}
-                    </h3>
-                    
-                    <p className="text-earth-600 mb-4 line-clamp-2">
-                      {recipe.description}
-                    </p>
-                    
-                    <div className="grid grid-cols-3 gap-4 mb-4 text-sm text-earth-500">
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {recipe.totalTime}m
-                      </div>
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 mr-1" />
-                        {recipe.servings}
-                      </div>
-                      <div className="flex items-center">
-                        <ChefHat className="h-4 w-4 mr-1" />
-                        {recipe.difficulty}
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-1 mb-4">
-                      {recipe.tags.slice(0, 3).map((tag) => (
-                        <span
-                          key={tag}
-                          className="bg-sage-50 text-sage-700 px-2 py-1 rounded text-xs"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    
-                    <Link
-                      to={`/rezepte/${recipe.slug}`}
-                      className="block w-full bg-sage-600 text-white text-center py-3 rounded-lg font-medium hover:bg-sage-700 transition-colors"
-                    >
-                      Rezept anzeigen
-                    </Link>
-                  </div>
-                </article>
+                <RecipeCard recipe={recipe} index={index} key={recipe.id} />
               ))}
             </div>
           ) : (
