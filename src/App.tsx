@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Layout from "@/components/Layout";
 import Index from "./pages/Index";
 import BlogOverview from "./pages/BlogOverview";
 import BlogPost from "./pages/BlogPost";
@@ -14,50 +15,39 @@ import About from "./pages/About";
 import Links from "./pages/Links";
 import NotFound from "./pages/NotFound";
 import ProfilePage from "./pages/ProfilePage";
-// import AuthPage from "./pages/AuthPage"; // Entfernt, da Datei nicht mehr existiert
 import AdminDashboard from "./pages/AdminDashboard";
 import ContactPage from "./pages/ContactPage";
 import NewsletterConfirmPage from "./pages/NewsletterConfirmPage";
-
-const queryClient = new QueryClient();
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <TooltipProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/blog" element={<BlogOverview />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            <Route path="/rezepte" element={<RecipeOverview />} />
-            <Route path="/rezepte/:id" element={<RecipeDetail />} />
-            <Route path="/rezeptebuch" element={<RecipeBook />} />
-            <Route path="/garten" element={<BlogOverview />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/links" element={<Links />} />
-            <Route path="/datenschutz" element={<About />} />
-            <Route path="/impressum" element={<About />} />
-            <Route path="/profil" element={<ProfilePage />} />
-            {/* <Route path="/auth" element={<AuthPage />} /> // Entfernt, da AuthPage nicht mehr existiert */}
-            <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-            <Route path="/kontakt" element={<ContactPage />} />
-            <Route path="/newsletter-confirm" element={<NewsletterConfirmPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </TooltipProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
-}
-
-// AdminProtectedRoute: Nur Admins erlaubt (kleine Hilfskomponente)
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
+const queryClient = new QueryClient();
+
+const LayoutRoutes = () => (
+  <Layout>
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/blog" element={<BlogOverview />} />
+      <Route path="/blog/:slug" element={<BlogPost />} />
+      <Route path="/rezepte" element={<RecipeOverview />} />
+      <Route path="/rezepte/:id" element={<RecipeDetail />} />
+      <Route path="/rezeptebuch" element={<RecipeBook />} />
+      <Route path="/garten" element={<BlogOverview />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/links" element={<Links />} />
+      <Route path="/datenschutz" element={<About />} />
+      <Route path="/impressum" element={<About />} />
+      <Route path="/profil" element={<ProfilePage />} />
+      <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+      <Route path="/kontakt" element={<ContactPage />} />
+      <Route path="/newsletter-confirm" element={<NewsletterConfirmPage />} />
+      {/* Kein Catch-All */}
+    </Routes>
+  </Layout>
+);
+
+// AdminProtectedRoute: Nur Admins erlaubt
 const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAllowed, setIsAllowed] = useState<null | boolean>(null);
   const navigate = useNavigate();
@@ -67,7 +57,7 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children
     const check = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
-        navigate("/auth");
+        navigate("/"); // Kein /auth Route mehr
         return;
       }
       const userId = sessionData.session.user.id;
@@ -87,7 +77,6 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children
   if (isAllowed === null) {
     return (
       <div className="flex items-center justify-center h-60">
-        {/* ...bisschen Loader UI... */}
         <span>Prüfe Admin-Rechte...</span>
       </div>
     );
@@ -96,5 +85,21 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children
   return <>{children}</>;
 };
 
-export default App;
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <TooltipProvider>
+          <Routes>
+            <Route path="*" element={<NotFound />} />
+            <Route path="/*" element={<LayoutRoutes />} />
+          </Routes>
+        </TooltipProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+}
 
+export default App;
