@@ -22,11 +22,11 @@ const RecipeBook = () => {
     queryFn: fetchRecipes,
   });
 
+  // Zutaten dynamisch
   function getIngredientsCount(ingredients: any): number {
     if (Array.isArray(ingredients)) {
       return ingredients.length;
     }
-    // Falls KI versehentlich kein Array liefert (Defensive)
     try {
       const parsed = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
       if (Array.isArray(parsed)) return parsed.length;
@@ -41,7 +41,6 @@ const RecipeBook = () => {
           <BookOpen className="h-8 w-8 text-sage-600" />
           Mein Rezeptbuch
         </h1>
-
         {isLoading && (
           <div className="text-center py-16 text-earth-500">Lade Rezepte...</div>
         )}
@@ -68,7 +67,9 @@ const RecipeBook = () => {
                     <h2 className="font-bold text-lg mb-2 font-serif text-earth-800">
                       {r.title}
                     </h2>
-                    <div className="text-sage-600 mb-2 truncate-2">{r.description}</div>
+                    <div className="text-sage-600 mb-2 truncate-2">
+                      {r.description}
+                    </div>
                     <div className="flex gap-2 text-xs text-sage-400 mt-2">
                       <span>
                         {getIngredientsCount(r.ingredients) > 1
@@ -97,5 +98,4 @@ const RecipeBook = () => {
     </Layout>
   );
 };
-
 export default RecipeBook;

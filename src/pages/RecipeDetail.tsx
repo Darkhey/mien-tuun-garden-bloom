@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -21,8 +20,8 @@ const RecipeDetail = () => {
     enabled: !!id,
   });
 
-  // Hilfsfunktionen zum Verarbeiten potentieller JSON-Daten
-  function parseArray<T=any>(val:any): T[] {
+  // Hilfsfunktion für KI/JSON-Extrakte
+  function parseArray(val: any): any[] {
     if (Array.isArray(val)) return val;
     if (typeof val === "string") {
       try { const arr = JSON.parse(val); if(Array.isArray(arr)) return arr;} catch {}
@@ -51,11 +50,9 @@ const RecipeDetail = () => {
       </Layout>
     );
 
-  // Zutaten, Anweisungen, Tipps robust extrahieren
+  // Zutaten/Schritte flexibel extrahiert
   const zutaten = parseArray(recipe.ingredients);
   const schritte = parseArray(recipe.instructions);
-  // Tips könnten entweder im description-text sein (als Notlösung), oder von KI geliefert:
-  // Versuche, an recipe.tips zu kommen falls da (kann als JSON landen)
   let tipps: string[] = [];
   if ('tips' in recipe && (Array.isArray((recipe as any).tips) || typeof (recipe as any).tips === "string")) {
     tipps = parseArray((recipe as any).tips);
@@ -71,7 +68,6 @@ const RecipeDetail = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Zurück zum Rezeptbuch
         </Link>
-
         <Card className="p-0 overflow-hidden bg-white shadow rounded-2xl mb-8">
           <img
             src={recipe.image_url || "/placeholder.svg"}
@@ -85,8 +81,7 @@ const RecipeDetail = () => {
             <p className="text-earth-600 mb-3">{recipe.description}</p>
           </div>
         </Card>
-
-        {/* Zutaten */}
+        {/* Zutaten dynamisch */}
         {zutaten.length > 0 && (
           <div>
             <h2 className="text-2xl font-serif font-bold text-earth-800 mb-4 flex items-center gap-2">
@@ -97,15 +92,14 @@ const RecipeDetail = () => {
               {zutaten.map((ing: any, i: number) => (
                 <li key={i} className="flex items-center gap-3">
                   <span className="bg-sage-100 rounded-full w-8 h-8 flex justify-center items-center font-semibold text-sage-800">
-                    {ing.amount ? `${ing.amount} ${ing.unit || ""}` : ""}
+                    {ing.amount !== undefined ? `${ing.amount} ${ing.unit || ""}` : ""}
                   </span>
-                  <span className="text-earth-700">{ing.name}</span>
+                  <span className="text-earth-700">{ing.name || ing}</span>
                 </li>
               ))}
             </ul>
           </div>
         )}
-
         {/* Zubereitung */}
         {schritte.length > 0 && (
           <div>
@@ -113,18 +107,17 @@ const RecipeDetail = () => {
               Zubereitung
             </h2>
             <ol className="space-y-4">
-              {schritte.map((step: string, i: number) => (
+              {schritte.map((step: any, i: number) => (
                 <li key={i} className="flex items-start gap-4">
                   <span className="w-8 h-8 bg-sage-600 text-white rounded-full flex items-center justify-center font-bold text-base mt-1">
                     {i + 1}
                   </span>
-                  <p className="text-earth-700 leading-relaxed">{step}</p>
+                  <p className="text-earth-700 leading-relaxed">{typeof step === "string" ? step : (step.text || JSON.stringify(step))}</p>
                 </li>
               ))}
             </ol>
           </div>
         )}
-
         {/* Tipps */}
         {tipps.length > 0 && (
           <div className="mt-8 bg-accent-50 rounded-xl p-6">
