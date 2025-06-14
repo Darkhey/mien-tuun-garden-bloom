@@ -13,6 +13,7 @@ const BlogPost = () => {
   
   // Mock Daten - später aus API
   const post = {
+    slug: slug || "kraeutergarten-anlegen", // <--- Hinzugefügt für Speicherung!
     title: 'Den perfekten Kräutergarten anlegen',
     content: `
       <p>Ein eigener Kräutergarten ist der Traum vieler Hobby-Köche und Gartenliebhaber. Frische Kräuter direkt vor der Haustür zu haben, bedeutet nicht nur aromatischere Gerichte, sondern auch die Gewissheit, was man zu sich nimmt.</p>
@@ -45,7 +46,6 @@ const BlogPost = () => {
   const handleSaveRecipe = async () => {
     setSaving(true);
     try {
-      // KI aufrufen
       const resp = await fetch(
         `https://ublbxvpmoccmegtwaslh.functions.supabase.co/blog-to-recipe`,
         {
@@ -61,7 +61,6 @@ const BlogPost = () => {
       if (!resp.ok) throw new Error("Fehler beim Aufruf der KI.");
       const { recipe } = await resp.json();
 
-      // Speichern ins Rezeptebuch
       const user = await supabase.auth.getUser();
       if (!user.data.user) throw new Error("Nicht eingeloggt!");
 
@@ -71,8 +70,8 @@ const BlogPost = () => {
           title: recipe.title,
           image_url: recipe.image || post.featuredImage,
           description: recipe.description || "",
-          ingredients: recipe.ingredients,
-          instructions: recipe.instructions,
+          ingredients: recipe.ingredients ?? [],
+          instructions: recipe.instructions ?? [],
           source_blog_slug: post.slug,
         },
       ]);

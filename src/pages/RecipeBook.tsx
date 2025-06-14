@@ -22,6 +22,18 @@ const RecipeBook = () => {
     queryFn: fetchRecipes,
   });
 
+  function getIngredientsCount(ingredients: any): number {
+    if (Array.isArray(ingredients)) {
+      return ingredients.length;
+    }
+    // Falls KI versehentlich kein Array liefert (Defensive)
+    try {
+      const parsed = typeof ingredients === "string" ? JSON.parse(ingredients) : ingredients;
+      if (Array.isArray(parsed)) return parsed.length;
+    } catch (e) {}
+    return 0;
+  }
+
   return (
     <Layout title="Mein Rezeptbuch">
       <section className="max-w-5xl mx-auto px-4 py-12">
@@ -59,9 +71,11 @@ const RecipeBook = () => {
                     <div className="text-sage-600 mb-2 truncate-2">{r.description}</div>
                     <div className="flex gap-2 text-xs text-sage-400 mt-2">
                       <span>
-                        {r.ingredients?.length > 1
-                          ? `${r.ingredients.length} Zutaten`
-                          : "Zutaten"}
+                        {getIngredientsCount(r.ingredients) > 1
+                          ? `${getIngredientsCount(r.ingredients)} Zutaten`
+                          : getIngredientsCount(r.ingredients) === 1
+                          ? "1 Zutat"
+                          : "Keine Zutaten"}
                       </span>
                       {r.source_blog_slug && (
                         <span className="ml-auto bg-accent-50 px-2 rounded-full">

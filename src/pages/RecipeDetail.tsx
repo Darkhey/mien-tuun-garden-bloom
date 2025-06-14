@@ -21,6 +21,15 @@ const RecipeDetail = () => {
     enabled: !!id,
   });
 
+  // Hilfsfunktionen zum Verarbeiten potentieller JSON-Daten
+  function parseArray<T=any>(val:any): T[] {
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string") {
+      try { const arr = JSON.parse(val); if(Array.isArray(arr)) return arr;} catch {}
+    }
+    return [];
+  }
+
   if (isLoading)
     return (
       <Layout title="Rezept">
@@ -41,6 +50,16 @@ const RecipeDetail = () => {
         <div className="py-24 text-center text-sage-400">Rezept nicht gefunden.</div>
       </Layout>
     );
+
+  // Zutaten, Anweisungen, Tipps robust extrahieren
+  const zutaten = parseArray(recipe.ingredients);
+  const schritte = parseArray(recipe.instructions);
+  // Tips könnten entweder im description-text sein (als Notlösung), oder von KI geliefert:
+  // Versuche, an recipe.tips zu kommen falls da (kann als JSON landen)
+  let tipps: string[] = [];
+  if ('tips' in recipe && (Array.isArray((recipe as any).tips) || typeof (recipe as any).tips === "string")) {
+    tipps = parseArray((recipe as any).tips);
+  }
 
   return (
     <Layout title={recipe.title}>
@@ -68,13 +87,14 @@ const RecipeDetail = () => {
         </Card>
 
         {/* Zutaten */}
-        {recipe.ingredients && (
+        {zutaten.length > 0 && (
           <div>
             <h2 className="text-2xl font-serif font-bold text-earth-800 mb-4 flex items-center gap-2">
-              <ChefHat className="w-6 h-6 text-sage-600" /> Zutaten
+              <span><svg className="w-6 h-6 text-sage-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318A4.5 4.5 0 018.5 4.5h7A4.5 4.5 0 0120 8.5v7a4.5 4.5 0 01-4.5 4.5h-7A4.5 4.5 0 014 15.5v-7c0-1.123.409-2.142 1.106-2.929z"></path></svg></span>
+              Zutaten
             </h2>
             <ul className="space-y-3 mb-6">
-              {recipe.ingredients.map((ing: any, i: number) => (
+              {zutaten.map((ing: any, i: number) => (
                 <li key={i} className="flex items-center gap-3">
                   <span className="bg-sage-100 rounded-full w-8 h-8 flex justify-center items-center font-semibold text-sage-800">
                     {ing.amount ? `${ing.amount} ${ing.unit || ""}` : ""}
@@ -87,13 +107,13 @@ const RecipeDetail = () => {
         )}
 
         {/* Zubereitung */}
-        {recipe.instructions && (
+        {schritte.length > 0 && (
           <div>
             <h2 className="text-2xl font-serif font-bold text-earth-800 mb-4">
               Zubereitung
             </h2>
             <ol className="space-y-4">
-              {recipe.instructions.map((step: string, i: number) => (
+              {schritte.map((step: string, i: number) => (
                 <li key={i} className="flex items-start gap-4">
                   <span className="w-8 h-8 bg-sage-600 text-white rounded-full flex items-center justify-center font-bold text-base mt-1">
                     {i + 1}
@@ -106,16 +126,16 @@ const RecipeDetail = () => {
         )}
 
         {/* Tipps */}
-        {recipe.tips && recipe.tips.length > 0 && (
+        {tipps.length > 0 && (
           <div className="mt-8 bg-accent-50 rounded-xl p-6">
             <h3 className="text-xl font-serif font-bold text-earth-800 mb-4 flex items-center">
               <span className="mr-2">💡</span>
               Tipps & Tricks
             </h3>
             <ul className="space-y-3">
-              {recipe.tips.map((tip: string, i: number) => (
+              {tipps.map((tip: string, i: number) => (
                 <li key={i} className="flex items-start">
-                  <Check className="h-5 w-5 text-sage-600 mr-2 flex-shrink-0 mt-0.5" />
+                  <svg className="h-5 w-5 text-sage-600 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path></svg>
                   <span className="text-earth-700">{tip}</span>
                 </li>
               ))}
