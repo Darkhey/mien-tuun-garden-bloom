@@ -22,7 +22,6 @@ const RecipeBook = () => {
     queryFn: fetchRecipes,
   });
 
-  // Zutaten dynamisch
   function getIngredientsCount(ingredients: any): number {
     if (Array.isArray(ingredients)) {
       return ingredients.length;
@@ -54,7 +53,7 @@ const RecipeBook = () => {
             {recipes.map((r) => (
               <Link
                 key={r.id}
-                to={`/rezepte/${r.id}`}
+                to={`/rezepte/${r.slug}`}
                 className="transition-transform transform hover:-translate-y-1"
               >
                 <Card className="p-0 overflow-hidden rounded-2xl shadow group bg-white/90 hover:shadow-lg">

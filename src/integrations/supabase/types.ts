@@ -44,6 +44,7 @@ export type Database = {
           image_url: string | null
           ingredients: Json | null
           instructions: Json | null
+          slug: string
           source_blog_slug: string | null
           title: string
           user_id: string
@@ -55,6 +56,7 @@ export type Database = {
           image_url?: string | null
           ingredients?: Json | null
           instructions?: Json | null
+          slug: string
           source_blog_slug?: string | null
           title: string
           user_id: string
@@ -66,6 +68,7 @@ export type Database = {
           image_url?: string | null
           ingredients?: Json | null
           instructions?: Json | null
+          slug?: string
           source_blog_slug?: string | null
           title?: string
           user_id?: string

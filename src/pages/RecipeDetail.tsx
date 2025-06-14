@@ -1,8 +1,9 @@
+
 import React from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, BookOpen, ChefHat, Check } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import IngredientList from "@/components/IngredientList";
@@ -10,21 +11,24 @@ import RecipeStep from "@/components/RecipeStep";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
-const fetchRecipe = async (id: string) => {
-  const { data, error } = await supabase.from("recipes").select("*").eq("id", id).maybeSingle();
+const fetchRecipeBySlug = async (slug: string) => {
+  const { data, error } = await supabase
+    .from("recipes")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
   if (error) throw error;
   return data;
 };
 
 const RecipeDetail = () => {
-  const { id } = useParams();
+  const { id: slug } = useParams();
   const { data: recipe, isLoading, error } = useQuery({
-    queryKey: ["recipe-detail", id],
-    queryFn: () => fetchRecipe(id!),
-    enabled: !!id,
+    queryKey: ["recipe-detail", slug],
+    queryFn: () => fetchRecipeBySlug(slug!),
+    enabled: !!slug,
   });
 
-  // Hilfsfunktion für KI/JSON-Extrakte
   function parseArray(val: any): any[] {
     if (Array.isArray(val)) return val;
     if (typeof val === "string") {
@@ -81,7 +85,6 @@ const RecipeDetail = () => {
       </Layout>
     );
 
-  // Zutaten/Schritte flexibel extrahiert
   const zutaten = parseArray(recipe.ingredients);
   const schritte = parseArray(recipe.instructions);
   let tipps: string[] = [];
