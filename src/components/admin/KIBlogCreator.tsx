@@ -1,10 +1,34 @@
-
 import React, { useState } from "react";
 import { Loader } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import TagSelector from "./TagSelector";
+
+const CATEGORY_OPTIONS = [
+  { value: "garten", label: "Garten" },
+  { value: "küche", label: "Küche" },
+  { value: "ernte", label: "Ernte" },
+  { value: "selbstversorgung", label: "Selbstversorgung" },
+  { value: "alltag", label: "Alltag" },
+  { value: "sonstiges", label: "Sonstiges" },
+];
+const DIFFICULTY = [
+  { value: "leicht", label: "Leicht" },
+  { value: "mittel", label: "Mittel" },
+  { value: "schwer", label: "Schwer" },
+];
+const SEASONS = [
+  { value: "frühling", label: "Frühling" },
+  { value: "sommer", label: "Sommer" },
+  { value: "herbst", label: "Herbst" },
+  { value: "winter", label: "Winter" },
+  { value: "ganzjährig", label: "Ganzjährig" },
+];
+const TAG_OPTIONS = [
+  "Schnell", "Kinder", "Tipps", "DIY", "Low Budget", "Bio", "Natur", "Regional", "Saisonal", "Nachhaltig", "Praktisch", "Dekor", "Haushalt"
+];
 
 const SUGGESTION_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/suggest-blog-topics";
 const GENERATE_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/generate-blog-post";
@@ -21,6 +45,12 @@ const KIBlogCreator: React.FC = () => {
   const [generated, setGenerated] = useState<string | null>(null); // Rohentwurf KI
   const [editing, setEditing] = useState<string>(""); // Editor
   const [loading, setLoading] = useState(false);
+  const [category, setCategory] = useState("");
+  const [difficulty, setDifficulty] = useState("");
+  const [season, setSeason] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [excerpt, setExcerpt] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const { toast } = useToast();
 
   // Themenvorschlag per Edge Function holen
@@ -53,12 +83,22 @@ const KIBlogCreator: React.FC = () => {
   const handleImprovePrompt = async () => {
     setLoading(true);
     try {
-      // Wir nutzen OpenAI direkt über vorhandene Funktion, aber geben ein "Verbesserungs-Systemprompt"
+      // Prompt wird mit Kontext aus Feldern aufgewertet
+      const contextParts = [
+        category ? `Kategorie: ${category}.` : "",
+        difficulty ? `Schwierigkeitsgrad: ${difficulty}.` : "",
+        season ? `Saison: ${season}.` : "",
+        tags.length ? `Tags: ${tags.join(", ")}.` : "",
+        excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
+        imageUrl ? `Bild: ${imageUrl}` : "",
+      ];
+      const fullPrompt = [input, ...contextParts].filter(Boolean).join(" ");
+      // prompt verbessern lassen
       const response = await fetch(GENERATE_FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: `Formuliere diesen Blogartikel-Idee/Prompt noch einmal so um, dass eine KI daraus einen besonders inspirierenden, ausführlichen und suchmaschinenoptimierten Artikel mit Tipps und Alltagspraxis verfassen kann. Gib mir nur den verbesserten Prompt zurück:\n${input}`
+          prompt: `Formuliere diesen Blogartikel-Idee/Prompt samt Kontext noch einmal so, dass eine KI daraus einen inspirierenden, ausführlichen und suchmaschinenoptimierten Artikel verfassen kann. Kontext/Details:\n${fullPrompt}\nGib NUR den verbesserten Prompt zurück.`
         }),
       });
       const data = await response.json();
@@ -71,28 +111,38 @@ const KIBlogCreator: React.FC = () => {
     setLoading(false);
   };
 
-  // Artikel generieren lassen (Prompt kann noch angepasst werden)
+  // Artikel generieren lassen
   const handleGenerate = async () => {
     setLoading(true);
     setGenerated(null);
     setEditing("");
     try {
+      // Kontextprompt um weitere Felder ergänzen
+      const contextParts = [
+        category ? `Kategorie: ${category}.` : "",
+        difficulty ? `Schwierigkeitsgrad: ${difficulty}.` : "",
+        season ? `Saison: ${season}.` : "",
+        tags.length ? `Tags: ${tags.join(", ")}.` : "",
+        excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
+        imageUrl ? `Bild: ${imageUrl}` : "",
+      ];
+      const fullPrompt = [prompt || input, ...contextParts].filter(Boolean).join(" ");
       const response = await fetch(GENERATE_FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ prompt: fullPrompt }),
       });
       const data = await response.json();
       if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei der KI");
       setGenerated(data.content);
-      setEditing(data.content); // Artikel vorschlagsweise in Editiermodus übernehmen
+      setEditing(data.content);
     } catch (err: any) {
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
     }
     setLoading(false);
   };
 
-  // Als Blogpost speichern (nach finaler Bestätigung)
+  // Speichern des Artikels
   const handleSave = async () => {
     setLoading(true);
     try {
@@ -102,19 +152,21 @@ const KIBlogCreator: React.FC = () => {
       const { error } = await supabase.from("blog_posts").insert([{
         slug,
         title: input,
-        excerpt: "",
+        excerpt,
         content: editing,
         author: user.data.user.email,
         published: true,
         featured: false,
-        featured_image: "",
+        featured_image: imageUrl,
         seo_title: "",
         seo_description: "",
-        seo_keywords: [],
-        tags: [],
-        category: "Sonstiges",
+        seo_keywords: tags,
+        tags,
+        category: category || "Sonstiges",
         published_at: new Date().toISOString(),
-        reading_time: 5
+        reading_time: 5,
+        difficulty,
+        season,
       }]);
       if (error) throw error;
       toast({ title: "Erstellt!", description: "Der Blogartikel wurde angelegt." });
@@ -127,25 +179,74 @@ const KIBlogCreator: React.FC = () => {
   return (
     <div className="bg-white p-5 rounded-xl shadow max-w-xl mx-auto">
       <h2 className="font-bold text-lg mb-4">KI Blogartikel Generator</h2>
+      {/* Auswahlfelder (neu) */}
+      <div className="mb-2 grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-xs mb-1">Kategorie</label>
+          <select
+            className="border rounded px-2 py-1 w-full"
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">Keine Auswahl</option>
+            {CATEGORY_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs mb-1">Schwierigkeitsgrad</label>
+          <select
+            className="border rounded px-2 py-1 w-full"
+            value={difficulty}
+            onChange={e => setDifficulty(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">Keine Auswahl</option>
+            {DIFFICULTY.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs mb-1">Saison (optional)</label>
+          <select
+            className="border rounded px-2 py-1 w-full"
+            value={season}
+            onChange={e => setSeason(e.target.value)}
+            disabled={loading}
+          >
+            <option value="">Keine Auswahl</option>
+            {SEASONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        <div className="col-span-2">
+          <label className="block text-xs mb-1">Tags (Mehrfachauswahl)</label>
+          <TagSelector options={TAG_OPTIONS} selected={tags} setSelected={setTags} disabled={loading} />
+        </div>
+      </div>
       {/* Themenvorschlag */}
       <div className="flex gap-2 mb-2">
         <input
           className="border rounded px-2 py-1 flex-1"
           value={topicInput}
           onChange={e => setTopicInput(e.target.value)}
-          placeholder="Schlagwort/Oberthema für Vorschläge (optional)"
-          disabled={isSuggesting}
+          placeholder="Schlagwort/Oberthema"
+          disabled={isSuggesting || loading}
         />
         <Button
           variant="secondary"
           onClick={handleSuggestTopics}
-          disabled={isSuggesting}
+          disabled={isSuggesting || loading}
         >
           {isSuggesting && <Loader className="animate-spin w-4 h-4" />}
           Themenvorschläge
         </Button>
       </div>
-      {/* Suggestions */}
+      {/* Vorschläge */}
       {suggestions.length > 0 && (
         <div className="mb-3">
           <div className="text-xs mb-1 text-sage-700">Vorschläge:</div>
@@ -164,7 +265,6 @@ const KIBlogCreator: React.FC = () => {
           </ul>
         </div>
       )}
-
       {/* Prompt bearbeiten */}
       <Textarea
         className="mb-2"
@@ -198,11 +298,35 @@ const KIBlogCreator: React.FC = () => {
         </div>
       )}
 
+      {/* Extra Felder */}
+      <div className="mb-2">
+        <label className="block text-xs mb-1">Kurz-Teaser oder Excerpt (optional)</label>
+        <Textarea
+          value={excerpt}
+          onChange={e => setExcerpt(e.target.value)}
+          rows={2}
+          className="mb-2"
+          placeholder="Kurze Einleitung oder Vorschau für den Artikel …"
+          disabled={loading}
+        />
+      </div>
+      <div className="mb-2">
+        <label className="block text-xs mb-1">Artikelbild (URL, optional)</label>
+        <input
+          type="url"
+          className="w-full border rounded p-2"
+          placeholder="https://beispiel.de/bild.jpg"
+          value={imageUrl}
+          onChange={e => setImageUrl(e.target.value)}
+          disabled={loading}
+        />
+      </div>
+
       {/* Artikel generieren */}
       <Button
         onClick={handleGenerate}
         className="mb-2"
-        disabled={loading || !prompt}
+        disabled={loading || !(prompt || input)}
       >
         {loading && !generated && <Loader className="w-4 h-4 animate-spin" />}
         KI-Artikel generieren
