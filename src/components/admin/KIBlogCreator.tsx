@@ -10,37 +10,29 @@ const KIBlogCreator: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Call KI Funktion zum Artikel-Generieren (nutzt OpenAI via supabase edge function)
+  // Blogartikel mit KI generieren (Edge Function statt direktem API-Call)
   const handleGenerate = async () => {
     setLoading(true);
     setResult(null);
     try {
-      // Hier wäre idealerweise eine dedizierte Edge Function, hier als Beispiel "blogartikel KI"
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY ?? ""}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o",
-          messages: [
-            { role: "system", content: "Du bist eine hilfreiche deutschsprachige Bloggerin für Garten & Küche und schreibst inspirierende, SEO-optimierte Blogartikel. Schreibe zu folgender Idee einen passenden Artikelentwurf als Markdown:" },
-            { role: "user", content: input }
-          ]
-        })
-      });
-      if (!response.ok) throw new Error("Fehler bei der KI");
+      const response = await fetch(
+        "https://ublbxvpmoccmegtwaslh.functions.supabase.co/generate-blog-post",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: input }),
+        }
+      );
       const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
-      setResult(content);
+      if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei der KI");
+      setResult(data.content);
     } catch (err: any) {
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
     }
     setLoading(false);
   };
 
-  // Als Blogpost speichern (einfach, minimal)
+  // Als Blogpost speichern (wie gehabt)
   const handleSave = async () => {
     setLoading(true);
     try {
