@@ -12,6 +12,8 @@ import RecipeDetail from "./pages/RecipeDetail";
 import RecipeBook from "./pages/RecipeBook";
 import About from "./pages/About";
 import Links from "./pages/Links";
+import Datenschutz from "./pages/Datenschutz";
+import Impressum from "./pages/Impressum";
 import NotFound from "./pages/NotFound";
 import ProfilePage from "./pages/ProfilePage";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -35,8 +37,8 @@ const LayoutRoutes = () => (
       <Route path="/garten" element={<BlogOverview />} />
       <Route path="/about" element={<About />} />
       <Route path="/links" element={<Links />} />
-      <Route path="/datenschutz" element={<About />} />
-      <Route path="/impressum" element={<About />} />
+      <Route path="/datenschutz" element={<Datenschutz />} />
+      <Route path="/impressum" element={<Impressum />} />
       <Route path="/profil" element={<ProfilePage />} />
       <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
       <Route path="/kontakt" element={<ContactPage />} />
