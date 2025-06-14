@@ -209,20 +209,34 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
           )}
         </div>
         {/* Premium Member */}
-        <div className="flex items-center space-x-2">
-          <Switch
-            name="is_premium"
-            id="is_premium"
-            checked={form.is_premium}
-            onCheckedChange={(checked) => setForm((f) => ({ ...f, is_premium: checked }))}
-          />
-          <Label htmlFor="is_premium">Premium-Mitglied</Label>
-          {form.is_premium && (
-            <span className="ml-2 text-pink-700 bg-pink-100 px-2 rounded text-xs font-semibold">
-              Premium
-            </span>
-          )}
-        </div>
+        {admin ? (
+          <div className="flex items-center space-x-2">
+            <Switch
+              name="is_premium"
+              id="is_premium"
+              checked={form.is_premium}
+              onCheckedChange={(checked) => setForm((f) => ({ ...f, is_premium: checked }))}
+            />
+            <Label htmlFor="is_premium">Premium-Mitglied</Label>
+            {form.is_premium && (
+              <span className="ml-2 text-pink-700 bg-pink-100 px-2 rounded text-xs font-semibold">
+                Premium
+              </span>
+            )}
+          </div>
+        ) : (
+          form.is_premium && (
+            <div className="flex items-center">
+              <span className="text-pink-700 bg-pink-100 px-2 rounded text-xs font-semibold">
+                Premium
+              </span>
+              <span className="ml-2 text-xs text-muted-foreground">
+                Du bist Premium-Mitglied.
+              </span>
+            </div>
+          )
+        )}
+
         <Button type="submit" disabled={loading}>
           {loading ? "Speichert..." : "Speichern"}
         </Button>
