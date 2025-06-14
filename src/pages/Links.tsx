@@ -1,8 +1,8 @@
-
 import React from 'react';
 import Layout from '@/components/Layout';
 import { siteConfig } from '@/config/site.config';
 import { ExternalLink, Heart, Mail, Flower } from 'lucide-react';
+import LegalLinkTree from "@/components/LegalLinkTree";
 
 const Links = () => {
   const linkGroups = [
@@ -125,6 +125,17 @@ const Links = () => {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Rechtliches/Legal Pages */}
+      <section className="py-12 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <h2 className="text-xl font-serif font-bold text-earth-800 mb-2">Rechtliches</h2>
+          <p className="text-earth-600 mb-4 text-sm">
+            Hier findest du die wichtigsten rechtlichen Infos zu dieser Website.
+          </p>
+          <LegalLinkTree />
         </div>
       </section>
 

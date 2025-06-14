@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { siteConfig } from '@/config/site.config';
@@ -82,6 +81,16 @@ const Footer: React.FC = () => {
               <li>
                 <Link to="/about" className="text-earth-600 hover:text-sage-600 transition-colors">
                   Über mich
+                </Link>
+              </li>
+              <li>
+                <Link to="/kontakt" className="text-earth-600 hover:text-sage-600 transition-colors">
+                  Kontakt
+                </Link>
+              </li>
+              <li>
+                <Link to="/links" className="text-earth-600 hover:text-sage-600 transition-colors">
+                  Link-Übersicht
                 </Link>
               </li>
             </ul>

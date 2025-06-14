@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import ContactPage from "./pages/ContactPage";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ function App() {
             <Route path="/profil" element={<ProfilePage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+            <Route path="/kontakt" element={<ContactPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </TooltipProvider>
