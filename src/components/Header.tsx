@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { siteConfig } from '@/config/site.config';
 import { Menu, X, Flower, Search, LogOut, Shield } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
+import AuthDialog from "@/components/AuthDialog";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -85,12 +86,13 @@ const Header: React.FC = () => {
             </button>
             {/* Auth Links */}
             {!session?.user && (
-              <Link
-                to="/auth"
-                className="ml-4 px-4 py-2 rounded-lg bg-sage-100 text-sage-700 hover:bg-sage-200 font-medium transition-colors"
-              >
-                Login/Registrieren
-              </Link>
+              <AuthDialog>
+                <button
+                  className="ml-4 px-4 py-2 rounded-lg bg-sage-100 text-sage-700 hover:bg-sage-200 font-medium transition-colors"
+                >
+                  Login/Registrieren
+                </button>
+              </AuthDialog>
             )}
             {session?.user && (
               <>
@@ -140,13 +142,14 @@ const Header: React.FC = () => {
                 </Link>
               ))}
               {!session?.user && (
-                <Link
-                  to="/auth"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="mt-2 text-sage-700 bg-sage-100 hover:bg-sage-200 font-medium px-3 py-2 rounded-lg transition-colors"
-                >
-                  Login/Registrieren
-                </Link>
+                <AuthDialog>
+                  <button
+                    onClick={() => setIsMenuOpen(false)}
+                    className="mt-2 text-sage-700 bg-sage-100 hover:bg-sage-200 font-medium px-3 py-2 rounded-lg transition-colors w-full"
+                  >
+                    Login/Registrieren
+                  </button>
+                </AuthDialog>
               )}
               {session?.user && (
                 <>
