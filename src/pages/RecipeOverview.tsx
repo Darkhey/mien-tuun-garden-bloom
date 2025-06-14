@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import RecipeCard from "@/components/recipes/RecipeCard";
 import RecipeFilter from "@/components/recipes/RecipeFilter";
 import { supabase } from "@/integrations/supabase/client";
+import type { Recipe } from '@/types/content';
 
 // Die Kategorien, Saisons und Schwierigkeitsgrade
 const categories = ['Alle', 'Süßes & Kuchen', 'Suppen & Eintöpfe', 'Salate & Vorspeisen', 'Konservieren'];
@@ -22,6 +23,38 @@ const fetchRecipes = async () => {
   return data;
 };
 
+// Hilfsfunktion: Supabase-RecipeRow zu Frontend-Recipe mit Defaults mappen
+function mapRowToRecipe(row: any): Recipe {
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    description: row.description || '',
+    image: row.image_url || '/placeholder.svg',
+    prepTime: 0, // Supabase kennt dieses Feld noch nicht
+    cookTime: 0,
+    totalTime: 0,
+    servings: 1,
+    difficulty: 'einfach', // Default
+    category: 'Unbekannt', // Default
+    season: 'ganzjährig', // Default
+    tags: [],
+    ingredients: Array.isArray(row.ingredients) ? row.ingredients : [],
+    instructions: Array.isArray(row.instructions) ? row.instructions : [],
+    nutrition: undefined,
+    tips: [],
+    relatedRecipes: [],
+    publishedAt: row.created_at,
+    author: 'Unbekannt',
+    featured: false,
+    seo: {
+      title: row.title,
+      description: row.description || '',
+      keywords: [],
+    }
+  }
+}
+
 const RecipeOverview = () => {
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>('Alle');
@@ -30,10 +63,13 @@ const RecipeOverview = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Data fetch
-  const { data: recipes = [], isLoading, error } = useQuery({
+  const { data: recipeRows = [], isLoading, error } = useQuery({
     queryKey: ["all-recipes"],
     queryFn: fetchRecipes,
   });
+
+  // Umwandeln in typisierte Recipes
+  const recipes = useMemo(() => recipeRows.map(mapRowToRecipe), [recipeRows]);
 
   // Filter-Logik
   const filteredRecipes = useMemo(() => {
@@ -45,9 +81,12 @@ const RecipeOverview = () => {
       // Schwierigkeit
       if (selectedDifficulty !== 'Alle' && r.difficulty !== selectedDifficulty) return false;
       // Suchbegriff
-      if (searchTerm &&
-        !(r.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          r.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+      if (
+        searchTerm &&
+        !(
+          r.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          r.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
       ) {
         return false;
       }
