@@ -39,11 +39,27 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [admin, setAdmin] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const [avatarValid, setAvatarValid] = useState(true);
 
   useEffect(() => {
-    // Prüfe, ob aktueller User Admin ist
     isAdmin(profile.id).then(setAdmin);
   }, [profile.id]);
+
+  // Sofortige Vorschau/Bildprüfung für Avatar-URL
+  useEffect(() => {
+    if (form.avatar_url && form.avatar_url.startsWith("http")) {
+      setAvatarPreviewUrl(form.avatar_url);
+      // Bildprobe (asynchron):
+      const img = new window.Image();
+      img.onload = () => setAvatarValid(true);
+      img.onerror = () => setAvatarValid(false);
+      img.src = form.avatar_url;
+    } else {
+      setAvatarPreviewUrl(null);
+      setAvatarValid(true);
+    }
+  }, [form.avatar_url]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -51,19 +67,29 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+    if (name === "avatar_url") setAvatarValid(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setShowValidation(true);
 
-    // Validierung
+    // Validierungen
     if (!form.display_name || form.display_name.trim().length < 2) {
       toast.error("Bitte gib einen Namen mit mindestens 2 Zeichen ein.");
       return;
     }
+    if (
+      form.avatar_url &&
+      form.avatar_url.length > 0 &&
+      (!form.avatar_url.startsWith("http") || !avatarValid)
+    ) {
+      toast.error("Bitte gib eine gültige Bild-URL ein.");
+      return;
+    }
 
     setLoading(true);
+
     const { error, data } = await supabase
       .from("profiles")
       .update({
@@ -75,6 +101,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
       .eq("id", profile.id)
       .select()
       .maybeSingle();
+
     setLoading(false);
 
     if (error) {
@@ -86,12 +113,19 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-6 bg-white p-6 rounded-lg shadow"
+      noValidate
+    >
+      {/* Name */}
       <div>
         <div className="flex items-center mb-2 gap-2">
           <Label htmlFor="display_name">Dein Name</Label>
           {admin && (
-            <span className="inline-block bg-amber-100 text-amber-900 px-2 py-0.5 rounded text-xs ml-2 font-semibold">Admin</span>
+            <span className="inline-block bg-amber-100 text-amber-900 px-2 py-0.5 rounded text-xs ml-2 font-semibold">
+              Admin
+            </span>
           )}
         </div>
         <Input
@@ -101,12 +135,20 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
           value={form.display_name}
           onChange={handleChange}
           required
-          className={showValidation && (!form.display_name || form.display_name.trim().length < 2) ? "border-red-500" : ""}
+          className={
+            showValidation && (!form.display_name || form.display_name.trim().length < 2)
+              ? "border-red-500"
+              : ""
+          }
+          aria-invalid={showValidation && (!form.display_name || form.display_name.trim().length < 2)}
         />
         {showValidation && (!form.display_name || form.display_name.trim().length < 2) && (
-          <div className="text-red-600 text-xs mt-1">Name muss mindestens 2 Zeichen lang sein.</div>
+          <div className="text-red-600 text-xs mt-1">
+            Name muss mindestens 2 Zeichen lang sein.
+          </div>
         )}
       </div>
+      {/* Avatar */}
       <div>
         <Label htmlFor="avatar_url">Avatar Bild-URL</Label>
         <Input
@@ -115,17 +157,26 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
           placeholder="https://..."
           value={form.avatar_url}
           onChange={handleChange}
+          className={
+            showValidation && form.avatar_url && (!form.avatar_url.startsWith("http") || !avatarValid)
+              ? "border-red-500"
+              : ""
+          }
+          aria-invalid={showValidation && form.avatar_url && (!form.avatar_url.startsWith("http") || !avatarValid)}
         />
-        {form.avatar_url && form.avatar_url.startsWith("http") && (
+        {avatarPreviewUrl && avatarValid && (
           <img
-            src={form.avatar_url}
+            src={avatarPreviewUrl}
             alt="Avatar-Vorschau"
             className="h-16 w-16 object-cover mt-2 rounded-full border border-sage-200"
-            onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
           />
+        )}
+        {showValidation && form.avatar_url && !avatarValid && (
+          <div className="text-red-600 text-xs mt-1">Avatar-URL ist kein gültiges Bild.</div>
         )}
         {/* Später: Direktes Hochladen als Feature */}
       </div>
+      {/* Custom Role */}
       <div>
         <Label htmlFor="custom_role">Deine selbstgewählte Rolle</Label>
         <Input
@@ -136,6 +187,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
           onChange={handleChange}
         />
       </div>
+      {/* Premium Member */}
       <div className="flex items-center space-x-2">
         <Switch
           name="is_premium"
