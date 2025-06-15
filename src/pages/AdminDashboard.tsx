@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import KIRecipeCreator from "@/components/admin/KIRecipeCreator";
@@ -24,6 +23,8 @@ const AdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [editRecipe, setEditRecipe] = useState<any | null>(null);
+  const [editBlogPost, setEditBlogPost] = useState<any | null>(null);
 
   // Lade Nutzer für Tab "users"
   useEffect(() => {
@@ -88,6 +89,39 @@ const AdminDashboard: React.FC = () => {
       )}
       {tab === "ki-recipe" && <KIRecipeCreator />}
       {tab === "ki-blog" && <KIBlogCreator />}
+
+      {/* Rezept & Blog Bearbeiten Modals */}
+      {editRecipe && (
+        <EditRecipeModal
+          recipe={editRecipe}
+          onClose={() => setEditRecipe(null)}
+          onSaved={() => setEditRecipe(null)}
+        />
+      )}
+      {editBlogPost && (
+        <EditBlogPostModal
+          post={editBlogPost}
+          onClose={() => setEditBlogPost(null)}
+          onSaved={() => setEditBlogPost(null)}
+        />
+      )}
+
+      {/* Rezepte & Blogartikel Listen (kurzes Beispiel, ggf. aktualisieren nach deinem Aufbau) */}
+      {tab === "ki-recipe" && (
+        <div>
+          {/* Rezepte-Liste editieren */}
+          {/* Beispiel: */}
+          {/* Mappe über Rezepte und biete "Bearbeiten"-Button an */}
+          {/* <button onClick={() => setEditRecipe(recipe)}>Bearbeiten</button> */}
+        </div>
+      )}
+      {tab === "ki-blog" && (
+        <div>
+          {/* Blogartikel-Liste editieren */}
+          {/* Beispiel: */}
+          {/* <button onClick={() => setEditBlogPost(post)}>Bearbeiten</button> */}
+        </div>
+      )}
     </div>
   );
 };

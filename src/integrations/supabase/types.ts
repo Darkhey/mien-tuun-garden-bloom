@@ -33,6 +33,92 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_post_versions: {
+        Row: {
+          audiences: string[] | null
+          author: string | null
+          blog_post_id: string
+          category: string | null
+          content: string | null
+          content_types: string[] | null
+          created_at: string
+          excerpt: string | null
+          featured: boolean | null
+          featured_image: string | null
+          id: string
+          og_image: string | null
+          published: boolean | null
+          reading_time: number | null
+          season: string | null
+          seo_description: string | null
+          seo_keywords: string[] | null
+          seo_title: string | null
+          slug: string
+          status: string | null
+          tags: string[] | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          audiences?: string[] | null
+          author?: string | null
+          blog_post_id: string
+          category?: string | null
+          content?: string | null
+          content_types?: string[] | null
+          created_at?: string
+          excerpt?: string | null
+          featured?: boolean | null
+          featured_image?: string | null
+          id?: string
+          og_image?: string | null
+          published?: boolean | null
+          reading_time?: number | null
+          season?: string | null
+          seo_description?: string | null
+          seo_keywords?: string[] | null
+          seo_title?: string | null
+          slug: string
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          audiences?: string[] | null
+          author?: string | null
+          blog_post_id?: string
+          category?: string | null
+          content?: string | null
+          content_types?: string[] | null
+          created_at?: string
+          excerpt?: string | null
+          featured?: boolean | null
+          featured_image?: string | null
+          id?: string
+          og_image?: string | null
+          published?: boolean | null
+          reading_time?: number | null
+          season?: string | null
+          seo_description?: string | null
+          seo_keywords?: string[] | null
+          seo_title?: string | null
+          slug?: string
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_versions_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           audiences: string[]
@@ -53,6 +139,7 @@ export type Database = {
           seo_keywords: string[]
           seo_title: string
           slug: string
+          status: string
           structured_data: string | null
           tags: string[]
           title: string
@@ -77,6 +164,7 @@ export type Database = {
           seo_keywords?: string[]
           seo_title: string
           slug: string
+          status?: string
           structured_data?: string | null
           tags?: string[]
           title: string
@@ -101,6 +189,7 @@ export type Database = {
           seo_keywords?: string[]
           seo_title?: string
           slug?: string
+          status?: string
           structured_data?: string | null
           tags?: string[]
           title?: string
@@ -288,6 +377,77 @@ export type Database = {
         }
         Relationships: []
       }
+      recipe_versions: {
+        Row: {
+          author: string | null
+          category: string | null
+          cook_time_minutes: number | null
+          created_at: string
+          description: string | null
+          difficulty: string | null
+          id: string
+          image_url: string | null
+          ingredients: Json | null
+          instructions: Json | null
+          prep_time_minutes: number | null
+          recipe_id: string
+          season: string | null
+          servings: number | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          cook_time_minutes?: number | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          image_url?: string | null
+          ingredients?: Json | null
+          instructions?: Json | null
+          prep_time_minutes?: number | null
+          recipe_id: string
+          season?: string | null
+          servings?: number | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          cook_time_minutes?: number | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          image_url?: string | null
+          ingredients?: Json | null
+          instructions?: Json | null
+          prep_time_minutes?: number | null
+          recipe_id?: string
+          season?: string | null
+          servings?: number | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_versions_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recipes: {
         Row: {
           author: string | null
@@ -305,6 +465,7 @@ export type Database = {
           servings: number | null
           slug: string
           source_blog_slug: string | null
+          status: string
           tags: string[] | null
           title: string
           user_id: string | null
@@ -325,6 +486,7 @@ export type Database = {
           servings?: number | null
           slug: string
           source_blog_slug?: string | null
+          status?: string
           tags?: string[] | null
           title: string
           user_id?: string | null
@@ -345,6 +507,7 @@ export type Database = {
           servings?: number | null
           slug?: string
           source_blog_slug?: string | null
+          status?: string
           tags?: string[] | null
           title?: string
           user_id?: string | null
