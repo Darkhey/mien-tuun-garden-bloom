@@ -1,87 +1,31 @@
+
 import React, { useState, useEffect } from "react";
-import { Loader } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import TagSelector from "./TagSelector";
 import BlogMetaSection from "./BlogMetaSection";
-import BlogTopicSuggestions from "./BlogTopicSuggestions";
-import BlogPromptEditor from "./BlogPromptEditor";
-import BlogArticleEditor from "./BlogArticleEditor";
-import DebugTerminal from "./DebugTerminal";
-
-const BLOG_CATEGORIES = [
-  { value: "gartenplanung", label: "Gartenplanung" },
-  { value: "saisonale-kueche", label: "Saisonale Küche" },
-  { value: "nachhaltigkeit", label: "Nachhaltigkeit" },
-  { value: "diY-projekte", label: "DIY Projekte" },
-  { value: "ernte", label: "Ernte" },
-  { value: "selbstversorgung", label: "Selbstversorgung" },
-  { value: "tipps-tricks", label: "Tipps & Tricks" },
-  { value: "sonstiges", label: "Sonstiges" },
-];
-
-// Zielgruppen für Blogartikel
-const AUDIENCE_OPTIONS = [
-  "Anfänger", "Fortgeschrittene", "Familien", "Singles", "Kinder", "Senioren"
-];
-
-// Content-Typen für Blogartikel
-const CONTENT_TYPE_OPTIONS = [
-  "Anleitung", "Inspiration", "Ratgeber", "Checkliste", "Rezeptsammlung"
-];
-
-const SEASONS = [
-  { value: "frühling", label: "Frühling" },
-  { value: "sommer", label: "Sommer" },
-  { value: "herbst", label: "Herbst" },
-  { value: "winter", label: "Winter" },
-  { value: "ganzjährig", label: "Ganzjährig" },
-];
+import MetaDebugTerminal from "./MetaDebugTerminal";
+import BlogSuggestionWorkflow from "./BlogSuggestionWorkflow";
+import BlogArticleWorkflow from "./BlogArticleWorkflow";
+import { getTrendTags, buildContextFromMeta } from "./blogHelpers";
 
 const TAG_OPTIONS = [
   "Schnell", "Kinder", "Tipps", "DIY", "Low Budget", "Bio", "Natur", "Regional", "Saisonal", "Nachhaltig", "Praktisch", "Dekor", "Haushalt",
   "Step-by-Step", "Checkliste", "Inspiration"
 ];
 
-const SUGGESTION_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/suggest-blog-topics";
-const GENERATE_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/generate-blog-post";
-
-// Dynamische Trend-Tags pro Kategorie/Saison (Beispielbasis)
-const TREND_TAGS = {
-  gartenplanung: ["Permakultur", "No-Dig", "Biogarten", "Hochbeet"],
-  "saisonale-kueche": ["Meal Prep", "Zero Waste", "Fermentieren", "One Pot"],
-  nachhaltigkeit: ["Plastikfrei", "Regenerativ", "Naturgarten"],
-  "diY-projekte": ["Upcycling", "Balkonideen"],
-  ernte: ["Haltbarmachen", "Kräutergarten", "Vorrat"],
-  selbstversorgung: ["Unabhängigkeit", "Microgreens", "Wildkräuter"],
-  "tipps-tricks": ["Tool Hacks", "Schädlingskontrolle"],
-  sonstiges: ["Inspiration"],
-  default: ["Nachhaltig", "DIY", "Tipps"]
-};
-
-function getTrendTags(category: string, season: string) {
-  const catTags = TREND_TAGS[category as keyof typeof TREND_TAGS] || TREND_TAGS.default;
-  const seasonTag = season ? [season.charAt(0).toUpperCase() + season.slice(1)] : [];
-  return Array.from(new Set([...catTags, ...seasonTag]));
-}
-
 const KIBlogCreator: React.FC = () => {
+  // Alle State-Variablen wie zuvor
   const [topicInput, setTopicInput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
-
   const [suggestionSelections, setSuggestionSelections] = useState<string[]>([]);
-
-  const [input, setInput] = useState(""); // Themenwahl oder Prompt
+  const [input, setInput] = useState("");
   const [prompt, setPrompt] = useState("");
   const [isPromptImproved, setIsPromptImproved] = useState(false);
-
   const [generated, setGenerated] = useState<string | null>(null);
   const [editing, setEditing] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [category, setCategory] = useState(""); // Artikel-Kategorie
+  const [category, setCategory] = useState("");
   const [season, setSeason] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [audiences, setAudiences] = useState<string[]>([]);
@@ -89,235 +33,26 @@ const KIBlogCreator: React.FC = () => {
   const [excerpt, setExcerpt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [dynamicTags, setDynamicTags] = useState<string[]>([]);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Hilfsfunktion: Kontext-String aus allen Metadaten erzeugen
-  function buildContextFromMeta() {
-    const contextParts = [
-      category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
-      season ? `Saison: ${SEASONS.find(s => s.value === season)?.label ?? season}.` : "",
-      audiences.length ? `Zielgruppe: ${audiences.join(", ")}.` : "",
-      contentType.length ? `Artikel-Typ/Format: ${contentType.join(", ")}.` : "",
-      tags.length ? `Tags: ${tags.join(", ")}.` : "",
-      excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
-      imageUrl ? `Bild: ${imageUrl}` : "",
-      "Bitte nur knackige, inspirierende Titel zurückgeben."
-    ];
-    return [topicInput || input, ...contextParts].filter(Boolean).join(" ");
-  }
-
-  // Debug-Terminal-Logik
-  const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  const addDebugLog = (msg: string) => {
-    setDebugLogs((prev) => [
-      ...prev.slice(-29), // Max. 30 Einträge
-      `[${new Date().toLocaleTimeString()}] ${msg}`
-    ]);
+  // Zustand für Prompteditor
+  const handleImprovePrompt = async () => {
+    setLoading(true);
+    setIsPromptImproved(true);
+    setPrompt(input);
+    setLoading(false);
   };
 
-  // Themenvorschlag per Edge Function holen (nun robustes Logging + Antwort immer Array)
-  const handleSuggestTopics = async () => {
-    setIsSuggesting(true);
-    setSuggestions([]);
-    setSuggestionSelections([]);
-    addDebugLog("Starte Themenvorschlags-Request an KI-Edge-Function.");
-    try {
-      const context = buildContextFromMeta();
-      addDebugLog("Sende POST an: " + SUGGESTION_FUNCTION_URL);
-      const response = await fetch(SUGGESTION_FUNCTION_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword: context }),
-      });
-
-      // Logge komplette Antwort (Rohtext)
-      const data = await response.json().catch(() => ({}));
-      addDebugLog("Antwort erhalten (Status: " + response.status + ")");
-      addDebugLog("Edge-Function Rückgabe: " + JSON.stringify(data, null, 2));
-
-      if (!response.ok || !data.topics) {
-        addDebugLog("Fehler beim Vorschlag: " + (data?.error || "Unbekannter Fehler"));
-        toast({ title: "Fehler", description: String(data?.error || "Fehler beim Vorschlag"), variant: "destructive" });
-        setSuggestions([]);
-        return;
-      }
-
-      // topics ist immer ein Array!
-      if (!Array.isArray(data.topics) || data.topics.length === 0) {
-        addDebugLog("Kein Thema extrahiert (topics leeres Array).");
-        toast({ title: "Keine Vorschläge", description: "Die KI hat keine brauchbaren Themen zurückgegeben.", variant: "destructive" });
-        setSuggestions([]);
-        return;
-      }
-
-      addDebugLog("Vorschläge extrahiert: " + JSON.stringify(data.topics));
-      setSuggestions(data.topics.slice(0, 3));
-    } catch (err: any) {
-      addDebugLog("Fehler beim Themenvorschlag: " + String(err.message || err));
-      toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
-      setSuggestions([]);
-    }
-    setIsSuggesting(false);
-  };
-
-  // Dynamische Tag-Sammlung je nach Kategorie & Saison
   useEffect(() => {
     // Dynamische Tag-Sammlung je nach Kategorie & Saison
     const trendTags = getTrendTags(category, season);
     setDynamicTags(Array.from(new Set([...TAG_OPTIONS, ...trendTags])));
   }, [category, season]);
 
-  // Inhalt der Vorschlagsauswahl als Main-Prompt oder als Array speichern
-  const handleSuggestionSelect = (s: string) => {
-    setPrompt("");
-    setIsPromptImproved(false);
-    setInput(""); // Verhindert Kollision mit Custom Prompt
-    setSuggestionSelections(prev =>
-      prev.includes(s)
-        ? prev.filter(item => item !== s)
-        : [...prev, s]
-    );
-  };
-
-  // Artikel für ALLE gewählten Vorschläge generieren (jeweils als einzelnes KI-Request)
-  const handleGenerateMultiple = async () => {
-    setLoading(true);
-    setGenerated(null);
-    setEditing("");
-    addDebugLog("Starte Multi-Artikel-Generation für " + suggestionSelections.length + " Vorschläge.");
-    try {
-      for (const sug of suggestionSelections) {
-        addDebugLog(`Sende Artikel-Request für Vorschlag "${sug}" an KI-Edge-Function.`);
-        const contextParts = [
-          sug,
-          category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
-          season ? `Saison: ${SEASONS.find(s => s.value === season)?.label ?? season}.` : "",
-          audiences.length ? `Zielgruppe: ${audiences.join(", ")}.` : "",
-          contentType.length ? `Artikel-Typ/Format: ${contentType.join(", ")}.` : "",
-          tags.length ? `Tags: ${tags.join(", ")}.` : "",
-          excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
-          imageUrl ? `Bild: ${imageUrl}` : "",
-        ];
-        const fullPrompt = contextParts.filter(Boolean).join(" ");
-        addDebugLog("Sende POST an: " + GENERATE_FUNCTION_URL);
-        const response = await fetch(GENERATE_FUNCTION_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: fullPrompt }),
-        });
-        const data = await response.json();
-        addDebugLog("Antwort erhalten (Status: " + response.status + ")");
-        if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei der KI");
-        setGenerated(data.content);
-        setEditing(data.content);
-        addDebugLog("Artikel erfolgreich generiert für Vorschlag: " + sug);
-        toast({ title: "Artikel generiert", description: `Artikel zu "${sug}" erstellt.` });
-      }
-    } catch (err: any) {
-      addDebugLog("Fehler bei Multi-Artikel-Generation: " + String(err.message || err));
-      toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
-    }
-    setLoading(false);
-  };
-
-  // Artikel generieren lassen
-  const handleGenerate = async () => {
-    setLoading(true);
-    setGenerated(null);
-    setEditing("");
-    addDebugLog("Starte Einzel-Artikel-Generation via KI-Edge-Function.");
-    try {
-      const contextParts = [
-        category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
-        season ? `Saison: ${SEASONS.find(s => s.value === season)?.label ?? season}.` : "",
-        audiences.length ? `Zielgruppe: ${audiences.join(", ")}.` : "",
-        contentType.length ? `Artikel-Typ/Format: ${contentType.join(", ")}.` : "",
-        tags.length ? `Tags: ${tags.join(", ")}.` : "",
-        excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
-        imageUrl ? `Bild: ${imageUrl}` : "",
-      ];
-      const fullPrompt = [prompt || input, ...contextParts].filter(Boolean).join(" ");
-      addDebugLog("Sende POST an: " + GENERATE_FUNCTION_URL);
-      const response = await fetch(GENERATE_FUNCTION_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: fullPrompt }),
-      });
-      const data = await response.json();
-      addDebugLog("Antwort erhalten (Status: " + response.status + ")");
-      if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei der KI");
-      setGenerated(data.content);
-      setEditing(data.content);
-      addDebugLog("Artikel erfolgreich generiert");
-    } catch (err: any) {
-      addDebugLog("Fehler bei Einzel-Artikel-Generation: " + String(err.message || err));
-      toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
-    }
-    setLoading(false);
-  };
-
-  // Speichern des Artikels
-  const handleSave = async () => {
-    setLoading(true);
-    addDebugLog("Beginne Artikel-Speichern via Supabase...");
-    try {
-      const user = await supabase.auth.getUser();
-      if (!user.data.user) throw new Error("Nicht eingeloggt!");
-      addDebugLog("Benutzer: " + JSON.stringify(user.data.user));
-      const slug = "blog-" + Date.now();
-      // ... keep unchanged ...
-      const { error } = await supabase.from("blog_posts").insert([{
-        slug,
-        title: input,
-        excerpt,
-        content: editing,
-        author: user.data.user.email,
-        published: true,
-        featured: false,
-        featured_image: imageUrl,
-        seo_title: "",
-        seo_description: "",
-        seo_keywords: tags,
-        tags,
-        category: category 
-          ? BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category
-          : "Sonstiges",
-        published_at: new Date().toISOString(),
-        reading_time: 5,
-        difficulty: "",
-        season: season ? SEASONS.find(s => s.value === season)?.label ?? season : "",
-        audiences: audiences,
-        content_types: contentType,
-      }]);
-      if (error) throw error;
-      addDebugLog("Supabase Insert erfolgreich!");
-      toast({ title: "Erstellt!", description: "Der Blogartikel wurde angelegt." });
-    } catch (err: any) {
-      addDebugLog("Fehler beim Speichern: " + String(err.message || err));
-      toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
-    }
-    setLoading(false);
-  };
-
-  // Prompt-Optimierung: Hier als Placeholder einfach das aktuelle input-Feld in den Prompt schreiben
-  const handleImprovePrompt = async () => {
-    setLoading(true);
-    addDebugLog("Starte Prompt-Optimierung (Platzhalter).");
-    try {
-      setPrompt(input);
-      setIsPromptImproved(true);
-      addDebugLog("Prompt nach Optimierung: " + input);
-    } catch (err: any) {
-      addDebugLog("Fehler bei Prompt-Optimierung: " + String(err.message || err));
-      toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
-    }
-    setLoading(false);
-  };
-
   return (
     <div className="bg-white p-5 rounded-xl shadow max-w-xl mx-auto">
       <h2 className="font-bold text-lg mb-4">KI Blogartikel Generator</h2>
-      {/* Meta-Formular */}
       <BlogMetaSection
         category={category}
         setCategory={setCategory}
@@ -336,51 +71,53 @@ const KIBlogCreator: React.FC = () => {
         dynamicTags={dynamicTags}
         loading={loading || isSuggesting}
       />
-      {/* Themenvorschlag */}
-      <BlogTopicSuggestions
+      <BlogSuggestionWorkflow
         topicInput={topicInput}
         setTopicInput={setTopicInput}
-        isSuggesting={isSuggesting}
+        category={category}
+        season={season}
+        audiences={audiences}
+        contentType={contentType}
+        tags={tags}
+        excerpt={excerpt}
+        imageUrl={imageUrl}
+        suggestionSelections={suggestionSelections}
+        setSuggestionSelections={setSuggestionSelections}
+        setDebugLogs={setDebugLogs}
         loading={loading}
-        handleSuggestTopics={handleSuggestTopics}
+        setLoading={setLoading}
+        isSuggesting={isSuggesting}
+        setIsSuggesting={setIsSuggesting}
         suggestions={suggestions}
-        selected={suggestionSelections}
-        onSuggestionClick={handleSuggestionSelect}
+        setSuggestions={setSuggestions}
       />
-      {/* Button: Generiere Artikel zu gewählten Vorschlägen */}
-      {suggestionSelections.length > 0 && (
-        <Button
-          className="mb-4"
-          onClick={handleGenerateMultiple}
-          disabled={loading || isSuggesting}
-        >
-          Artikel für {suggestionSelections.length} Vorschlag{suggestionSelections.length > 1 ? "e" : ""} generieren
-        </Button>
-      )}
-
-      {/* Prompt bearbeiten/editor */}
-      <BlogPromptEditor
-        input={input}
-        setInput={setInput}
+      <BlogArticleWorkflow
+        suggestionSelections={suggestionSelections}
+        loading={loading}
+        setLoading={setLoading}
         prompt={prompt}
         setPrompt={setPrompt}
-        handleImprovePrompt={handleImprovePrompt}
+        input={input}
+        setInput={setInput}
         isPromptImproved={isPromptImproved}
-        loading={loading}
-        isSuggesting={isSuggesting}
-      />
-      {/* Artikel generieren & Editor (Single Workflow für eigenen Prompt) */}
-      <BlogArticleEditor
-        generated={generated}
+        setIsPromptImproved={setIsPromptImproved}
+        handleImprovePrompt={handleImprovePrompt}
+        canGenerate={Boolean(prompt || input)}
         editing={editing}
         setEditing={setEditing}
-        loading={loading}
-        handleGenerate={handleGenerate}
-        handleSave={handleSave}
-        canGenerate={Boolean(prompt || input)}
+        generated={generated}
+        setGenerated={setGenerated}
+        category={category}
+        season={season}
+        audiences={audiences}
+        contentType={contentType}
+        tags={tags}
+        excerpt={excerpt}
+        imageUrl={imageUrl}
+        setDebugLogs={setDebugLogs}
+        toast={toast}
       />
-      {/* Debug-Terminal */}
-      <DebugTerminal logs={debugLogs} />
+      <MetaDebugTerminal logs={debugLogs} />
     </div>
   );
 };
