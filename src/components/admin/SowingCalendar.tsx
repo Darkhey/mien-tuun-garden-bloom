@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Search, Filter } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const SOWING_DATA = [
   {
@@ -523,9 +524,9 @@ const SowingCalendar: React.FC = () => {
         </div>
       </div>
 
-      {/* Table Container with fixed height and scroll */}
+      {/* Table Container mit ScrollArea von shadcn/ui */}
       <div className="border border-sage-200 rounded-lg overflow-hidden bg-white">
-        <div className="overflow-x-auto">
+        <ScrollArea className="w-full max-w-full">
           <Table>
             <TableHeader className="bg-sage-50">
               <TableRow className="border-sage-200">
@@ -583,7 +584,7 @@ const SowingCalendar: React.FC = () => {
               💡 Tipp: Je nach Region kann es Abweichungen geben. Tabelle orientiert sich an Mitteleuropa.
             </TableCaption>
           </Table>
-        </div>
+        </ScrollArea>
       </div>
 
       {/* Fixed Legend at Bottom */}
