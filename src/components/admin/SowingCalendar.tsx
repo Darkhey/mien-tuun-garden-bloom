@@ -264,21 +264,22 @@ const SowingCalendar: React.FC = () => {
     plantOut: true,
     harvest: true,
   });
-  const [selectedMonth, setSelectedMonth] = useState<string>("");
-  const [selectedSeason, setSelectedSeason] = useState<string>("");
-  const [selectedType, setSelectedType] = useState<string>("");
+  // Initialisiere alle Filter-States mit "ALL"!
+  const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
+  const [selectedSeason, setSelectedSeason] = useState<string>("ALL");
+  const [selectedType, setSelectedType] = useState<string>("ALL");
 
   // Filtere alle rows, die den Kriterien entsprechen
   const filteredRows = useMemo(() => {
     return SOWING_DATA.filter(row => {
       // Type-Filter
-      if (selectedType && row.type !== selectedType) return false;
+      if (selectedType !== "ALL" && row.type !== selectedType) return false;
       // Saison-Filter
-      if (selectedSeason && !row.season.includes(selectedSeason)) return false;
+      if (selectedSeason !== "ALL" && !row.season.includes(selectedSeason)) return false;
       // Textsuche auf Name
       if (search && !row.plant.toLowerCase().includes(search.toLowerCase())) return false;
       // Monat-Filter: nur zeigen, wenn in diesem Monat eine relevante Kategorie belegt ist
-      if (selectedMonth) {
+      if (selectedMonth !== "ALL") {
         const monthNum = MONTHS.indexOf(selectedMonth) + 1;
         // Wenn für eine aktivierte Kategorie in diesem Monat kein Eintrag -> Zeile ausblenden
         const anyCategory = CATEGORIES.some(cat =>
@@ -343,7 +344,8 @@ const SowingCalendar: React.FC = () => {
             <SelectValue placeholder="Monat" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Alle Monate</SelectItem>
+            {/* Wert ist jetzt "ALL" statt "" */}
+            <SelectItem value="ALL">Alle Monate</SelectItem>
             {MONTHS.map((m, i) => (
               <SelectItem key={m} value={m}>{m}</SelectItem>
             ))}
@@ -357,7 +359,7 @@ const SowingCalendar: React.FC = () => {
             <SelectValue placeholder="Saison" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Alle Saisons</SelectItem>
+            <SelectItem value="ALL">Alle Saisons</SelectItem>
             {SEASONS.map(s => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
@@ -371,7 +373,7 @@ const SowingCalendar: React.FC = () => {
             <SelectValue placeholder="Art" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Obst &amp; Gemüse</SelectItem>
+            <SelectItem value="ALL">Obst &amp; Gemüse</SelectItem>
             {TYPES.map(t => (
               <SelectItem key={t} value={t}>{t}</SelectItem>
             ))}
