@@ -3,3 +3,6 @@ project_id = "ublbxvpmoccmegtwaslh"
 
 [functions.blog-to-recipe]
 verify_jwt = false
+
+[functions.suggest-blog-topics]
+verify_jwt = false
