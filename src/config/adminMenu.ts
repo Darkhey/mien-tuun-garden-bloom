@@ -1,5 +1,5 @@
 
-import { BookOpen, FileText, Users, Sparkles, Calendar, Shield, Brain, Zap, Clock } from "lucide-react";
+import { BookOpen, FileText, Users, Sparkles, Calendar, Shield, Brain, Zap, TestTube } from "lucide-react";
 import { AdminView } from "@/types/admin";
 
 export const menuItems: { group: string; items: { key: AdminView; label: string; icon: React.ElementType }[] }[] = [
@@ -30,6 +30,7 @@ export const menuItems: { group: string; items: { key: AdminView; label: string;
     items: [
       { key: "sowing-calendar", label: "Aussaatkalender", icon: Calendar },
       { key: "security-log", label: "Sicherheits-Log", icon: Shield },
+      { key: "blog-test-dashboard", label: "Blog-System-Tests", icon: TestTube },
     ],
   },
 ];
