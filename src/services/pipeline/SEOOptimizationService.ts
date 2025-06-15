@@ -20,6 +20,13 @@ export interface SEOOptimizationResult {
   recommendations: string[];
 }
 
+export interface AssessmentResult {
+  score: number;
+  details: string[];
+  warnings: string[];
+  errors: string[];
+}
+
 export class SEOOptimizationService {
   async analyzeTopicAndKeywords(topic: string): Promise<SEOAnalysis> {
     console.log('[SEO] Analyzing topic and keywords for:', topic);
@@ -169,15 +176,20 @@ export class SEOOptimizationService {
 
   private calculateKeywordDensity(content: string, keyword: string): number {
     if (!keyword) return 0;
-    
-    const words = content.toLowerCase().split(/\s+/);
-    const keywordCount = words.filter(word => word.includes(keyword.toLowerCase())).length;
+    if (!content) return 0;
+    // Entferne HTML und Sonderzeichen, splitte exakt nach Wortgrenzen
+    const plainText = content.replace(/<[^>]*>/g, '').replace(/[^\wäöüßÄÖÜ\s\-]/gi, ' ');
+    const words = plainText.toLowerCase().split(/\s+/).filter(Boolean);
+
+    // Exakter Wort-Match statt "includes"
+    // Zähle wie oft Keyword als vollständiges Wort vorkommt
+    const keywordNormalized = keyword.toLowerCase().trim();
+    const keywordCount = words.filter(word => word === keywordNormalized).length;
     const totalWords = words.length;
-    
-    // Ensure we have valid numbers for calculation
+
     if (totalWords === 0) return 0;
-    
-    return (keywordCount / totalWords) * 100;
+    // Density: Anteil am Gesamttext: z.B. 2% bei 3/150 Wörtern = 2
+    return Number(((keywordCount / totalWords) * 100).toFixed(2));
   }
 
   private calculateReadabilityScore(content: string): number {
