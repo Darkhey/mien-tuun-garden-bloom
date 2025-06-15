@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,7 +65,7 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    setSuggestionSelections((prev: string[]) => 
+    setSuggestionSelections((prev) => 
       prev.includes(suggestion) 
         ? prev.filter(s => s !== suggestion)
         : [...prev, suggestion]
