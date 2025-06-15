@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import Layout from "@/components/Layout";
 import { ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -119,23 +118,17 @@ const RecipeDetail = () => {
 
   if (isLoading)
     return (
-      <Layout title="Rezept">
-        <div className="py-24 text-center text-sage-500">Lädt Rezeptdetails...</div>
-      </Layout>
+      <div className="py-24 text-center text-sage-500">Lädt Rezeptdetails...</div>
     );
   if (error)
     return (
-      <Layout title="Rezept">
-        <div className="py-24 text-center text-destructive-600">
-          Fehler beim Laden!
-        </div>
-      </Layout>
+      <div className="py-24 text-center text-destructive-600">
+        Fehler beim Laden!
+      </div>
     );
   if (!recipe)
     return (
-      <Layout title="Rezept">
-        <div className="py-24 text-center text-sage-400">Rezept nicht gefunden.</div>
-      </Layout>
+      <div className="py-24 text-center text-sage-400">Rezept nicht gefunden.</div>
     );
 
   // Zutaten und Schritte inklusive Fallbacks parsen & normalisieren
@@ -152,11 +145,10 @@ const RecipeDetail = () => {
   }
 
   return (
-    <Layout title={recipe.title}>
-      <RecipeStructuredData
-        recipe={recipe}
-        averageRating={recipeRating.average ?? undefined}
-        ratingCount={recipeRating.count}
+    <RecipeStructuredData
+      recipe={recipe}
+      averageRating={recipeRating.average ?? undefined}
+      ratingCount={recipeRating.count}
       />
       <section className="max-w-3xl mx-auto px-4 py-10">
         <Link
@@ -188,7 +180,6 @@ const RecipeDetail = () => {
       <section className="max-w-3xl mx-auto px-4 pb-16">
         <RecipeComments recipeId={slug!} userId={userId} />
       </section>
-    </Layout>
   );
 };
 
