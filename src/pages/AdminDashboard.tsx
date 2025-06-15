@@ -22,6 +22,7 @@ import Phase3Dashboard from "@/components/admin/Phase3Dashboard";
 const AdminDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState<AdminView>("recipes");
   const [userEmail, setUserEmail] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const getUserEmail = async () => {
@@ -36,11 +37,36 @@ const AdminDashboard: React.FC = () => {
   const renderContent = () => {
     switch (activeView) {
       case "recipes":
-        return <RecipesView />;
+        return (
+          <RecipesView 
+            recipes={[]}
+            loading={loading}
+            error={null}
+            onToggleStatus={() => {}}
+            onEdit={() => {}}
+            onDelete={() => {}}
+          />
+        );
       case "blog-posts":
-        return <BlogPostsView />;
+        return (
+          <BlogPostsView 
+            posts={[]}
+            loading={loading}
+            error={null}
+            onToggleStatus={() => {}}
+            onEdit={() => {}}
+            onDelete={() => {}}
+          />
+        );
       case "users":
-        return <UsersView />;
+        return (
+          <UsersView 
+            users={[]}
+            loading={loading}
+            error={null}
+            onTogglePremium={() => {}}
+          />
+        );
       case "ki-recipe":
         return <KIRecipeCreator />;
       case "ki-blog":
@@ -54,7 +80,16 @@ const AdminDashboard: React.FC = () => {
       case "phase3-dashboard":
         return <Phase3Dashboard />;
       default:
-        return <RecipesView />;
+        return (
+          <RecipesView 
+            recipes={[]}
+            loading={loading}
+            error={null}
+            onToggleStatus={() => {}}
+            onEdit={() => {}}
+            onDelete={() => {}}
+          />
+        );
     }
   };
 
