@@ -1,5 +1,6 @@
+
 import React, { useState } from "react";
-import { useQuery, QueryFunctionContext } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import BlogPostCard from "@/components/blog/BlogPostCard";
 import BlogFilter from "@/components/blog/BlogFilter";
@@ -7,44 +8,6 @@ import { Helmet } from "react-helmet";
 import { Database } from "@/integrations/supabase/types";
 
 type BlogPostRow = Database['public']['Tables']['blog_posts']['Row'];
-type QueryKey = readonly (string | boolean)[];
-
-const fetchBlogPosts = async (ctx: QueryFunctionContext): Promise<BlogPostRow[]> => {
-  const [_, selectedCategory, selectedSeason, showDrafts, searchTerm] = ctx.queryKey;
-  
-  console.log('[BlogOverview] Lade Blog-Posts...');
-  let query = supabase
-    .from('blog_posts')
-    .select('*')
-    .order('published_at', { ascending: false });
-
-  // Filter nur anwenden wenn nicht alle Artikel (inklusive Entwürfe) angezeigt werden sollen
-  if (!showDrafts) {
-    query = query.eq('published', true);
-  }
-
-  if (selectedCategory) {
-    query = query.eq('category', selectedCategory as string);
-  }
-
-  if (selectedSeason) {
-    query = query.eq('season', selectedSeason as string);
-  }
-
-  if (searchTerm) {
-    query = query.or(`title.ilike.%${searchTerm as string}%,content.ilike.%${searchTerm as string}%`);
-  }
-
-  const { data, error } = await query;
-  
-  if (error) {
-    console.error('[BlogOverview] Fehler beim Laden der Posts:', error);
-    throw error;
-  }
-
-  console.log('[BlogOverview] Posts geladen:', data?.length, 'Artikel gefunden');
-  return data || [];
-};
 
 interface BlogOverviewProps {
   variant?: string;
@@ -57,12 +20,45 @@ const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   const { data: posts, isLoading, error } = useQuery({
-    queryKey: ['blog-posts', selectedCategory, selectedSeason, showDrafts, searchTerm],
-    queryFn: fetchBlogPosts,
+    queryKey: ['blog-posts', selectedCategory, selectedSeason, showDrafts, searchTerm] as const,
+    queryFn: async () => {
+      console.log('[BlogOverview] Lade Blog-Posts...');
+      let query = supabase
+        .from('blog_posts')
+        .select('*')
+        .order('published_at', { ascending: false });
+
+      // Filter nur anwenden wenn nicht alle Artikel (inklusive Entwürfe) angezeigt werden sollen
+      if (!showDrafts) {
+        query = query.eq('published', true);
+      }
+
+      if (selectedCategory) {
+        query = query.eq('category', selectedCategory);
+      }
+
+      if (selectedSeason) {
+        query = query.eq('season', selectedSeason);
+      }
+
+      if (searchTerm) {
+        query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
+      }
+
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('[BlogOverview] Fehler beim Laden der Posts:', error);
+        throw error;
+      }
+
+      console.log('[BlogOverview] Posts geladen:', data?.length, 'Artikel gefunden');
+      return data || [];
+    },
   });
 
   const { data: categories } = useQuery({
-    queryKey: ['blog-categories'],
+    queryKey: ['blog-categories'] as const,
     queryFn: async () => {
       const { data } = await supabase
         .from('blog_posts')
