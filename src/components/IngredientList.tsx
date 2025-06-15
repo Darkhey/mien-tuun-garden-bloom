@@ -38,7 +38,13 @@ const IngredientList: React.FC<Props> = ({
     <ul className="space-y-3 mb-6 w-full">
       {ingredients.map((ing, i) => (
         <li key={i} className="flex items-center gap-3 group relative">
-          <span className="bg-sage-100 rounded-full w-12 h-8 flex justify-center items-center font-semibold text-sage-800 text-sm">
+          {/* Mengen-Box: zentriert & hübsch */}
+          <span
+            className="flex items-center justify-center font-semibold text-sage-800 text-sm 
+            bg-sage-100 rounded-full min-w-[3rem] h-8 px-2 py-1
+            shadow-sm border border-sage-200 text-center transition-colors"
+            style={{ lineHeight: "1.5" }}
+          >
             {ing.amount !== undefined && !isNaN(ing.amount)
               ? `${(ing.amount * factor).toLocaleString("de-DE", {
                   maximumFractionDigits: 1,
@@ -88,3 +94,4 @@ const IngredientList: React.FC<Props> = ({
 };
 
 export default IngredientList;
+
