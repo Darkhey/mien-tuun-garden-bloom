@@ -1,4 +1,3 @@
-
 import { generateSlug, generateMetaTitle, generateMetaDescription } from '@/utils/blogSeo';
 
 export interface SEOAnalysis {
@@ -180,10 +179,15 @@ export class SEOOptimizationService {
   private calculateReadabilityScore(content: string): number {
     const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
     const words = content.split(/\s+/);
-    const avgWordsPerSentence = words.length / sentences.length;
     
-    // Flesch Reading Ease approximation
-    return Math.max(0, 206.835 - (1.015 * avgWordsPerSentence));
+    // Ensure we have valid numbers for calculation
+    const sentenceCount = sentences.length || 1;
+    const wordCount = words.length || 1;
+    const avgWordsPerSentence = wordCount / sentenceCount;
+    
+    // Flesch Reading Ease approximation - ensure all operations are on numbers
+    const score = 206.835 - (1.015 * avgWordsPerSentence);
+    return Math.max(0, score);
   }
 
   private generateSEORecommendations(content: any, seoScore: number): string[] {

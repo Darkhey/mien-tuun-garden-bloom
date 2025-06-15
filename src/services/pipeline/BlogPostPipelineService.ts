@@ -1,5 +1,5 @@
 
-import { ContentGenerationService } from '../ContentGenerationService';
+import { contentGenerationService } from '../ContentGenerationService';
 import { SEOOptimizationService } from './SEOOptimizationService';
 import { QualityAssuranceService } from './QualityAssuranceService';
 import { ContentEnrichmentService } from './ContentEnrichmentService';
@@ -46,14 +46,12 @@ export interface PipelineExecution {
 }
 
 class BlogPostPipelineService {
-  private contentGeneration: ContentGenerationService;
   private seoOptimization: SEOOptimizationService;
   private qualityAssurance: QualityAssuranceService;
   private contentEnrichment: ContentEnrichmentService;
   private executions: Map<string, PipelineExecution> = new Map();
 
   constructor() {
-    this.contentGeneration = new ContentGenerationService();
     this.seoOptimization = new SEOOptimizationService();
     this.qualityAssurance = new QualityAssuranceService();
     this.contentEnrichment = new ContentEnrichmentService();
@@ -85,7 +83,12 @@ class BlogPostPipelineService {
       // Stage 2: Enhanced Content Generation
       await this.executeStage(execution, 'content_generation', async () => {
         const topicData = execution.stages.find(s => s.id === 'topic_research')?.result;
-        return await this.contentGeneration.generateWithSEOContext(prompt, topicData, config);
+        return await contentGenerationService.generateBlogPost({
+          prompt,
+          category: config.contentType,
+          audiences: [config.targetAudience],
+          contentType: [config.contentType]
+        });
       });
 
       // Stage 3: Quality Assurance
