@@ -1,81 +1,26 @@
+
 import React, { useEffect, useState } from "react";
-import { Loader2, Edit, Trash2, Eye, EyeOff, Plus, BookOpen, FileText, Users, Sparkles, Calendar, Shield } from "lucide-react";
 import KIRecipeCreator from "@/components/admin/KIRecipeCreator";
 import KIBlogCreator from "@/components/admin/KIBlogCreator";
 import { supabase } from "@/integrations/supabase/client";
 import EditRecipeModal from "@/components/admin/EditRecipeModal";
 import EditBlogPostModal from "@/components/admin/EditBlogPostModal";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from "@/components/ui/sidebar";
 import SowingCalendar from "@/components/admin/SowingCalendar";
 import SecurityAuditLog from "@/components/admin/SecurityAuditLog";
-
-interface AdminUser {
-  id: string;
-  display_name: string;
-  email?: string;
-  is_premium: boolean;
-  custom_role?: string | null;
-  created_at: string;
-}
-
-interface Recipe {
-  id: string;
-  title: string;
-  slug: string;
-  status: string;
-  author: string;
-  created_at: string;
-  difficulty?: string;
-  category?: string;
-}
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  status: string;
-  author: string;
-  published_at: string;
-  category: string;
-  featured: boolean;
-}
-
-type AdminView = "users" | "recipes" | "blog-posts" | "ki-recipe" | "ki-blog" | "sowing-calendar" | "security-log";
-
-const menuItems: { group: string; items: { key: AdminView; label: string; icon: React.ElementType }[] }[] = [
-  {
-    group: "Verwaltung",
-    items: [
-      { key: "recipes", label: "Rezepte", icon: BookOpen },
-      { key: "blog-posts", label: "Blog-Artikel", icon: FileText },
-      { key: "users", label: "Nutzer", icon: Users },
-    ],
-  },
-  {
-    group: "KI-Tools",
-    items: [
-      { key: "ki-recipe", label: "KI-Rezept erstellen", icon: Sparkles },
-      { key: "ki-blog", label: "KI-Artikel erstellen", icon: Sparkles },
-    ],
-  },
-  {
-    group: "Weitere Tools",
-    items: [
-      { key: "sowing-calendar", label: "Aussaatkalender", icon: Calendar },
-      { key: "security-log", label: "Sicherheits-Log", icon: Shield },
-    ],
-  },
-];
+import { AdminView, AdminUser, AdminRecipe, AdminBlogPost } from "@/types/admin";
+import { menuItems } from "@/config/adminMenu";
+import UsersView from "@/components/admin/views/UsersView";
+import RecipesView from "@/components/admin/views/RecipesView";
+import BlogPostsView from "@/components/admin/views/BlogPostsView";
 
 const AdminDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState<AdminView>("recipes");
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [recipes, setRecipes] = useState<AdminRecipe[]>([]);
+  const [blogPosts, setBlogPosts] = useState<AdminBlogPost[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [editRecipe, setEditRecipe] = useState<any | null>(null);
   const [editBlogPost, setEditBlogPost] = useState<any | null>(null);
@@ -92,7 +37,7 @@ const AdminDashboard: React.FC = () => {
         .select("id, display_name, is_premium, custom_role, created_at")
         .then(({ data, error }) => {
           if (error) setError(error.message);
-          else setUsers(data || []);
+          else setUsers((data as AdminUser[]) || []);
           setLoading(false);
         });
     } else if (activeView === "recipes") {
@@ -102,7 +47,7 @@ const AdminDashboard: React.FC = () => {
         .order("created_at", { ascending: false })
         .then(({ data, error }) => {
           if (error) setError(error.message);
-          else setRecipes(data || []);
+          else setRecipes((data as AdminRecipe[]) || []);
           setLoading(false);
         });
     } else if (activeView === "blog-posts") {
@@ -112,7 +57,7 @@ const AdminDashboard: React.FC = () => {
         .order("published_at", { ascending: false })
         .then(({ data, error }) => {
           if (error) setError(error.message);
-          else setBlogPosts(data || []);
+          else setBlogPosts((data as AdminBlogPost[]) || []);
           setLoading(false);
         });
     } else {
@@ -192,6 +137,27 @@ const AdminDashboard: React.FC = () => {
     const title = menuItems.flatMap(g => g.items).find(i => i.key === activeView)?.label || "Dashboard";
     return <h2 className="text-xl font-semibold mb-4">{title}</h2>;
   };
+  
+  const renderContent = () => {
+    switch (activeView) {
+      case "users":
+        return <UsersView users={users} loading={loading} error={error} onTogglePremium={handleToggleUserPremium} />;
+      case "recipes":
+        return <RecipesView recipes={recipes} loading={loading} error={error} onToggleStatus={handleToggleRecipeStatus} onDelete={handleDeleteRecipe} onEdit={setEditRecipe} />;
+      case "blog-posts":
+        return <BlogPostsView posts={blogPosts} loading={loading} error={error} onToggleStatus={handleToggleBlogStatus} onDelete={handleDeleteBlogPost} onEdit={setEditBlogPost} />;
+      case "ki-recipe":
+        return <KIRecipeCreator />;
+      case "ki-blog":
+        return <KIBlogCreator />;
+      case "sowing-calendar":
+        return <SowingCalendar />;
+      case "security-log":
+        return <SecurityAuditLog />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <SidebarProvider>
@@ -228,190 +194,8 @@ const AdminDashboard: React.FC = () => {
           </header>
 
           <div className="flex-1 p-4 md:p-6">
-            {activeView === "users" && (
-              <>
-                <PageTitle />
-                {loading ? (
-                  <div className="flex justify-center items-center h-40">
-                    <Loader2 className="animate-spin mr-2" /> Nutzer werden geladen...
-                  </div>
-                ) : error ? (
-                  <div className="text-red-600 p-4 bg-red-50 rounded">{error}</div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Custom-Rolle</TableHead>
-                        <TableHead>Premium</TableHead>
-                        <TableHead>Erstellt</TableHead>
-                        <TableHead>Aktionen</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map(user => (
-                        <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.display_name}</TableCell>
-                          <TableCell>{user.custom_role || "-"}</TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              variant={user.is_premium ? "default" : "outline"}
-                              onClick={() => handleToggleUserPremium(user.id, user.is_premium)}
-                            >
-                              {user.is_premium ? "Premium" : "Standard"}
-                            </Button>
-                          </TableCell>
-                          <TableCell>{new Date(user.created_at).toLocaleDateString('de-DE')}</TableCell>
-                          <TableCell>
-                            <Button size="sm" variant="outline">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </>
-            )}
-
-            {activeView === "recipes" && (
-              <>
-                <PageTitle />
-                {loading ? (
-                  <div className="flex justify-center items-center h-40">
-                    <Loader2 className="animate-spin mr-2" /> Rezepte werden geladen...
-                  </div>
-                ) : error ? (
-                  <div className="text-red-600 p-4 bg-red-50 rounded">{error}</div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Titel</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Autor</TableHead>
-                        <TableHead>Kategorie</TableHead>
-                        <TableHead>Schwierigkeit</TableHead>
-                        <TableHead>Erstellt</TableHead>
-                        <TableHead>Aktionen</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {recipes.map(recipe => (
-                        <TableRow key={recipe.id}>
-                          <TableCell className="font-medium">{recipe.title}</TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              variant={recipe.status === "veröffentlicht" ? "default" : "outline"}
-                              onClick={() => handleToggleRecipeStatus(recipe.id, recipe.status)}
-                            >
-                              {recipe.status === "veröffentlicht" ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                              {recipe.status}
-                            </Button>
-                          </TableCell>
-                          <TableCell>{recipe.author}</TableCell>
-                          <TableCell>{recipe.category || "-"}</TableCell>
-                          <TableCell>{recipe.difficulty || "-"}</TableCell>
-                          <TableCell>{new Date(recipe.created_at).toLocaleDateString('de-DE')}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setEditRecipe(recipe)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleDeleteRecipe(recipe.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </>
-            )}
-
-            {activeView === "blog-posts" && (
-              <>
-                <PageTitle />
-                {loading ? (
-                  <div className="flex justify-center items-center h-40">
-                    <Loader2 className="animate-spin mr-2" /> Blog-Artikel werden geladen...
-                  </div>
-                ) : error ? (
-                  <div className="text-red-600 p-4 bg-red-50 rounded">{error}</div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Titel</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Autor</TableHead>
-                        <TableHead>Kategorie</TableHead>
-                        <TableHead>Featured</TableHead>
-                        <TableHead>Veröffentlicht</TableHead>
-                        <TableHead>Aktionen</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {blogPosts.map(post => (
-                        <TableRow key={post.id}>
-                          <TableCell className="font-medium">{post.title}</TableCell>
-                          <TableCell>
-                            <Button
-                              size="sm"
-                              variant={post.status === "veröffentlicht" ? "default" : "outline"}
-                              onClick={() => handleToggleBlogStatus(post.id, post.status)}
-                            >
-                              {post.status === "veröffentlicht" ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                              {post.status}
-                            </Button>
-                          </TableCell>
-                          <TableCell>{post.author}</TableCell>
-                          <TableCell>{post.category}</TableCell>
-                          <TableCell>{post.featured ? "Ja" : "Nein"}</TableCell>
-                          <TableCell>{new Date(post.published_at).toLocaleDateString('de-DE')}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setEditBlogPost(post)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleDeleteBlogPost(post.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </>
-            )}
-
-            {activeView === "ki-recipe" && <KIRecipeCreator />}
-            {activeView === "ki-blog" && <KIBlogCreator />}
-            {activeView === "sowing-calendar" && <SowingCalendar />}
-            {activeView === "security-log" && <SecurityAuditLog />}
+            <PageTitle />
+            {renderContent()}
           </div>
         </main>
         
