@@ -60,6 +60,15 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Environment variables
+
+This project requires two Supabase variables to be available at runtime:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+These are read from `import.meta.env` and the application will throw an error if they are missing.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/b2361a81-7fac-454c-a2bd-9ce8a515ca60) and click on Share -> Publish.
