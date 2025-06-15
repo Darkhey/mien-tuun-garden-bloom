@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminView, AdminUser, AdminRecipe, AdminBlogPost } from "@/types/admin";
@@ -16,7 +15,7 @@ export const useAdminData = (activeView: AdminView) => {
     console.log("[AdminDashboard] Lade Rezepte...");
     const { data, error } = await supabase
       .from('recipes')
-      .select('id, title, slug, status, author, created_at, difficulty, category')
+      .select('id, title, slug, status, author, created_at, difficulty, category, description, season, servings, prep_time_minutes, cook_time_minutes, image_url')
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -30,7 +29,13 @@ export const useAdminData = (activeView: AdminView) => {
       author: recipe.author || 'Unbekannt',
       created_at: recipe.created_at,
       difficulty: recipe.difficulty,
-      category: recipe.category
+      category: recipe.category,
+      description: recipe.description,
+      season: recipe.season,
+      servings: recipe.servings,
+      prep_time_minutes: recipe.prep_time_minutes,
+      cook_time_minutes: recipe.cook_time_minutes,
+      image_url: recipe.image_url,
     }));
 
     setRecipes(transformedRecipes);
@@ -41,7 +46,7 @@ export const useAdminData = (activeView: AdminView) => {
     console.log("[AdminDashboard] Lade Blog-Artikel...");
     const { data, error } = await supabase
       .from('blog_posts')
-      .select('id, title, slug, status, author, published_at, category, featured')
+      .select('id, title, slug, status, author, published_at, category, featured, description')
       .order('published_at', { ascending: false })
       .limit(50);
 
@@ -55,7 +60,8 @@ export const useAdminData = (activeView: AdminView) => {
       author: post.author,
       published_at: post.published_at,
       category: post.category,
-      featured: post.featured || false
+      featured: post.featured || false,
+      description: post.description,
     }));
 
     setBlogPosts(transformedPosts);
@@ -66,7 +72,7 @@ export const useAdminData = (activeView: AdminView) => {
     console.log("[AdminDashboard] Lade Benutzer...");
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, display_name, created_at, custom_role, is_premium')
+      .select('id, display_name, created_at, custom_role, is_premium, description')
       .order('created_at', { ascending: false })
       .limit(50);
 
@@ -77,7 +83,8 @@ export const useAdminData = (activeView: AdminView) => {
       display_name: user.display_name,
       is_premium: user.is_premium,
       custom_role: user.custom_role,
-      created_at: user.created_at
+      created_at: user.created_at,
+      description: user.description,
     }));
 
     setUsers(transformedUsers);

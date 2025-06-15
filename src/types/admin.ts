@@ -38,6 +38,12 @@ export interface AdminRecipe {
   created_at: string;
   difficulty?: string;
   category?: string;
+  description?: string;
+  season?: string;
+  servings?: number;
+  prep_time_minutes?: number;
+  cook_time_minutes?: number;
+  image_url?: string;
 }
 
 export interface AdminBlogPost {
