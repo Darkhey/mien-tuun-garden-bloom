@@ -138,6 +138,7 @@ const KIBlogCreator: React.FC = () => {
             setIsSuggesting={setIsSuggesting}
             suggestions={suggestions}
             setSuggestions={setSuggestions}
+            toast={toast}
           />
 
           {/* Enhanced Artikel Editor für ausgewählte Vorschläge */}
@@ -161,6 +162,7 @@ const KIBlogCreator: React.FC = () => {
                         tags={tags}
                         excerpt={excerpt}
                         imageUrl={imageUrl}
+                        toast={toast}
                       />
                     </div>
                   ))}
@@ -186,6 +188,7 @@ const KIBlogCreator: React.FC = () => {
                   tags={tags}
                   excerpt={excerpt}
                   imageUrl={imageUrl}
+                  toast={toast}
                 />
               </CardContent>
             </Card>
@@ -208,3 +211,4 @@ const KIBlogCreator: React.FC = () => {
 };
 
 export default KIBlogCreator;
+

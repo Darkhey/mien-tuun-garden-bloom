@@ -1,10 +1,11 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import BlogTopicSuggestions from "./BlogTopicSuggestions";
 import { buildContextFromMeta } from "./blogHelpers";
-
-const SUGGEST_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/suggest-blog-topics";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface BlogSuggestionWorkflowProps {
   topicInput: string;
@@ -25,33 +26,43 @@ interface BlogSuggestionWorkflowProps {
   setIsSuggesting: (s: boolean) => void;
   suggestions: string[];
   setSuggestions: (s: string[]) => void;
+  toast: ReturnType<typeof useToast>["toast"];
 }
 
 const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
   topicInput, setTopicInput, category, season, audiences, contentType, tags, excerpt, imageUrl,
   suggestionSelections, setSuggestionSelections, setDebugLogs,
   loading, setLoading, isSuggesting, setIsSuggesting, suggestions, setSuggestions,
+  toast,
 }) => {
   
   const handleSuggest = async () => {
     setIsSuggesting(true);
-    setDebugLogs(prev => [...prev, "Starte Themenvorschlags-Request an KI-Edge-Function."]);
+    setDebugLogs(prev => [...prev, "Starte Themenvorschlags-Request via Supabase Client."]);
     try {
       const context = buildContextFromMeta({ category, season, audiences, contentType, tags, excerpt, imageUrl });
       const keyword = topicInput || context || "Bitte nur knackige, inspirierende Titel zurückgeben.";
-      setDebugLogs(prev => [...prev, "Sende POST an: " + SUGGEST_FUNCTION_URL]);
-      const response = await fetch(SUGGEST_FUNCTION_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword }),
+      
+      const { data, error } = await supabase.functions.invoke('suggest-blog-topics', {
+        body: { keyword },
       });
-      const data = await response.json();
-      setDebugLogs(prev => [...prev, "Antwort erhalten (Status: " + response.status + ")"]);
+
+      if (error) {
+        throw new Error(`Edge Function Fehler: ${error.message}`);
+      }
+
+      setDebugLogs(prev => [...prev, "Antwort erhalten"]);
+      
+      const { topics } = data;
+
+      if (!topics) {
+        throw new Error("Keine Themenvorschläge von der KI erhalten.");
+      }
+      
       setDebugLogs(prev => [...prev, "Edge-Function Rückgabe: " + JSON.stringify(data, null, 2)]);
-      if (!response.ok || !data.topics) throw new Error(data?.error ?? "Fehler bei der KI");
       
       // Entferne doppelte Anführungszeichen und bereinige die Themen
-      const cleanedTopics = data.topics.map((topic: string) => {
+      const cleanedTopics = topics.map((topic: string) => {
         // Entferne führende und abschließende Anführungszeichen
         return topic.replace(/^"(.*)"$/, '$1');
       });
@@ -60,6 +71,11 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
       setDebugLogs(prev => [...prev, "Vorschläge extrahiert: " + JSON.stringify(cleanedTopics, null, 2)]);
     } catch (err: any) {
       setDebugLogs(prev => [...prev, "Fehler bei Themenvorschlägen: " + String(err.message || err)]);
+      toast({
+        title: "Fehler bei Themenvorschlägen",
+        description: err.message || "Die KI konnte keine Vorschläge generieren.",
+        variant: "destructive",
+      });
     }
     setIsSuggesting(false);
   };
@@ -108,3 +124,4 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
 };
 
 export default BlogSuggestionWorkflow;
+

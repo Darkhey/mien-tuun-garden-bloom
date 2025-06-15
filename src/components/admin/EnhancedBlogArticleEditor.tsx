@@ -8,6 +8,7 @@ import { Loader2, RefreshCw, Save, Eye, TrendingUp, Target, Zap } from "lucide-r
 import ContentQualityIndicator from "./ContentQualityIndicator";
 import { contentGenerationService, GeneratedContent } from "@/services/ContentGenerationService";
 import { contextAnalyzer, TrendData } from "@/services/ContextAnalyzer";
+import { useToast } from "@/hooks/use-toast";
 
 interface EnhancedBlogArticleEditorProps {
   initialPrompt: string;
@@ -19,6 +20,7 @@ interface EnhancedBlogArticleEditorProps {
   tags?: string[];
   excerpt?: string;
   imageUrl?: string;
+  toast: ReturnType<typeof useToast>["toast"];
 }
 
 const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
@@ -30,7 +32,8 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
   contentType,
   tags,
   excerpt,
-  imageUrl
+  imageUrl,
+  toast
 }) => {
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [editingContent, setEditingContent] = useState("");
@@ -78,8 +81,13 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
         quality: result.quality.score,
         wordCount: result.quality.wordCount
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("[EnhancedEditor] Generation failed:", error);
+      toast({
+        title: "Fehler bei der Artikel-Generierung",
+        description: error.message || "Unbekannter Fehler bei der Kommunikation mit der KI.",
+        variant: "destructive",
+      });
     }
     setLoading(false);
   };
@@ -100,8 +108,13 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
 
       setGeneratedContent(result);
       setEditingContent(result.content);
-    } catch (error) {
+    } catch (error: any) {
       console.error("[EnhancedEditor] Regeneration failed:", error);
+      toast({
+        title: "Fehler bei der Artikel-Neugenerierung",
+        description: error.message || "Unbekannter Fehler bei der Kommunikation mit der KI.",
+        variant: "destructive",
+      });
     }
     setRegenerating(false);
   };
@@ -211,9 +224,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
                 <CardTitle>Vorschau</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="prose max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: editingContent.replace(/\n/g, '<br>') }} />
-                </div>
+                <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: editingContent.replace(/\n/g, "<br />") }} />
               </CardContent>
             </Card>
           ) : (
@@ -248,3 +259,4 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
 };
 
 export default EnhancedBlogArticleEditor;
+
