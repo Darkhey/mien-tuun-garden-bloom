@@ -71,6 +71,8 @@ const KIBlogCreator: React.FC = () => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
 
+  const [suggestionSelections, setSuggestionSelections] = useState<string[]>([]);
+
   const [input, setInput] = useState(""); // Themenwahl oder Prompt
   const [prompt, setPrompt] = useState("");
   const [isPromptImproved, setIsPromptImproved] = useState(false);
@@ -88,26 +90,44 @@ const KIBlogCreator: React.FC = () => {
   const [dynamicTags, setDynamicTags] = useState<string[]>([]);
   const { toast } = useToast();
 
-  // Themenvorschlag per Edge Function holen
+  // Hilfsfunktion: Kontext-String aus allen Metadaten erzeugen
+  function buildContextFromMeta() {
+    const contextParts = [
+      category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
+      season ? `Saison: ${SEASONS.find(s => s.value === season)?.label ?? season}.` : "",
+      audiences.length ? `Zielgruppe: ${audiences.join(", ")}.` : "",
+      contentType.length ? `Artikel-Typ/Format: ${contentType.join(", ")}.` : "",
+      tags.length ? `Tags: ${tags.join(", ")}.` : "",
+      excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
+      imageUrl ? `Bild: ${imageUrl}` : "",
+      "Bitte nur knackige, inspirierende Titel zurückgeben."
+    ];
+    return [topicInput || input, ...contextParts].filter(Boolean).join(" ");
+  }
+
+  // Themenvorschlag per Edge Function holen (nun nur noch 3 Vorschläge, Input inkl. aller Metadaten)
   const handleSuggestTopics = async () => {
     setIsSuggesting(true);
     setSuggestions([]);
+    setSuggestionSelections([]);
     try {
+      const context = buildContextFromMeta();
       const response = await fetch(SUGGESTION_FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword: topicInput }),
+        body: JSON.stringify({ keyword: context }),
       });
       const data = await response.json();
       if (!response.ok || !data.topics) throw new Error(data?.error ?? "Fehler beim Vorschlag");
-      // Versuche, Markdown/Nummerierung zu entfernen und als Liste zu zeigen
+
+      // Maximal 3 Vorschläge aus der KI-Antwort extrahieren
       const regex = /(?:\d+\.\s*)?(.*?)(?:\n|$)/g;
       const topics = [];
       let match;
       while ((match = regex.exec(data.topics))) {
         if (match[1]?.trim()) topics.push(match[1].trim());
       }
-      setSuggestions(topics);
+      setSuggestions(topics.slice(0, 3));
     } catch (err: any) {
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
     }
@@ -121,35 +141,50 @@ const KIBlogCreator: React.FC = () => {
     setDynamicTags(Array.from(new Set([...TAG_OPTIONS, ...trendTags])));
   }, [category, season]);
 
-  // Prompt automatisch verbessern
-  const handleImprovePrompt = async () => {
+  // Inhalt der Vorschlagsauswahl als Main-Prompt oder als Array speichern
+  const handleSuggestionSelect = (s: string) => {
+    setPrompt("");
+    setIsPromptImproved(false);
+    setInput(""); // Verhindert Kollision mit Custom Prompt
+    setSuggestionSelections(prev =>
+      prev.includes(s)
+        ? prev.filter(item => item !== s)
+        : [...prev, s]
+    );
+  };
+
+  // Artikel für ALLE gewählten Vorschläge generieren (jeweils als einzelnes KI-Request)
+  const handleGenerateMultiple = async () => {
     setLoading(true);
+    setGenerated(null);
+    setEditing("");
     try {
-      // Kontext verstärkt durch Trends, Saison, Kategorie, Zielgruppen etc.
-      const contextParts = [
-        category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
-        season ? `Saison: ${SEASONS.find(s => s.value === season)?.label ?? season}.` : "",
-        audiences.length ? `Zielgruppe: ${audiences.join(", ")}.` : "",
-        contentType.length ? `Artikel-Typ/Format: ${contentType.join(", ")}.` : "",
-        tags.length ? `Tags: ${tags.join(", ")}.` : "",
-        dynamicTags.length ? `Trend-Tags: ${dynamicTags.join(", ")}.` : "",
-        excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
-        imageUrl ? `Bild: ${imageUrl}` : "",
-        // Kleiner SEO-Anker: Füge Trend-Schlagworte und saisonales Flair hinzu!
-        "Der Artikel soll SEO-optimiert sein und aktuelle Trends sowie Saisonbezug aufgreifen."
-      ];
-      const fullPrompt = [input, ...contextParts].filter(Boolean).join(" ");
-      const response = await fetch(GENERATE_FUNCTION_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: `Formuliere diesen Blogartikel-Idee/Prompt samt Kontext so, dass eine KI einen inspirierenden, ausführlichen und suchmaschinenoptimierten Artikel verfassen kann. Kontext/Details:\n${fullPrompt}\nGib NUR den verbesserten Prompt zurück.`
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei Prompt-Optimierung");
-      setPrompt(data.content.trim());
-      setIsPromptImproved(true);
+      for (const sug of suggestionSelections) {
+        const contextParts = [
+          sug,
+          category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
+          season ? `Saison: ${SEASONS.find(s => s.value === season)?.label ?? season}.` : "",
+          audiences.length ? `Zielgruppe: ${audiences.join(", ")}.` : "",
+          contentType.length ? `Artikel-Typ/Format: ${contentType.join(", ")}.` : "",
+          tags.length ? `Tags: ${tags.join(", ")}.` : "",
+          excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
+          imageUrl ? `Bild: ${imageUrl}` : "",
+        ];
+        const fullPrompt = contextParts.filter(Boolean).join(" ");
+
+        const response = await fetch(GENERATE_FUNCTION_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: fullPrompt }),
+        });
+        const data = await response.json();
+        if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei der KI");
+        // Zeige nacheinander die generierten Artikel im Editor
+        setGenerated(data.content);
+        setEditing(data.content);
+        // Optional: toast oder Info für Batch-Fortschritt ausgeben
+        toast({ title: "Artikel generiert", description: `Artikel zu "${sug}" erstellt.` });
+      }
     } catch (err: any) {
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
     }
@@ -255,8 +290,20 @@ const KIBlogCreator: React.FC = () => {
         loading={loading}
         handleSuggestTopics={handleSuggestTopics}
         suggestions={suggestions}
-        onSuggestionClick={(s) => { setInput(s); setPrompt(""); setIsPromptImproved(false); }}
+        selected={suggestionSelections}
+        onSuggestionClick={handleSuggestionSelect}
       />
+      {/* Button: Generiere Artikel zu gewählten Vorschlägen */}
+      {suggestionSelections.length > 0 && (
+        <Button
+          className="mb-4"
+          onClick={handleGenerateMultiple}
+          disabled={loading || isSuggesting}
+        >
+          Artikel für {suggestionSelections.length} Vorschlag{suggestionSelections.length > 1 ? "e" : ""} generieren
+        </Button>
+      )}
+
       {/* Prompt bearbeiten/editor */}
       <BlogPromptEditor
         input={input}
@@ -268,7 +315,7 @@ const KIBlogCreator: React.FC = () => {
         loading={loading}
         isSuggesting={isSuggesting}
       />
-      {/* Artikel generieren & Editor */}
+      {/* Artikel generieren & Editor (Single Workflow für eigenen Prompt) */}
       <BlogArticleEditor
         generated={generated}
         editing={editing}
@@ -283,3 +330,5 @@ const KIBlogCreator: React.FC = () => {
 };
 
 export default KIBlogCreator;
+
+// Das File ist inzwischen recht lang (>286 Zeilen). Bitte nach Bedarf eine Aufsplittung in kleinere Komponenten erwägen!
