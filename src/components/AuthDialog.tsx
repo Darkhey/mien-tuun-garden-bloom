@@ -107,32 +107,74 @@ const AuthDialog: React.FC<Props> = ({ children }) => {
         {/* Das Child ist meist der Login/Reg Button im Header */}
         {children}
       </DialogTrigger>
-      <DialogContent className="w-full max-w-md rounded-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-center text-2xl font-bold mb-2">
-            {isLogin ? "Login" : "Konto anlegen"}
-          </DialogTitle>
-          <div className="flex justify-center gap-2 text-sm mb-4">
-            <button
-              className={`px-3 py-1 rounded-full font-medium transition-colors ${isLogin ? "bg-sage-600 text-white" : "text-sage-700 bg-sage-100 hover:bg-sage-200"}`}
-              onClick={() => setIsLogin(true)}
-              disabled={isLogin}
-              type="button"
-            >
-              Login
-            </button>
-            <button
-              className={`px-3 py-1 rounded-full font-medium transition-colors ${!isLogin ? "bg-sage-600 text-white" : "text-sage-700 bg-sage-100 hover:bg-sage-200"}`}
-              onClick={() => setIsLogin(false)}
-              disabled={!isLogin}
-              type="button"
-            >
-              Registrieren
-            </button>
-          </div>
-        </DialogHeader>
+      <DialogContent
+        className="
+          w-full max-w-md rounded-2xl
+          md:rounded-2xl 
+          px-2 md:px-8 py-6
+          !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2
+          relative
+          bg-white
+          shadow-xl
+          transition-all
+          data-[state=open]:animate-in
+          data-[state=closed]:animate-out
+          data-[state=open]:duration-200
+          data-[state=closed]:duration-150
+          
+          md:my-16
+          /* Mobile Fullscreen BottomSheet Style */
+          sm:max-w-md
+          sm:rounded-2xl
+          max-h-[95dvh]
+          overflow-y-auto
+          
+          [&]:!p-0
+          flex flex-col
+          "
+        // individuell auf Mobile: ohne großen Rand, fast Fullscreen
+        style={{
+          // ab max-w-md sowieso beschränkt für größere Geräte,
+          // auf mobilen Geräten (max-width: 640px = sm) Volle Breite und bottom-sheet
+          borderRadius: "24px",
+          paddingTop: 0,
+          paddingBottom: 0,
+        }}
+      >
+        <div
+          className="
+            px-6 py-2 pt-5 md:pt-7 rounded-t-2xl w-full 
+            bg-sage-50 border-b border-sage-100
+            flex flex-col items-center
+            sticky top-0 z-10
+          "
+        >
+          <DialogHeader>
+            <DialogTitle className="text-center text-2xl font-bold mb-1">
+              {isLogin ? "Login" : "Konto anlegen"}
+            </DialogTitle>
+            <div className="flex justify-center gap-2 text-sm mb-2">
+              <button
+                className={`px-3 py-1 rounded-full font-medium transition-colors ${isLogin ? "bg-sage-600 text-white" : "text-sage-700 bg-sage-100 hover:bg-sage-200"}`}
+                onClick={() => setIsLogin(true)}
+                disabled={isLogin}
+                type="button"
+              >
+                Login
+              </button>
+              <button
+                className={`px-3 py-1 rounded-full font-medium transition-colors ${!isLogin ? "bg-sage-600 text-white" : "text-sage-700 bg-sage-100 hover:bg-sage-200"}`}
+                onClick={() => setIsLogin(false)}
+                disabled={!isLogin}
+                type="button"
+              >
+                Registrieren
+              </button>
+            </div>
+          </DialogHeader>
+        </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-4 px-6 pt-4 pb-2 w-full" onSubmit={handleSubmit}>
           <div>
             <Label htmlFor="email">E-Mail</Label>
             <div className="relative">
@@ -196,7 +238,7 @@ const AuthDialog: React.FC<Props> = ({ children }) => {
             {loading ? <><Loader2 className="animate-spin mr-2" /> Bitte warten...</> : (isLogin ? "Login" : "Registrieren")}
           </Button>
         </form>
-        <div className="text-center mt-3">
+        <div className="text-center mt-3 pb-4 px-6">
           <button
             className="text-primary hover:underline text-xs"
             type="button"
