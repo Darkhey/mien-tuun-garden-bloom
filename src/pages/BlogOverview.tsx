@@ -8,7 +8,7 @@ import { Helmet } from "react-helmet";
 import { Database } from "@/integrations/supabase/types";
 
 type BlogPostRow = Database['public']['Tables']['blog_posts']['Row'];
-type QueryKey = (string | boolean)[];
+type QueryKey = readonly (string | boolean)[];
 
 const fetchBlogPosts = async (ctx: QueryFunctionContext<QueryKey>): Promise<BlogPostRow[]> => {
   const [_, selectedCategory, selectedSeason, showDrafts, searchTerm] = ctx.queryKey;
@@ -57,7 +57,7 @@ const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
   const [showDrafts, setShowDrafts] = useState(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const { data: posts, isLoading, error } = useQuery<BlogPostRow[], Error>({
+  const { data: posts, isLoading, error } = useQuery<BlogPostRow[], Error, BlogPostRow[], QueryKey>({
     queryKey: ['blog-posts', selectedCategory, selectedSeason, showDrafts, searchTerm],
     queryFn: fetchBlogPosts,
   });

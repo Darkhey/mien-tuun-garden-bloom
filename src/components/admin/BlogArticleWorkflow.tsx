@@ -32,7 +32,7 @@ interface BlogArticleWorkflowProps {
   excerpt: string;
   imageUrl: string;
   setDebugLogs: React.Dispatch<React.SetStateAction<string[]>>;
-  toast: ReturnType<typeof import("@/components/ui/use-toast").useToast>["toast"];
+  toast: ReturnType<typeof import("@/hooks/use-toast").useToast>["toast"];
 }
 
 const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
@@ -221,6 +221,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
                   tags={tags}
                   excerpt={excerpt}
                   imageUrl={imageUrl}
+                  toast={toast}
                 />
               )}
             </div>
@@ -242,6 +243,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
             tags={tags}
             excerpt={excerpt}
             imageUrl={imageUrl}
+            toast={toast}
           />
         </div>
       )}
