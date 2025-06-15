@@ -1,3 +1,24 @@
+export type AdminView = 
+  | "recipes" 
+  | "blog-posts" 
+  | "users" 
+  | "ki-recipe" 
+  | "ki-blog" 
+  | "sowing-calendar" 
+  | "security-log"
+  | "phase2-dashboard"
+  | "phase3-dashboard";
+
+export interface AdminMenuItem {
+  key: AdminView;
+  label: string;
+  icon: React.ElementType;
+}
+
+export interface MenuGroup {
+  group: string;
+  items: AdminMenuItem[];
+}
 
 export interface AdminUser {
   id: string;
@@ -29,5 +50,3 @@ export interface AdminBlogPost {
   category: string;
   featured: boolean;
 }
-
-export type AdminView = "users" | "recipes" | "blog-posts" | "ki-recipe" | "ki-blog" | "sowing-calendar" | "security-log";

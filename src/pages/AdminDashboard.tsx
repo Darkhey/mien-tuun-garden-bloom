@@ -1,151 +1,46 @@
 
-import React, { useEffect, useState } from "react";
-import KIRecipeCreator from "@/components/admin/KIRecipeCreator";
-import KIBlogCreator from "@/components/admin/KIBlogCreator";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
-import EditRecipeModal from "@/components/admin/EditRecipeModal";
-import EditBlogPostModal from "@/components/admin/EditBlogPostModal";
-import { useToast } from "@/hooks/use-toast";
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger } from "@/components/ui/sidebar";
-import SowingCalendar from "@/components/admin/SowingCalendar";
-import SecurityAuditLog from "@/components/admin/SecurityAuditLog";
-import { AdminView, AdminUser, AdminRecipe, AdminBlogPost } from "@/types/admin";
+import { AdminView } from "@/types/admin";
 import { menuItems } from "@/config/adminMenu";
-import UsersView from "@/components/admin/views/UsersView";
+
+// Import components
 import RecipesView from "@/components/admin/views/RecipesView";
 import BlogPostsView from "@/components/admin/views/BlogPostsView";
+import UsersView from "@/components/admin/views/UsersView";
+import KIRecipeCreator from "@/components/admin/KIRecipeCreator";
+import KIBlogCreator from "@/components/admin/KIBlogCreator";
+import SowingCalendar from "@/components/admin/SowingCalendar";
+import SecurityAuditLog from "@/components/admin/SecurityAuditLog";
+import Phase2Dashboard from "@/components/admin/Phase2Dashboard";
+import Phase3Dashboard from "@/components/admin/Phase3Dashboard";
 
 const AdminDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState<AdminView>("recipes");
-  const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [recipes, setRecipes] = useState<AdminRecipe[]>([]);
-  const [blogPosts, setBlogPosts] = useState<AdminBlogPost[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [editRecipe, setEditRecipe] = useState<any | null>(null);
-  const [editBlogPost, setEditBlogPost] = useState<any | null>(null);
-  const { toast } = useToast();
+  const [userEmail, setUserEmail] = useState<string>("");
 
-  // Load data based on active tab
   useEffect(() => {
-    setLoading(true);
-    setError(null);
+    const getUserEmail = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        setUserEmail(session.user.email);
+      }
+    };
+    getUserEmail();
+  }, []);
 
-    if (activeView === "users") {
-      supabase
-        .from("profiles")
-        .select("id, display_name, is_premium, custom_role, created_at")
-        .then(({ data, error }) => {
-          if (error) setError(error.message);
-          else setUsers((data as AdminUser[]) || []);
-          setLoading(false);
-        });
-    } else if (activeView === "recipes") {
-      supabase
-        .from("recipes")
-        .select("id, title, slug, status, author, created_at, difficulty, category")
-        .order("created_at", { ascending: false })
-        .then(({ data, error }) => {
-          if (error) setError(error.message);
-          else setRecipes((data as AdminRecipe[]) || []);
-          setLoading(false);
-        });
-    } else if (activeView === "blog-posts") {
-      supabase
-        .from("blog_posts")
-        .select("id, title, slug, status, author, published_at, category, featured")
-        .order("published_at", { ascending: false })
-        .then(({ data, error }) => {
-          if (error) setError(error.message);
-          else setBlogPosts((data as AdminBlogPost[]) || []);
-          setLoading(false);
-        });
-    } else {
-      setLoading(false);
-    }
-  }, [activeView]);
-
-  const handleDeleteRecipe = async (id: string) => {
-    if (!confirm("Rezept wirklich löschen?")) return;
-    
-    const { error } = await supabase.from("recipes").delete().eq("id", id);
-    if (error) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Erfolg", description: "Rezept gelöscht" });
-      setRecipes(recipes.filter(r => r.id !== id));
-    }
-  };
-
-  const handleDeleteBlogPost = async (id: string) => {
-    if (!confirm("Blog-Artikel wirklich löschen?")) return;
-    
-    const { error } = await supabase.from("blog_posts").delete().eq("id", id);
-    if (error) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Erfolg", description: "Blog-Artikel gelöscht" });
-      setBlogPosts(blogPosts.filter(p => p.id !== id));
-    }
-  };
-
-  const handleToggleRecipeStatus = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === "veröffentlicht" ? "entwurf" : "veröffentlicht";
-    const { error } = await supabase
-      .from("recipes")
-      .update({ status: newStatus })
-      .eq("id", id);
-    
-    if (error) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Erfolg", description: `Status zu "${newStatus}" geändert` });
-      setRecipes(recipes.map(r => r.id === id ? { ...r, status: newStatus } : r));
-    }
-  };
-
-  const handleToggleBlogStatus = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === "veröffentlicht" ? "entwurf" : "veröffentlicht";
-    const { error } = await supabase
-      .from("blog_posts")
-      .update({ status: newStatus })
-      .eq("id", id);
-    
-    if (error) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Erfolg", description: `Status zu "${newStatus}" geändert` });
-      setBlogPosts(blogPosts.map(p => p.id === id ? { ...p, status: newStatus } : p));
-    }
-  };
-
-  const handleToggleUserPremium = async (id: string, isPremium: boolean) => {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_premium: !isPremium })
-      .eq("id", id);
-    
-    if (error) {
-      toast({ title: "Fehler", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Erfolg", description: `Premium-Status geändert` });
-      setUsers(users.map(u => u.id === id ? { ...u, is_premium: !isPremium } : u));
-    }
-  };
-
-  const PageTitle = () => {
-    const title = menuItems.flatMap(g => g.items).find(i => i.key === activeView)?.label || "Dashboard";
-    return <h2 className="text-xl font-semibold mb-4">{title}</h2>;
-  };
-  
   const renderContent = () => {
     switch (activeView) {
-      case "users":
-        return <UsersView users={users} loading={loading} error={error} onTogglePremium={handleToggleUserPremium} />;
       case "recipes":
-        return <RecipesView recipes={recipes} loading={loading} error={error} onToggleStatus={handleToggleRecipeStatus} onDelete={handleDeleteRecipe} onEdit={setEditRecipe} />;
+        return <RecipesView />;
       case "blog-posts":
-        return <BlogPostsView posts={blogPosts} loading={loading} error={error} onToggleStatus={handleToggleBlogStatus} onDelete={handleDeleteBlogPost} onEdit={setEditBlogPost} />;
+        return <BlogPostsView />;
+      case "users":
+        return <UsersView />;
       case "ki-recipe":
         return <KIRecipeCreator />;
       case "ki-blog":
@@ -154,75 +49,74 @@ const AdminDashboard: React.FC = () => {
         return <SowingCalendar />;
       case "security-log":
         return <SecurityAuditLog />;
+      case "phase2-dashboard":
+        return <Phase2Dashboard />;
+      case "phase3-dashboard":
+        return <Phase3Dashboard />;
       default:
-        return null;
+        return <RecipesView />;
     }
   };
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <Sidebar>
-          <SidebarHeader>
-            <h2 className="text-xl font-semibold p-2">Admin Menü</h2>
-          </SidebarHeader>
-          <SidebarContent>
-            {menuItems.map((group) => (
-              <SidebarGroup key={group.group}>
-                <SidebarGroupLabel>{group.group}</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {group.items.map((item) => (
-                      <SidebarMenuItem key={item.key}>
-                        <SidebarMenuButton onClick={() => setActiveView(item.key)} isActive={activeView === item.key}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            ))}
-          </SidebarContent>
-        </Sidebar>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="text-gray-600 mt-1">Verwalte deine Website und Inhalte</p>
+            </div>
+            <Badge variant="outline" className="bg-green-50 text-green-800 border-green-200">
+              Admin: {userEmail}
+            </Badge>
+          </div>
+        </div>
 
-        <main className="flex-1 flex flex-col">
-          <header className="flex items-center gap-4 p-4 border-b lg:h-[68px]">
-            <SidebarTrigger className="md:hidden" />
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          </header>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar Navigation */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Navigation</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {menuItems.map((group, groupIndex) => (
+                  <div key={groupIndex}>
+                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                      {group.group}
+                    </h3>
+                    <div className="space-y-1">
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <Button
+                            key={item.key}
+                            variant={activeView === item.key ? "default" : "ghost"}
+                            className="w-full justify-start"
+                            onClick={() => setActiveView(item.key)}
+                          >
+                            <Icon className="mr-2 h-4 w-4" />
+                            {item.label}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    {groupIndex < menuItems.length - 1 && <Separator className="mt-4" />}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
 
-          <div className="flex-1 p-4 md:p-6">
-            <PageTitle />
+          {/* Main Content */}
+          <div className="lg:col-span-3">
             {renderContent()}
           </div>
-        </main>
-        
-        {editRecipe && (
-          <EditRecipeModal
-            recipe={editRecipe}
-            onClose={() => setEditRecipe(null)}
-            onSaved={() => {
-              setEditRecipe(null);
-              // Refresh recipes list
-              setActiveView("recipes");
-            }}
-          />
-        )}
-        {editBlogPost && (
-          <EditBlogPostModal
-            post={editBlogPost}
-            onClose={() => setEditBlogPost(null)}
-            onSaved={() => {
-              setEditBlogPost(null);
-              // Refresh blog posts list
-              setActiveView("blog-posts");
-            }}
-          />
-        )}
+        </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 

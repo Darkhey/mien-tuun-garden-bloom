@@ -1,5 +1,5 @@
 
-import { BookOpen, FileText, Users, Sparkles, Calendar, Shield } from "lucide-react";
+import { BookOpen, FileText, Users, Sparkles, Calendar, Shield, Brain, Zap } from "lucide-react";
 import { AdminView } from "@/types/admin";
 
 export const menuItems: { group: string; items: { key: AdminView; label: string; icon: React.ElementType }[] }[] = [
@@ -16,6 +16,13 @@ export const menuItems: { group: string; items: { key: AdminView; label: string;
     items: [
       { key: "ki-recipe", label: "KI-Rezept erstellen", icon: Sparkles },
       { key: "ki-blog", label: "KI-Artikel erstellen", icon: Sparkles },
+    ],
+  },
+  {
+    group: "Intelligence & Automation",
+    items: [
+      { key: "phase2-dashboard", label: "Content Intelligence", icon: Brain },
+      { key: "phase3-dashboard", label: "Automation & Workflows", icon: Zap },
     ],
   },
   {
