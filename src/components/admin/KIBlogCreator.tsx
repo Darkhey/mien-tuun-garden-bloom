@@ -105,21 +105,32 @@ const KIBlogCreator: React.FC = () => {
     return [topicInput || input, ...contextParts].filter(Boolean).join(" ");
   }
 
+  // Debug-Terminal-Logik
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
+  const addDebugLog = (msg: string) => {
+    setDebugLogs((prev) => [
+      ...prev.slice(-29), // Max. 30 Einträge
+      `[${new Date().toLocaleTimeString()}] ${msg}`
+    ]);
+  };
+
   // Themenvorschlag per Edge Function holen (nun nur noch 3 Vorschläge, Input inkl. aller Metadaten)
   const handleSuggestTopics = async () => {
     setIsSuggesting(true);
     setSuggestions([]);
     setSuggestionSelections([]);
+    addDebugLog("Starte Themenvorschlags-Request an KI-Edge-Function.");
     try {
       const context = buildContextFromMeta();
+      addDebugLog("Sende POST an: " + SUGGESTION_FUNCTION_URL);
       const response = await fetch(SUGGESTION_FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ keyword: context }),
       });
       const data = await response.json();
+      addDebugLog("Antwort erhalten (Status: " + response.status + ")");
       if (!response.ok || !data.topics) throw new Error(data?.error ?? "Fehler beim Vorschlag");
-
       // Maximal 3 Vorschläge aus der KI-Antwort extrahieren
       const regex = /(?:\d+\.\s*)?(.*?)(?:\n|$)/g;
       const topics = [];
@@ -128,7 +139,9 @@ const KIBlogCreator: React.FC = () => {
         if (match[1]?.trim()) topics.push(match[1].trim());
       }
       setSuggestions(topics.slice(0, 3));
+      addDebugLog("Vorschläge extrahiert: " + JSON.stringify(topics.slice(0, 3)));
     } catch (err: any) {
+      addDebugLog("Fehler beim Themenvorschlag: " + String(err.message || err));
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
     }
     setIsSuggesting(false);
@@ -158,8 +171,10 @@ const KIBlogCreator: React.FC = () => {
     setLoading(true);
     setGenerated(null);
     setEditing("");
+    addDebugLog("Starte Multi-Artikel-Generation für " + suggestionSelections.length + " Vorschläge.");
     try {
       for (const sug of suggestionSelections) {
+        addDebugLog(`Sende Artikel-Request für Vorschlag "${sug}" an KI-Edge-Function.`);
         const contextParts = [
           sug,
           category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
@@ -171,21 +186,22 @@ const KIBlogCreator: React.FC = () => {
           imageUrl ? `Bild: ${imageUrl}` : "",
         ];
         const fullPrompt = contextParts.filter(Boolean).join(" ");
-
+        addDebugLog("Sende POST an: " + GENERATE_FUNCTION_URL);
         const response = await fetch(GENERATE_FUNCTION_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: fullPrompt }),
         });
         const data = await response.json();
+        addDebugLog("Antwort erhalten (Status: " + response.status + ")");
         if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei der KI");
-        // Zeige nacheinander die generierten Artikel im Editor
         setGenerated(data.content);
         setEditing(data.content);
-        // Optional: toast oder Info für Batch-Fortschritt ausgeben
+        addDebugLog("Artikel erfolgreich generiert für Vorschlag: " + sug);
         toast({ title: "Artikel generiert", description: `Artikel zu "${sug}" erstellt.` });
       }
     } catch (err: any) {
+      addDebugLog("Fehler bei Multi-Artikel-Generation: " + String(err.message || err));
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
     }
     setLoading(false);
@@ -196,6 +212,7 @@ const KIBlogCreator: React.FC = () => {
     setLoading(true);
     setGenerated(null);
     setEditing("");
+    addDebugLog("Starte Einzel-Artikel-Generation via KI-Edge-Function.");
     try {
       const contextParts = [
         category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
@@ -207,16 +224,20 @@ const KIBlogCreator: React.FC = () => {
         imageUrl ? `Bild: ${imageUrl}` : "",
       ];
       const fullPrompt = [prompt || input, ...contextParts].filter(Boolean).join(" ");
+      addDebugLog("Sende POST an: " + GENERATE_FUNCTION_URL);
       const response = await fetch(GENERATE_FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: fullPrompt }),
       });
       const data = await response.json();
+      addDebugLog("Antwort erhalten (Status: " + response.status + ")");
       if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei der KI");
       setGenerated(data.content);
       setEditing(data.content);
+      addDebugLog("Artikel erfolgreich generiert");
     } catch (err: any) {
+      addDebugLog("Fehler bei Einzel-Artikel-Generation: " + String(err.message || err));
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
     }
     setLoading(false);
@@ -225,10 +246,13 @@ const KIBlogCreator: React.FC = () => {
   // Speichern des Artikels
   const handleSave = async () => {
     setLoading(true);
+    addDebugLog("Beginne Artikel-Speichern via Supabase...");
     try {
       const user = await supabase.auth.getUser();
       if (!user.data.user) throw new Error("Nicht eingeloggt!");
+      addDebugLog("Benutzer: " + JSON.stringify(user.data.user));
       const slug = "blog-" + Date.now();
+      // ... keep unchanged ...
       const { error } = await supabase.from("blog_posts").insert([{
         slug,
         title: input,
@@ -253,8 +277,10 @@ const KIBlogCreator: React.FC = () => {
         content_types: contentType,
       }]);
       if (error) throw error;
+      addDebugLog("Supabase Insert erfolgreich!");
       toast({ title: "Erstellt!", description: "Der Blogartikel wurde angelegt." });
     } catch (err: any) {
+      addDebugLog("Fehler beim Speichern: " + String(err.message || err));
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
     }
     setLoading(false);
@@ -263,11 +289,13 @@ const KIBlogCreator: React.FC = () => {
   // Prompt-Optimierung: Hier als Placeholder einfach das aktuelle input-Feld in den Prompt schreiben
   const handleImprovePrompt = async () => {
     setLoading(true);
+    addDebugLog("Starte Prompt-Optimierung (Platzhalter).");
     try {
-      // Placeholder: einfach das user input als prompt setzen (ersetzt durch KI-Call wenn gewünscht)
       setPrompt(input);
       setIsPromptImproved(true);
+      addDebugLog("Prompt nach Optimierung: " + input);
     } catch (err: any) {
+      addDebugLog("Fehler bei Prompt-Optimierung: " + String(err.message || err));
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
     }
     setLoading(false);
@@ -338,10 +366,25 @@ const KIBlogCreator: React.FC = () => {
         handleSave={handleSave}
         canGenerate={Boolean(prompt || input)}
       />
+      {/* Debug-Terminal */}
+      <DebugTerminal logs={debugLogs} />
     </div>
   );
 };
 
 export default KIBlogCreator;
+
+// Debug-Terminal-Komponente (einfaches Panel unten)
+function DebugTerminal({ logs }: { logs: string[] }) {
+  if (logs.length === 0) return null;
+  return (
+    <div className="bg-black/90 text-green-200 text-xs font-mono rounded mt-6 p-2 max-h-52 overflow-y-auto">
+      <div className="mb-1 font-bold text-green-400">Debug Terminal:</div>
+      {logs.map((log, i) => (
+        <div key={i} className="whitespace-pre-line">{log}</div>
+      ))}
+    </div>
+  );
+}
 
 // Das File ist inzwischen recht lang (>286 Zeilen). Bitte nach Bedarf eine Aufsplittung in kleinere Komponenten erwägen!
