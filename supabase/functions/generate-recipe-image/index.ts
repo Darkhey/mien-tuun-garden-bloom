@@ -53,7 +53,9 @@ serve(async (req) => {
         prompt,
         model: "dall-e-3",
         n: 1,
-        size: "1024x1024"
+        size: "1792x1024",
+        response_format: "b64_json",
+        quality: "hd",
       }),
     });
 
@@ -66,14 +68,14 @@ serve(async (req) => {
     }
 
     const data = await res.json();
-    if (!data?.data?.[0]?.url) {
+    if (!data?.data?.[0]?.b64_json) {
       return new Response(JSON.stringify({ error: "No image returned from OpenAI", details: data }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ imageUrl: data.data[0].url }), {
+    return new Response(JSON.stringify({ imageB64: data.data[0].b64_json }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 

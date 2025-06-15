@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +32,22 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
     });
     return () => { listener?.subscription.unsubscribe(); };
   }, []);
+
+  const b64toBlob = (b64Data: string, contentType = '', sliceSize = 512) => {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+      const slice = byteCharacters.slice(offset, offset + sliceSize);
+      const byteNumbers = new Array(slice.length);
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+    const blob = new Blob(byteArrays, { type: contentType });
+    return blob;
+  };
 
   const handleCreateRecipe = async () => {
     setSaving(true);
@@ -91,14 +108,37 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
           );
           if (imgResp.ok) {
             const imgData = await imgResp.json();
-            if (imgData && imgData.imageUrl) {
-              recipeImageUrl = imgData.imageUrl;
+            if (imgData && imgData.imageB64) {
+              const imageBlob = b64toBlob(imgData.imageB64, 'image/png');
+              const fileName = `recipe-${slugify(recipe.title)}-${Date.now()}.png`;
+
+              const { error: uploadError } = await supabase.storage
+                .from('recipe-images')
+                .upload(fileName, imageBlob, {
+                  contentType: 'image/png',
+                  upsert: false,
+                });
+
+              if (uploadError) {
+                throw new Error(`Fehler beim Bildupload: ${uploadError.message}`);
+              }
+
+              const { data: urlData } = supabase.storage
+                .from('recipe-images')
+                .getPublicUrl(fileName);
+
+              if (urlData.publicUrl) {
+                recipeImageUrl = urlData.publicUrl;
+              } else {
+                console.warn("Konnte keine öffentliche URL für das KI-Bild erhalten.");
+              }
             }
           }
         }
       } catch (imgErr) {
         // Bildgenerierung darf fehlschlagen, kein Abbruch
         console.warn("Konnte kein KI-Bild generieren:", imgErr);
+        toast({ title: "Hinweis", description: "Es konnte kein neues Bild generiert werden, das Blog-Bild wird als Platzhalter verwendet.", variant: "default" });
       }
 
       const insertObj = {
