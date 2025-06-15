@@ -189,8 +189,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       published: false,
       featured: false,
       reading_time: Math.ceil(content.split(/\s/).length / 160), // roughly word count / wpm
-      author: "KI-Bot",
-      excerpt: excerpt || content.slice(0, 180),
+      author: "KI-Bot"
     };
 
     try {
@@ -200,7 +199,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       toast({
         title: "Erfolgreich gespeichert!",
         description: `Artikel "${suggestion}" wurde gespeichert.`,
-        variant: "success",
+        variant: "default",
       });
     } catch (err: any) {
       toast({
