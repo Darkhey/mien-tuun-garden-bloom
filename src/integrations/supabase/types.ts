@@ -126,6 +126,7 @@ export type Database = {
           category: string
           content: string
           content_types: string[]
+          description: string | null
           excerpt: string
           featured: boolean
           featured_image: string
@@ -151,6 +152,7 @@ export type Database = {
           category: string
           content: string
           content_types?: string[]
+          description?: string | null
           excerpt: string
           featured?: boolean
           featured_image: string
@@ -176,6 +178,7 @@ export type Database = {
           category?: string
           content?: string
           content_types?: string[]
+          description?: string | null
           excerpt?: string
           featured?: boolean
           featured_image?: string
@@ -474,6 +477,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           custom_role: string | null
+          description: string | null
           display_name: string
           id: string
           is_premium: boolean
@@ -482,6 +486,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           custom_role?: string | null
+          description?: string | null
           display_name: string
           id: string
           is_premium?: boolean
@@ -490,6 +495,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           custom_role?: string | null
+          description?: string | null
           display_name?: string
           id?: string
           is_premium?: boolean
