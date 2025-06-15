@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -12,7 +13,83 @@ import RecipeStructuredData from "@/components/recipe/RecipeStructuredData";
 import RecipeRating from "@/components/recipe/RecipeRating";
 import RecipeComments from "@/components/recipe/RecipeComments";
 import SaveRecipeButton from "@/components/recipe/SaveRecipeButton";
-import { parseJsonArray, getRecipeImageUrl } from "@/utils/recipe";
+import { getRecipeImageUrl } from "@/utils/recipe";
+
+// Hilfsfunktion: Parsing und Normalisierung von Arrays (Zutaten, Schritte etc.)
+function parseRecipeArray(val: any): any[] {
+  if (Array.isArray(val)) return val;
+  if (typeof val === "string") {
+    try {
+      const arr = JSON.parse(val);
+      if (Array.isArray(arr)) return arr;
+    } catch (e) { }
+  }
+  return [];
+}
+
+// Normalisiert ein RecipeStep-Objekt (auch Fallback für reine Strings)
+function normalizeStep(step: any, idx: number): {
+  id?: string;
+  step: number;
+  text: string;
+  description?: string;
+  image?: string;
+  time?: number;
+} {
+  if (typeof step === "string") {
+    return { step: idx + 1, text: step };
+  }
+  // Wenn image fehlt, prüfe auf evtl. image_url oder ähnliches
+  let image = step.image || step.image_url || "";
+  return {
+    id: step.id || undefined,
+    step: step.step || idx + 1,
+    text: step.text || step.description || "",
+    description: step.description,
+    image: image && typeof image === "string" ? image : undefined,
+    time: step.time ? Number(step.time) : undefined,
+  };
+}
+
+// Zutaten normalisieren (Strings und Objekte unterstützen)
+function normalizeIngredient(ing: any): any {
+  if (typeof ing === "string") {
+    return { name: ing };
+  }
+  return {
+    ...ing,
+    name: ing.name || "",
+    amount:
+      typeof ing.amount === "string"
+        ? parseFloat(ing.amount.replace(",", "."))
+        : ing.amount,
+    unit: ing.unit || "",
+    notes: ing.notes || "",
+    group: ing.group || "",
+    optional: !!ing.optional,
+  };
+}
+
+// Tipps/Tricks als String-Array normalisieren
+function normalizeTips(val: any): string[] {
+  if (Array.isArray(val)) {
+    return val.map((tip) =>
+      typeof tip === "string" ? tip : (tip.text || JSON.stringify(tip))
+    );
+  } else if (typeof val === "string") {
+    try {
+      const arr = JSON.parse(val);
+      return Array.isArray(arr)
+        ? arr.map((tip) =>
+            typeof tip === "string" ? tip : (tip.text || JSON.stringify(tip))
+          )
+        : [];
+    } catch {
+      return [val];
+    }
+  }
+  return [];
+}
 
 const fetchRecipeBySlug = async (slug: string) => {
   const { data, error } = await supabase
@@ -47,7 +124,7 @@ const RecipeDetail = () => {
     });
     return () => { listener?.subscription.unsubscribe(); };
   }, []);
-  
+
   useEffect(() => {
     if (!slug) return;
     const fetchRating = async () => {
@@ -55,7 +132,7 @@ const RecipeDetail = () => {
         .from("recipe_ratings")
         .select("rating", { count: "exact" })
         .eq("recipe_id", slug);
-      
+
       if (data && data.length > 0) {
         const sum = data.reduce((acc, cur) => acc + cur.rating, 0);
         const avg = Math.round((sum / data.length) * 10) / 10;
@@ -74,11 +151,11 @@ const RecipeDetail = () => {
 
   useEffect(() => {
     if (recipe?.servings) {
-        setServings(recipe.servings);
+      setServings(recipe.servings);
     }
   }, [recipe?.servings]);
 
-  // State für KI-Alternativen "Speech Bubble"
+  // Alternativen KI-Bubbles
   const [alternativeBubbles, setAlternativeBubbles] = useState<{
     [ingredient: string]: { alternative: string | null; explanation: string | null } | undefined;
   }>({});
@@ -92,7 +169,6 @@ const RecipeDetail = () => {
         body: JSON.stringify({ ingredient }),
       });
       const data = await res.json();
-      // KI-Antwort als Bubble an die jeweilige Zutat
       setAlternativeBubbles((prev) => ({
         ...prev,
         [ingredient]: {
@@ -135,17 +211,29 @@ const RecipeDetail = () => {
       </Layout>
     );
 
-  const zutaten = parseJsonArray(recipe.ingredients);
-  const schritte = parseJsonArray(recipe.instructions);
+  // Zutaten und Schritte inklusive Fallbacks parsen & normalisieren
+  const zutatenRaw = recipe.ingredients;
+  const zutaten = parseRecipeArray(zutatenRaw).map(normalizeIngredient);
+
+  const schritteRaw = recipe.instructions;
+  const schritte = parseRecipeArray(schritteRaw).map(normalizeStep);
+
+  // Tipps & Tricks
   let tipps: string[] = [];
-  if ('tips' in recipe && (Array.isArray((recipe as any).tips) || typeof (recipe as any).tips === "string")) {
-    tipps = parseJsonArray((recipe as any).tips);
+  if ("tips" in recipe && (Array.isArray((recipe as any).tips) || typeof (recipe as any).tips === "string")) {
+    tipps = normalizeTips((recipe as any).tips);
   }
+
+  // Bild-Fallback: Zeige recipe.image_url, dann ggf. recipe.image
+  let recipeImage =
+    !imgError && (recipe.image_url || recipe.image)
+      ? getRecipeImageUrl(recipe.image_url || recipe.image)
+      : "/placeholder.svg";
 
   return (
     <Layout title={recipe.title}>
-      <RecipeStructuredData 
-        recipe={recipe} 
+      <RecipeStructuredData
+        recipe={recipe}
         averageRating={recipeRating.average ?? undefined}
         ratingCount={recipeRating.count}
       />
@@ -159,7 +247,7 @@ const RecipeDetail = () => {
         </Link>
         <Card className="p-0 overflow-hidden bg-white shadow rounded-2xl mb-8">
           <img
-            src={imgError ? "/placeholder.svg" : getRecipeImageUrl(recipe.image_url)}
+            src={recipeImage}
             alt={recipe.title}
             className="w-full h-64 object-cover"
             onError={() => setImgError(true)}
@@ -175,29 +263,31 @@ const RecipeDetail = () => {
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-200/70 border-t border-gray-200/70">
-            { ((recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)) > 0 && (
-            <div className="bg-white p-3 text-center">
-                <p className="font-bold text-earth-700">{(recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)} min</p>
+            {((recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)) > 0 && (
+              <div className="bg-white p-3 text-center">
+                <p className="font-bold text-earth-700">
+                  {(recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)} min
+                </p>
                 <p className="text-gray-500 text-sm">Gesamt</p>
-            </div>
+              </div>
             )}
-            { recipe.servings && (
-            <div className="bg-white p-3 text-center">
+            {recipe.servings && (
+              <div className="bg-white p-3 text-center">
                 <p className="font-bold text-earth-700">{recipe.servings}</p>
                 <p className="text-gray-500 text-sm">Portionen</p>
-            </div>
+              </div>
             )}
-            { recipe.difficulty && (
-            <div className="bg-white p-3 text-center">
+            {recipe.difficulty && (
+              <div className="bg-white p-3 text-center">
                 <p className="font-bold text-earth-700 capitalize">{recipe.difficulty}</p>
                 <p className="text-gray-500 text-sm">Niveau</p>
-            </div>
+              </div>
             )}
-            { recipe.season && (
-            <div className="bg-white p-3 text-center">
+            {recipe.season && (
+              <div className="bg-white p-3 text-center">
                 <p className="font-bold text-earth-700 capitalize">{recipe.season}</p>
                 <p className="text-gray-500 text-sm">Saison</p>
-            </div>
+              </div>
             )}
           </div>
         </Card>
@@ -206,7 +296,19 @@ const RecipeDetail = () => {
           <div>
             <h2 className="text-2xl font-serif font-bold text-earth-800 mb-2 flex items-center gap-2">
               <span>
-                <svg className="w-6 h-6 text-sage-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318A4.5 4.5 0 018.5 4.5h7A4.5 4.5 0 0120 8.5v7a4.5 4.5 0 01-4.5 4.5h-7A4.5 4.5 0 014 15.5v-7c0-1.123.409-2.142 1.106-2.929z"></path></svg>
+                <svg
+                  className="w-6 h-6 text-sage-600"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.318 6.318A4.5 4.5 0 018.5 4.5h7A4.5 4.5 0 0120 8.5v7a4.5 4.5 0 01-4.5 4.5h-7A4.5 4.5 0 014 15.5v-7c0-1.123.409-2.142 1.106-2.929z"
+                  ></path>
+                </svg>
               </span>
               Zutaten
               <div className="ml-auto flex items-center gap-2 bg-sage-50 rounded-full px-3">
@@ -214,12 +316,16 @@ const RecipeDetail = () => {
                 <button
                   className="px-2 py-0.5 rounded-l bg-sage-100 hover:bg-sage-200 font-bold"
                   onClick={() => setServings(Math.max(servings - 1, 1))}
-                >-</button>
+                >
+                  -
+                </button>
                 <span className="px-2">{servings}</span>
                 <button
                   className="px-2 py-0.5 rounded-r bg-sage-100 hover:bg-sage-200 font-bold"
                   onClick={() => setServings(servings + 1)}
-                >+</button>
+                >
+                  +
+                </button>
               </div>
             </h2>
             <IngredientList
@@ -232,7 +338,9 @@ const RecipeDetail = () => {
               loadingAlt={loadingAlt}
             />
             {loadingAlt && (
-              <div className="text-xs text-sage-500">Alternative für "{loadingAlt}" wird gesucht ...</div>
+              <div className="text-xs text-sage-500">
+                Alternative für "{loadingAlt}" wird gesucht ...
+              </div>
             )}
           </div>
         )}
@@ -259,7 +367,19 @@ const RecipeDetail = () => {
             <ul className="space-y-3">
               {tipps.map((tip: string, i: number) => (
                 <li key={i} className="flex items-start">
-                  <svg className="h-5 w-5 text-sage-600 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path></svg>
+                  <svg
+                    className="h-5 w-5 text-sage-600 mr-2 flex-shrink-0 mt-0.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    ></path>
+                  </svg>
                   <span className="text-earth-700">{tip}</span>
                 </li>
               ))}
