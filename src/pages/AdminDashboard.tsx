@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Loader2, Edit, Trash2, Eye, EyeOff, Plus } from "lucide-react";
 import KIRecipeCreator from "@/components/admin/KIRecipeCreator";
@@ -16,6 +15,7 @@ interface AdminUser {
   email?: string;
   is_premium: boolean;
   custom_role?: string | null;
+  created_at: string;
 }
 
 interface Recipe {
@@ -67,7 +67,7 @@ const AdminDashboard: React.FC = () => {
     if (tab === "users") {
       supabase
         .from("profiles")
-        .select("*")
+        .select("id, display_name, is_premium, custom_role, created_at")
         .then(({ data, error }) => {
           if (error) setError(error.message);
           else setUsers(data || []);
