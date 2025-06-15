@@ -124,11 +124,38 @@ serve(async (req) => {
     const ideaData = await ideaResp.json();
     const topicIdea = ideaData.choices?.[0]?.message?.content?.replace(/["\.]/g,"").trim() || "Neuer Blogartikel";
 
-    // === NEU: EINFACHE DUPLIKATERKENNUNG ===
+    // Supabase Client einmalig initialisieren
+    const supabase = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
+
+    // === NEU: THEMEN-BLACKLIST PRÜFEN ===
+    const { data: blacklist, error: blacklistError } = await supabase
+      .from("blog_topic_blacklist")
+      .select("topic");
+
+    if (blacklistError) {
+      console.error("Fehler beim Laden der Blacklist:", blacklistError.message);
+      // Prozess wird nicht gestoppt, aber der Fehler wird geloggt.
+    }
+
+    if (blacklist?.length) {
+      const isBlacklisted = blacklist.some((item) =>
+        topicIdea.toLowerCase().includes(item.topic.toLowerCase())
+      );
+      if (isBlacklisted) {
+        return new Response(JSON.stringify({
+          status: "blacklisted",
+          title: topicIdea,
+          message: "Dieses Thema steht auf der Blacklist und wurde übersprungen.",
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+    }
+
+    // === DUPLIKATERKENNUNG ===
     const slug = generateSlug(topicIdea);
 
     // Hole die letzten 20 Slugs aus Supabase
-    const supabase = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
     const { data: existingPosts, error: postsError } = await supabase
       .from("blog_posts")
       .select("slug,title")
@@ -206,10 +233,6 @@ serve(async (req) => {
     }
 
     // 8. Speichern via Service Role Key
-    const supabase = createClient(
-      SUPABASE_URL!,
-      SERVICE_ROLE_KEY!,
-    );
     const { error } = await supabase.from("blog_posts").insert([{
       slug: slug + "-" + now.getTime(),
       title: topicIdea,

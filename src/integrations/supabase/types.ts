@@ -132,6 +132,27 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_topic_blacklist: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          topic: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          topic?: string
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           confirmation_token: string | null
