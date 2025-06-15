@@ -9,30 +9,25 @@ interface VersionHistoryProps {
   itemId: string;
 }
 
-// Strictly typed table and column names for safer use:
-const TABLE_MAP: Record<VersionType, "recipe_versions" | "blog_post_versions"> = {
-  recipe: "recipe_versions",
-  blog: "blog_post_versions",
-};
-
-const COLUMN_ID_MAP: Record<VersionType, "recipe_id" | "blog_post_id"> = {
-  recipe: "recipe_id",
-  blog: "blog_post_id",
-};
-
 const VersionHistory: React.FC<VersionHistoryProps> = ({ type, itemId }) => {
   const [versions, setVersions] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchVersions() {
-      const col = COLUMN_ID_MAP[type];
-      const table = TABLE_MAP[type];
+      let table: string;
+      let idColumn: string;
+      if (type === "recipe") {
+        table = "recipe_versions";
+        idColumn = "recipe_id";
+      } else {
+        table = "blog_post_versions";
+        idColumn = "blog_post_id";
+      }
 
-      // Remove generics from .from()!
       const { data } = await supabase
         .from(table)
         .select("*")
-        .eq(col, itemId)
+        .eq(idColumn, itemId)
         .order("created_at", { ascending: false });
 
       setVersions(data || []);
