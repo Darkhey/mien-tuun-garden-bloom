@@ -1,9 +1,9 @@
-
 import React, { useState } from "react";
 import { Loader } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { slugify } from "@/utils/slugify";
+import { Link } from "react-router-dom";
 
 /**
  * Helper: robustly extract array from maybe-string/array
@@ -65,6 +65,7 @@ type BlogPostToRecipeSectionProps = {
 const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post }) => {
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<any | null>(null);
+  const [savedRecipeSlug, setSavedRecipeSlug] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Early return if this is not a recipe-related post
@@ -145,14 +146,18 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
         ingredients: recipe.ingredients ?? null,
         instructions: recipe.instructions ?? null,
         source_blog_slug: post.slug,
+        status: 'veröffentlicht',
       };
 
       const { error } = await supabase.from("recipes").insert([insertObj]);
       if (error) throw error;
 
+      // Set the saved recipe slug for the link
+      setSavedRecipeSlug(recipeSlug);
+
       toast({
         title: "Rezept gespeichert!",
-        description: "Das Rezept wurde in dein Rezeptbuch übernommen.",
+        description: "Das Rezept wurde in dein Rezeptbuch übernommen und ist jetzt verfügbar.",
       });
     } catch (err: any) {
       toast({
@@ -184,6 +189,25 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
           Als Rezept speichern
         </button>
       </div>
+
+      {/* Success message with link to saved recipe */}
+      {savedRecipeSlug && (
+        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-green-800">
+            <span>✅</span>
+            <span className="font-semibold">Rezept erfolgreich gespeichert!</span>
+          </div>
+          <p className="text-green-700 mt-2">
+            Das Rezept wurde zu deinen Rezepten hinzugefügt und ist jetzt für alle sichtbar.
+          </p>
+          <Link
+            to={`/rezept/${savedRecipeSlug}`}
+            className="inline-flex items-center gap-2 mt-3 bg-sage-600 text-white px-4 py-2 rounded-full hover:bg-sage-700 transition-colors"
+          >
+            Zum Rezept gehen →
+          </Link>
+        </div>
+      )}
 
       {/* Vorschau (alles dynamisch) */}
       {preview && (
