@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import Layout from "@/components/Layout";
@@ -226,8 +225,8 @@ const RecipeDetail = () => {
 
   // Bild-Fallback: Zeige recipe.image_url, dann ggf. recipe.image
   let recipeImage =
-    !imgError && (recipe.image_url || recipe.image)
-      ? getRecipeImageUrl(recipe.image_url || recipe.image)
+    !imgError && recipe.image_url
+      ? getRecipeImageUrl(recipe.image_url)
       : "/placeholder.svg";
 
   return (
