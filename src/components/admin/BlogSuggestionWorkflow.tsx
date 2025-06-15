@@ -1,6 +1,6 @@
 
-import React, { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import React from "react";
+import { useToast } from "@/hooks/use-toast";
 import BlogTopicSuggestions from "./BlogTopicSuggestions";
 import { buildContextFromMeta } from "./blogHelpers";
 
@@ -44,7 +44,7 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
     setIsSuggesting(true);
     setSuggestions([]);
     setSuggestionSelections([]);
-    setDebugLogs((prev) => [...prev, "Starte Themenvorschlags-Request an KI-Edge-Function."]);
+    setDebugLogs(prev => [...prev, "Starte Themenvorschlags-Request an KI-Edge-Function."]);
     try {
       const context = buildContextFromMeta({
         topicInput, category, season, audiences, contentType, tags, excerpt, imageUrl
@@ -57,11 +57,16 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
       });
 
       const data = await response.json().catch(() => ({}));
-      setDebugLogs(prev => [...prev, "Antwort erhalten (Status: " + response.status + ")", "Edge-Function Rückgabe: " + JSON.stringify(data, null, 2)]);
+      setDebugLogs(prev => [
+        ...prev,
+        "Antwort erhalten (Status: " + response.status + ")",
+        "Edge-Function Rückgabe: " + JSON.stringify(data, null, 2)
+      ]);
       if (!response.ok || !data.topics) {
         setDebugLogs(prev => [...prev, "Fehler beim Vorschlag: " + (data?.error || "Unbekannter Fehler")]);
         toast({ title: "Fehler", description: String(data?.error || "Fehler beim Vorschlag"), variant: "destructive" });
         setSuggestions([]);
+        setIsSuggesting(false);
         return;
       }
 
@@ -69,6 +74,7 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
         setDebugLogs(prev => [...prev, "Kein Thema extrahiert (topics leeres Array)."]);
         toast({ title: "Keine Vorschläge", description: "Die KI hat keine brauchbaren Themen zurückgegeben.", variant: "destructive" });
         setSuggestions([]);
+        setIsSuggesting(false);
         return;
       }
       setDebugLogs(prev => [...prev, "Vorschläge extrahiert: " + JSON.stringify(data.topics)]);
@@ -83,11 +89,15 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
 
   // Inhalt der Vorschlagsauswahl als Main-Prompt oder als Array speichern
   const handleSuggestionSelect = (s: string) => {
-    setSuggestionSelections(prev =>
-      prev.includes(s)
-        ? prev.filter(item => item !== s)
-        : [...prev, s]
-    );
+    // Wir dürfen hier nicht das Callback-Pattern verwenden,
+    // sondern müssen einen neuen Wert direkt ableiten.
+    let nextSelections: string[];
+    if (suggestionSelections.includes(s)) {
+      nextSelections = suggestionSelections.filter(item => item !== s);
+    } else {
+      nextSelections = [...suggestionSelections, s];
+    }
+    setSuggestionSelections(nextSelections);
   };
 
   return (
