@@ -232,7 +232,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       />
 
       {/* Multi-Artikel-Editoren */}
-      {generatedList.length > 0 &&
+      {generatedList.length > 0 && (
         <div className="grid gap-6 mt-2">
           {generatedList.map((item, idx) => (
             <div key={idx} className="border rounded-xl p-3 shadow-sm bg-muted/30 relative">
@@ -254,7 +254,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
                     );
                   }}
                   loading={false}
-                  handleGenerate={() => {}} // Nicht erneut generieren für Multi
+                  handleGenerate={() => {}} // Kein erneutes Generieren
                   handleSave={() => handleSave(item.editing, item.suggestion)}
                   canGenerate={true}
                 />
