@@ -9,35 +9,28 @@ interface VersionHistoryProps {
   itemId: string;
 }
 
-/**
- * Mapping für Table- und Column-Namen,
- * explizit als Literal-Typen, damit TypeScript keine Fehlermeldung wirft.
- */
-const TABLE_MAP = {
-  recipe: "recipe_versions",
-  blog: "blog_post_versions",
-} as const;
-
-const COLUMN_ID_MAP = {
-  recipe: "recipe_id",
-  blog: "blog_post_id",
-} as const;
-
 const VersionHistory: React.FC<VersionHistoryProps> = ({ type, itemId }) => {
   const [versions, setVersions] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchVersions() {
-      // Wir casten table und idColumn als Literal-Typen
-      const table = TABLE_MAP[type]; // "recipe_versions" | "blog_post_versions"
-      const idColumn = COLUMN_ID_MAP[type]; // "recipe_id" | "blog_post_id"
-
-      // table als Literal-Typen übergeben
-      const { data } = await supabase
-        .from(table)
-        .select("*")
-        .eq(idColumn, itemId)
-        .order("created_at", { ascending: false });
+      let data;
+      
+      if (type === "recipe") {
+        const result = await supabase
+          .from("recipe_versions")
+          .select("*")
+          .eq("recipe_id", itemId)
+          .order("created_at", { ascending: false });
+        data = result.data;
+      } else {
+        const result = await supabase
+          .from("blog_post_versions")
+          .select("*")
+          .eq("blog_post_id", itemId)
+          .order("created_at", { ascending: false });
+        data = result.data;
+      }
 
       setVersions(data || []);
     }
@@ -75,4 +68,3 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ type, itemId }) => {
 };
 
 export default VersionHistory;
-
