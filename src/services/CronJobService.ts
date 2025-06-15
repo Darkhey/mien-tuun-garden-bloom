@@ -2,10 +2,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
-type CronJob = Database['public']['Tables']['cron_jobs']['Row'];
-type JobExecutionLog = Database['public']['Tables']['job_execution_logs']['Row'];
-type JobTemplate = Database['public']['Tables']['job_templates']['Row'];
-type ScheduledTask = Database['public']['Tables']['scheduled_tasks']['Row'];
+export type CronJob = Database['public']['Tables']['cron_jobs']['Row'];
+export type JobExecutionLog = Database['public']['Tables']['job_execution_logs']['Row'];
+export type JobTemplate = Database['public']['Tables']['job_templates']['Row'];
+export type ScheduledTask = Database['public']['Tables']['scheduled_tasks']['Row'];
 
 type CronJobInsert = Database['public']['Tables']['cron_jobs']['Insert'];
 type JobExecutionLogInsert = Database['public']['Tables']['job_execution_logs']['Insert'];
@@ -22,7 +22,7 @@ export interface CreateCronJobParams {
   name: string;
   description?: string;
   cron_expression: string;
-  job_type: string;
+  job_type: Database['public']['Enums']['job_type'];
   function_name: string;
   function_payload?: Record<string, any>;
   enabled?: boolean;
@@ -53,6 +53,10 @@ class CronJobService {
     return data || [];
   }
 
+  async getCronJobs(): Promise<CronJob[]> {
+    return this.getAllJobs();
+  }
+
   async getJobById(id: string): Promise<CronJob | null> {
     const { data, error } = await supabase
       .from('cron_jobs')
@@ -75,7 +79,7 @@ class CronJobService {
       name: params.name,
       description: params.description,
       cron_expression: params.cron_expression,
-      job_type: params.job_type as any,
+      job_type: params.job_type,
       function_name: params.function_name,
       function_payload: params.function_payload || {},
       created_by: session.session.user.id,
@@ -97,10 +101,21 @@ class CronJobService {
     return data;
   }
 
+  async createCronJob(params: CreateCronJobParams): Promise<CronJob> {
+    return this.createJob(params);
+  }
+
   async updateJob(id: string, updates: Partial<CreateCronJobParams>): Promise<CronJob> {
+    const updateData: any = { ...updates };
+    
+    // Ensure job_type is properly typed
+    if (updateData.job_type && typeof updateData.job_type === 'string') {
+      updateData.job_type = updateData.job_type as Database['public']['Enums']['job_type'];
+    }
+
     const { data, error } = await supabase
       .from('cron_jobs')
-      .update(updates)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -118,6 +133,10 @@ class CronJobService {
     if (error) throw error;
   }
 
+  async deleteCronJob(id: string): Promise<void> {
+    return this.deleteJob(id);
+  }
+
   async toggleJob(id: string, enabled: boolean): Promise<CronJob> {
     const { data, error } = await supabase
       .from('cron_jobs')
@@ -128,6 +147,10 @@ class CronJobService {
 
     if (error) throw error;
     return data;
+  }
+
+  async toggleCronJob(id: string, enabled: boolean): Promise<CronJob> {
+    return this.toggleJob(id, enabled);
   }
 
   async executeJob(id: string): Promise<{ success: boolean; executionId?: string; error?: string }> {
@@ -142,6 +165,10 @@ class CronJobService {
       console.error('Job execution failed:', error);
       return { success: false, error: error.message };
     }
+  }
+
+  async executeJobManually(id: string): Promise<{ success: boolean; executionId?: string; error?: string }> {
+    return this.executeJob(id);
   }
 
   async getJobLogs(jobId?: string, limit = 50): Promise<JobExecutionLog[]> {
@@ -268,6 +295,31 @@ class CronJobService {
       successRate: Math.round(successRate),
       lastExecutions: logs
     };
+  }
+
+  async getJobStatistics(): Promise<CronJobStats> {
+    return this.getJobStats();
+  }
+
+  parseCronExpression(expression: string): string {
+    // Simple cron expression parser
+    const parts = expression.split(' ');
+    if (parts.length !== 5) return 'Invalid expression';
+    
+    const [minute, hour, day, month, weekday] = parts;
+    
+    if (minute === '0' && hour !== '*') {
+      return `Täglich um ${hour}:00 Uhr`;
+    }
+    if (minute === '0' && hour === '0' && weekday !== '*') {
+      const days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+      return `Jeden ${days[parseInt(weekday)]} um Mitternacht`;
+    }
+    if (minute === '0' && hour === '0' && day === '1') {
+      return 'Monatlich am ersten Tag';
+    }
+    
+    return expression;
   }
 }
 
