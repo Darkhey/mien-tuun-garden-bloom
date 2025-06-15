@@ -26,7 +26,7 @@ export const SEASONS = [
 const TREND_TAGS = {
   gartenplanung: ["Permakultur", "No-Dig", "Biogarten", "Hochbeet"],
   "saisonale-kueche": ["Meal Prep", "Zero Waste", "Fermentieren", "One Pot"],
-  nachhaltig: ["Plastikfrei", "Regenerativ", "Naturgarten"],
+  nachhaltigkeit: ["Plastikfrei", "Regenerativ", "Naturgarten"],
   "diY-projekte": ["Upcycling", "Balkonideen"],
   ernte: ["Haltbarmachen", "Kräutergarten", "Vorrat"],
   selbstversorgung: ["Unabhängigkeit", "Microgreens", "Wildkräuter"],
