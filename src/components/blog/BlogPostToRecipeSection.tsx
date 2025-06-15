@@ -19,12 +19,46 @@ function parseArray(val: any): any[] {
   return [];
 }
 
+/**
+ * Helper: Check if the blog post content contains recipe-related keywords
+ */
+function isRecipeRelated(post: { title: string; content: string; category: string }): boolean {
+  const recipeKeywords = [
+    'zutaten', 'zutat', 'ingredients', 'ingredient',
+    'rezept', 'recipe', 'kochen', 'backen', 'cooking', 'baking',
+    'schritt', 'anleitung', 'instructions', 'step',
+    'ml', 'gr', 'gramm', 'liter', 'tl', 'el', 'teelöffel', 'esslöffel',
+    'ofen', 'pfanne', 'topf', 'mixer', 'rühren', 'mischen',
+    'servieren', 'portion', 'servings'
+  ];
+  
+  const recipeCategories = [
+    'rezept', 'rezepte', 'kochen', 'backen', 'küche', 'ernährung'
+  ];
+
+  const textToCheck = `${post.title} ${post.content} ${post.category}`.toLowerCase();
+  
+  // Check if category is recipe-related
+  if (recipeCategories.some(cat => post.category.toLowerCase().includes(cat))) {
+    return true;
+  }
+  
+  // Check if content contains multiple recipe keywords
+  const keywordMatches = recipeKeywords.filter(keyword => 
+    textToCheck.includes(keyword.toLowerCase())
+  ).length;
+  
+  // Require at least 3 recipe-related keywords to consider it a recipe
+  return keywordMatches >= 3;
+}
+
 type BlogPostToRecipeSectionProps = {
   post: {
     title: string;
     content: string;
     featuredImage: string;
     slug: string;
+    category: string;
   };
 };
 
@@ -32,6 +66,11 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState<any | null>(null);
   const { toast } = useToast();
+
+  // Early return if this is not a recipe-related post
+  if (!isRecipeRelated(post)) {
+    return null;
+  }
 
   // KI Vorschau holen
   const handlePreviewRecipe = async () => {

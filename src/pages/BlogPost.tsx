@@ -144,7 +144,13 @@ const BlogPostPage = () => {
         />
         <BlogPostImage src={post.featuredImage} alt={post.title} />
         <BlogPostContent content={post.content} />
-        <BlogPostToRecipeSection post={post} />
+        <BlogPostToRecipeSection post={{
+          title: post.title,
+          content: post.content,
+          featuredImage: post.featuredImage,
+          slug: post.slug,
+          category: post.category
+        }} />
         <BlogPostShareSection />
         {/* ----- Start Related Carousel ----- */}
         <RelatedBlogPostsCarousel
