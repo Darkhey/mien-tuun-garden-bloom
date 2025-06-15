@@ -238,11 +238,11 @@ const RecipeDetail = () => {
       />
       <section className="max-w-3xl mx-auto px-4 py-10">
         <Link
-          to="/rezeptebuch"
+          to="/rezepte"
           className="inline-flex items-center text-sage-600 hover:text-sage-700 mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Zurück zum Rezeptbuch
+          Zurück zur Rezeptübersicht
         </Link>
         <Card className="p-0 overflow-hidden bg-white shadow rounded-2xl mb-8">
           <img
