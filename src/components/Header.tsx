@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { siteConfig } from '@/config/site.config';
@@ -142,14 +141,13 @@ const Header: React.FC = () => {
                 </Link>
               ))}
               {!session?.user && (
-                <AuthDialog>
-                  <button
-                    onClick={() => setIsMenuOpen(false)}
-                    className="mt-2 text-sage-700 bg-sage-100 hover:bg-sage-200 font-medium px-3 py-2 rounded-lg transition-colors w-full"
-                  >
-                    Login/Registrieren
-                  </button>
-                </AuthDialog>
+                <Link
+                  to="/login"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="mt-2 text-sage-700 bg-sage-100 hover:bg-sage-200 font-medium px-3 py-2 rounded-lg transition-colors w-full text-center"
+                >
+                  Login/Registrieren
+                </Link>
               )}
               {session?.user && (
                 <>

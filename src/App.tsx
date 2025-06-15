@@ -19,6 +19,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AdminDashboard from "./pages/AdminDashboard";
 import ContactPage from "./pages/ContactPage";
 import NewsletterConfirmPage from "./pages/NewsletterConfirmPage";
+import LoginPage from "./pages/LoginPage";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -87,6 +88,7 @@ function App() {
               <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
               <Route path="/kontakt" element={<ContactPage />} />
               <Route path="/newsletter-confirm" element={<NewsletterConfirmPage />} />
+              <Route path="/login" element={<LoginPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
