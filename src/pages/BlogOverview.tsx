@@ -1,10 +1,12 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import BlogPostCard from "@/components/blog/BlogPostCard";
 import BlogFilter from "@/components/blog/BlogFilter";
 import { Helmet } from "react-helmet";
+import { Database } from "@/integrations/supabase/types";
+
+type BlogPostRow = Database['public']['Tables']['blog_posts']['Row'];
 
 interface BlogOverviewProps {
   variant?: string;
@@ -16,9 +18,9 @@ const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
   const [showDrafts, setShowDrafts] = useState(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const { data: posts, isLoading, error } = useQuery({
+  const { data: posts, isLoading, error } = useQuery<BlogPostRow[]>({
     queryKey: ['blog-posts', selectedCategory, selectedSeason, showDrafts, searchTerm],
-    queryFn: async () => {
+    queryFn: async (): Promise<BlogPostRow[]> => {
       console.log('[BlogOverview] Lade Blog-Posts...');
       let query = supabase
         .from('blog_posts')
@@ -75,7 +77,7 @@ const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
     excerpt: post.excerpt || "",
     featuredImage: post.featured_image || "/placeholder.svg",
     category: post.category || "",
-    publishedAt: new Date(post.published_at).toLocaleDateString('de-DE'),
+    publishedAt: post.published_at ? new Date(post.published_at).toLocaleDateString('de-DE') : 'Unbekannt',
     readingTime: post.reading_time || 5,
     author: post.author || "Mien Tuun Team",
     tags: post.tags || []
@@ -150,8 +152,8 @@ const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
                 {transformedPosts.length} Artikel gefunden {showDrafts && "(inkl. Entwürfe)"}
               </div>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {transformedPosts.map((post, index) => (
-                  <BlogPostCard key={post.id} post={post} index={index} />
+                {transformedPosts.map((post) => (
+                  <BlogPostCard key={post.id} post={post} />
                 ))}
               </div>
             </>
