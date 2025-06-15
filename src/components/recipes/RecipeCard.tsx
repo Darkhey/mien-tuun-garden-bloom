@@ -1,11 +1,10 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Clock, Users, ChefHat } from "lucide-react";
 import { type Tables } from "@/integrations/supabase/types";
 
 interface RecipeCardProps {
-  recipe: Tables<'recipes'>['Row'];
+  recipe: Tables<'recipes'>;
   index?: number;
 }
 
