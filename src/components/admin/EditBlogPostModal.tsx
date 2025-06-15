@@ -1,10 +1,14 @@
 
-import React, { useState } from "react";
-import StatusSelector from "./StatusSelector";
-import ImageUploadField from "./ImageUploadField";
-import VersionHistory from "./VersionHistory";
+import React, { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2, Upload, Sparkles } from "lucide-react";
+import ImageUploadField from "./ImageUploadField";
 
 interface EditBlogPostModalProps {
   post: any;
@@ -13,78 +17,215 @@ interface EditBlogPostModalProps {
 }
 
 const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, onSaved }) => {
-  const [form, setForm] = useState({ ...post });
-  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    content: "",
+    excerpt: "",
+    category: "",
+    featured_image: "",
+    status: "entwurf",
+  });
+  const [loading, setLoading] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const { toast } = useToast();
 
-  function handleChange(field: string, value: any) {
-    setForm(prev => ({ ...prev, [field]: value }));
-  }
+  useEffect(() => {
+    if (post) {
+      setFormData({
+        title: post.title || "",
+        content: post.content || "",
+        excerpt: post.excerpt || "",
+        category: post.category || "",
+        featured_image: post.featured_image || "",
+        status: post.status || "entwurf",
+      });
+    }
+  }, [post]);
 
-  async function saveVersionAndUpdatePost() {
-    setSaving(true);
-    const user = await supabase.auth.getUser();
-    if (!user.data.user) {
-      toast({ title: "Nicht eingeloggt", description: "Melde dich neu an." });
-      setSaving(false);
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const generateImageFromContent = async () => {
+    if (!formData.title && !formData.content) {
+      toast({
+        title: "Fehler",
+        description: "Titel oder Inhalt sind erforderlich für die Bildgenerierung",
+        variant: "destructive"
+      });
       return;
     }
-    const versionInsert = {
-      blog_post_id: post.id,
-      user_id: user.data.user.id,
-      ...post // alte Werte als Version sichern
-    };
-    await supabase.from("blog_post_versions").insert([versionInsert]);
-    const { error } = await supabase.from("blog_posts").update(form).eq("id", post.id);
-    if (error) {
-      toast({ title: "Fehler beim Speichern", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Gespeichert!", description: "Artikel wurde erfolgreich aktualisiert." });
-      onSaved();
-      onClose();
+
+    setGeneratingImage(true);
+    try {
+      // Erstelle einen aussagekräftigen Prompt basierend auf Titel und Inhalt
+      const contentPreview = formData.content.slice(0, 200);
+      const imagePrompt = `Hyperrealistisches, stimmungsvolles Garten- oder Küchenbild passend zum Thema "${formData.title}". Basierend auf: ${contentPreview}. Natürliches Licht, viel Atmosphäre, hochwertiger Fotografie-Stil. Ohne Text.`;
+
+      const { data, error } = await supabase.functions.invoke('generate-recipe-image', {
+        body: { prompt: imagePrompt }
+      });
+
+      if (error) throw error;
+
+      if (data.imageUrl) {
+        setFormData(prev => ({ ...prev, featured_image: data.imageUrl }));
+        toast({
+          title: "Erfolg",
+          description: "Bild wurde erfolgreich generiert!"
+        });
+      }
+    } catch (error: any) {
+      console.error("Fehler bei der Bildgenerierung:", error);
+      toast({
+        title: "Fehler",
+        description: "Bildgenerierung fehlgeschlagen: " + (error.message || "Unbekannter Fehler"),
+        variant: "destructive"
+      });
     }
-    setSaving(false);
-  }
+    setGeneratingImage(false);
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("blog_posts")
+        .update(formData)
+        .eq("id", post.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Erfolg",
+        description: "Blog-Artikel wurde aktualisiert"
+      });
+      onSaved();
+    } catch (error: any) {
+      toast({
+        title: "Fehler",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+    setLoading(false);
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1001]">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 relative">
-        <button onClick={onClose} className="absolute top-2 right-4 text-xl">&times;</button>
-        <h2 className="font-bold text-xl mb-2">Blogartikel bearbeiten</h2>
-        <div className="mb-2">
-          <label className="block text-sm font-semibold">Titel:</label>
-          <input
-            className="border rounded px-2 py-1 w-full"
-            value={form.title}
-            onChange={e => handleChange("title", e.target.value)}
-            disabled={saving}
-          />
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Blog-Artikel bearbeiten</DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="title">Titel</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => handleInputChange("title", e.target.value)}
+              placeholder="Artikel-Titel"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="excerpt">Kurzbeschreibung</Label>
+            <Textarea
+              id="excerpt"
+              value={formData.excerpt}
+              onChange={(e) => handleInputChange("excerpt", e.target.value)}
+              placeholder="Kurze Beschreibung des Artikels"
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="content">Inhalt</Label>
+            <Textarea
+              id="content"
+              value={formData.content}
+              onChange={(e) => handleInputChange("content", e.target.value)}
+              placeholder="Artikel-Inhalt (Markdown möglich)"
+              rows={12}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="category">Kategorie</Label>
+            <Input
+              id="category"
+              value={formData.category}
+              onChange={(e) => handleInputChange("category", e.target.value)}
+              placeholder="Kategorie"
+            />
+          </div>
+
+          <div>
+            <Label>Artikel-Bild</Label>
+            <div className="space-y-3">
+              <ImageUploadField
+                currentImageUrl={formData.featured_image}
+                onImageUploaded={(imageUrl) => handleInputChange("featured_image", imageUrl)}
+                bucketName="blog-images"
+                label="Bild hochladen"
+              />
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">oder</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={generateImageFromContent}
+                  disabled={generatingImage || (!formData.title && !formData.content)}
+                  className="flex items-center gap-2"
+                >
+                  {generatingImage ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  {generatingImage ? "Generiere Bild..." : "KI-Bild generieren"}
+                </Button>
+              </div>
+              
+              {formData.featured_image && (
+                <div className="mt-3">
+                  <img
+                    src={formData.featured_image}
+                    alt="Artikel-Bild Vorschau"
+                    className="w-full max-w-md h-48 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <select
+              id="status"
+              value={formData.status}
+              onChange={(e) => handleInputChange("status", e.target.value)}
+              className="w-full p-2 border rounded-md"
+            >
+              <option value="entwurf">Entwurf</option>
+              <option value="veröffentlicht">Veröffentlicht</option>
+            </select>
+          </div>
         </div>
-        <div className="mb-2">
-          <ImageUploadField
-            value={form.featured_image}
-            onChange={url => handleChange("featured_image", url)}
-            bucket="blog-images"
-            disabled={saving}
-          />
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button variant="outline" onClick={onClose}>
+            Abbrechen
+          </Button>
+          <Button onClick={handleSave} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Speichern
+          </Button>
         </div>
-        <div className="mb-2">
-          <StatusSelector
-            value={form.status}
-            onChange={val => handleChange("status", val)}
-            disabled={saving}
-          />
-        </div>
-        {/* Zusatzfelder wie excerpt, content, etc. können einfach ergänzt werden */}
-        <div className="flex gap-2 mt-4">
-          <button className="bg-sage-700 text-white px-4 py-2 rounded" disabled={saving} onClick={saveVersionAndUpdatePost}>
-            {saving ? "Speichere..." : "Speichern & Version sichern"}
-          </button>
-          <button className="bg-sage-100 px-4 py-2 rounded" onClick={onClose} disabled={saving}>Abbrechen</button>
-        </div>
-        <VersionHistory type="blog" itemId={post.id} />
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
