@@ -1,10 +1,14 @@
 
-import React, { useState } from "react";
-import StatusSelector from "./StatusSelector";
-import ImageUploadField from "./ImageUploadField";
-import VersionHistory from "./VersionHistory";
+import React, { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2, Sparkles } from "lucide-react";
+import ImageUploadField from "./ImageUploadField";
 
 interface EditRecipeModalProps {
   recipe: any;
@@ -13,80 +17,273 @@ interface EditRecipeModalProps {
 }
 
 const EditRecipeModal: React.FC<EditRecipeModalProps> = ({ recipe, onClose, onSaved }) => {
-  const [form, setForm] = useState({ ...recipe });
-  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    category: "",
+    season: "",
+    difficulty: "",
+    servings: 1,
+    prep_time_minutes: 0,
+    cook_time_minutes: 0,
+    image_url: "",
+    status: "entwurf",
+  });
+  const [loading, setLoading] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const { toast } = useToast();
 
-  function handleChange(field: string, value: any) {
-    setForm(prev => ({ ...prev, [field]: value }));
-  }
+  useEffect(() => {
+    if (recipe) {
+      setFormData({
+        title: recipe.title || "",
+        description: recipe.description || "",
+        category: recipe.category || "",
+        season: recipe.season || "",
+        difficulty: recipe.difficulty || "",
+        servings: recipe.servings || 1,
+        prep_time_minutes: recipe.prep_time_minutes || 0,
+        cook_time_minutes: recipe.cook_time_minutes || 0,
+        image_url: recipe.image_url || "",
+        status: recipe.status || "entwurf",
+      });
+    }
+  }, [recipe]);
 
-  async function saveVersionAndUpdateRecipe() {
-    setSaving(true);
-    // 1. Version speichern
-    const user = await supabase.auth.getUser();
-    if (!user.data.user) {
-      toast({ title: "Nicht eingeloggt", description: "Melde dich neu an." });
-      setSaving(false);
+  const handleInputChange = (field: string, value: string | number) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const generateImageFromContent = async () => {
+    if (!formData.title) {
+      toast({
+        title: "Fehler",
+        description: "Titel ist erforderlich für die Bildgenerierung",
+        variant: "destructive"
+      });
       return;
     }
-    const versionInsert = {
-      recipe_id: recipe.id,
-      user_id: user.data.user.id,
-      ...recipe // alte Daten
-    };
-    await supabase.from("recipe_versions").insert([versionInsert]);
-    // 2. Update Recipe
-    const { error } = await supabase.from("recipes").update(form).eq("id", recipe.id);
-    if (error) {
-      toast({ title: "Fehler beim Speichern", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Gespeichert!", description: "Rezept wurde erfolgreich aktualisiert." });
-      onSaved();
-      onClose();
+
+    setGeneratingImage(true);
+    try {
+      const imagePrompt = `Hyperrealistisches, appetitliches Food-Foto von "${formData.title}". ${formData.description}. Professionelle Küchenfotografie, natürliches Licht, ansprechende Präsentation. Ohne Text.`;
+
+      const { data, error } = await supabase.functions.invoke('generate-recipe-image', {
+        body: { prompt: imagePrompt }
+      });
+
+      if (error) throw error;
+
+      if (data.imageUrl) {
+        setFormData(prev => ({ ...prev, image_url: data.imageUrl }));
+        toast({
+          title: "Erfolg",
+          description: "Bild wurde erfolgreich generiert!"
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Fehler",
+        description: "Bildgenerierung fehlgeschlagen: " + error.message,
+        variant: "destructive"
+      });
     }
-    setSaving(false);
-  }
+    setGeneratingImage(false);
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("recipes")
+        .update(formData)
+        .eq("id", recipe.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Erfolg",
+        description: "Rezept wurde aktualisiert"
+      });
+      onSaved();
+    } catch (error: any) {
+      toast({
+        title: "Fehler",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+    setLoading(false);
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-[1001]">
-      <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative">
-        <button onClick={onClose} className="absolute top-2 right-4 text-xl">&times;</button>
-        <h2 className="font-bold text-xl mb-2">Rezept bearbeiten</h2>
-        <div className="mb-2">
-          <label className="block text-sm font-semibold">Titel:</label>
-          <input
-            className="border rounded px-2 py-1 w-full"
-            value={form.title}
-            onChange={e => handleChange("title", e.target.value)}
-            disabled={saving}
-          />
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Rezept bearbeiten</DialogTitle>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="title">Titel</Label>
+            <Input
+              id="title"
+              value={formData.title}
+              onChange={(e) => handleInputChange("title", e.target.value)}
+              placeholder="Rezept-Titel"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="description">Beschreibung</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => handleInputChange("description", e.target.value)}
+              placeholder="Kurze Beschreibung des Rezepts"
+              rows={3}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="category">Kategorie</Label>
+              <select
+                id="category"
+                value={formData.category}
+                onChange={(e) => handleInputChange("category", e.target.value)}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="">Wähle Kategorie</option>
+                <option value="Süßes & Kuchen">Süßes & Kuchen</option>
+                <option value="Suppen & Eintöpfe">Suppen & Eintöpfe</option>
+                <option value="Salate & Vorspeisen">Salate & Vorspeisen</option>
+                <option value="Konservieren">Konservieren</option>
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="season">Saison</Label>
+              <select
+                id="season"
+                value={formData.season}
+                onChange={(e) => handleInputChange("season", e.target.value)}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="">Wähle Saison</option>
+                <option value="frühling">Frühling</option>
+                <option value="sommer">Sommer</option>
+                <option value="herbst">Herbst</option>
+                <option value="winter">Winter</option>
+                <option value="ganzjährig">Ganzjährig</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="difficulty">Schwierigkeit</Label>
+              <select
+                id="difficulty"
+                value={formData.difficulty}
+                onChange={(e) => handleInputChange("difficulty", e.target.value)}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="">Wähle Schwierigkeit</option>
+                <option value="einfach">Einfach</option>
+                <option value="mittel">Mittel</option>
+                <option value="schwer">Schwer</option>
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="servings">Portionen</Label>
+              <Input
+                id="servings"
+                type="number"
+                min="1"
+                value={formData.servings}
+                onChange={(e) => handleInputChange("servings", parseInt(e.target.value))}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="prep_time">Zubereitungszeit (Min.)</Label>
+              <Input
+                id="prep_time"
+                type="number"
+                min="0"
+                value={formData.prep_time_minutes}
+                onChange={(e) => handleInputChange("prep_time_minutes", parseInt(e.target.value))}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label>Rezept-Bild</Label>
+            <div className="space-y-3">
+              <ImageUploadField
+                value={formData.image_url}
+                onChange={(imageUrl) => handleInputChange("image_url", imageUrl)}
+                bucket="recipe-images"
+                disabled={loading || generatingImage}
+              />
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">oder</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={generateImageFromContent}
+                  disabled={generatingImage || !formData.title}
+                  className="flex items-center gap-2"
+                >
+                  {generatingImage ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                  {generatingImage ? "Generiere Bild..." : "KI-Bild generieren"}
+                </Button>
+              </div>
+              
+              {formData.image_url && (
+                <div className="mt-3">
+                  <img
+                    src={formData.image_url}
+                    alt="Rezept-Bild Vorschau"
+                    className="w-full max-w-md h-48 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <select
+              id="status"
+              value={formData.status}
+              onChange={(e) => handleInputChange("status", e.target.value)}
+              className="w-full p-2 border rounded-md"
+            >
+              <option value="entwurf">Entwurf</option>
+              <option value="veröffentlicht">Veröffentlicht</option>
+            </select>
+          </div>
         </div>
-        <div className="mb-2">
-          <ImageUploadField
-            value={form.image_url}
-            onChange={url => handleChange("image_url", url)}
-            bucket="recipe-images"
-            disabled={saving}
-          />
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button variant="outline" onClick={onClose}>
+            Abbrechen
+          </Button>
+          <Button onClick={handleSave} disabled={loading}>
+            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Speichern
+          </Button>
         </div>
-        <div className="mb-2">
-          <StatusSelector
-            value={form.status}
-            onChange={val => handleChange("status", val)}
-            disabled={saving}
-          />
-        </div>
-        {/* Weitere Felder wie Beschreibung, Zutaten etc. sind ähnlich hinzufügbar */}
-        <div className="flex gap-2 mt-4">
-          <button className="bg-sage-700 text-white px-4 py-2 rounded" disabled={saving} onClick={saveVersionAndUpdateRecipe}>
-            {saving ? "Speichere..." : "Speichern & Version sichern"}
-          </button>
-          <button className="bg-sage-100 px-4 py-2 rounded" onClick={onClose} disabled={saving}>Abbrechen</button>
-        </div>
-        <VersionHistory type="recipe" itemId={recipe.id} />
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

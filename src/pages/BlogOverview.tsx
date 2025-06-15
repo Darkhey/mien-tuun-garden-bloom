@@ -1,201 +1,104 @@
-
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import React, { useState, useMemo } from 'react';
+import { Helmet } from "react-helmet";
+import { useQuery } from '@tanstack/react-query';
 import BlogPostCard from "@/components/blog/BlogPostCard";
 import BlogFilter from "@/components/blog/BlogFilter";
-import { Helmet } from "react-helmet";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from '@/integrations/supabase/types';
 
-interface BlogPost {
-  id: string;
-  slug: string;
-  title: string;
-  excerpt: string;
-  featured_image: string;
-  category: string;
-  published_at: string;
-  reading_time: number;
-  author: string;
-  tags: string[];
-}
+// Die Kategorien
+const categories = ['Alle', 'Gartenpflege', 'Rezepte', 'Nachhaltigkeit', 'DIY'];
 
-interface BlogOverviewProps {
-  variant?: string;
-}
+// Blog-Posts aus Supabase laden
+const fetchBlogPosts = async () => {
+  const { data, error } = await supabase
+    .from('blog_posts')
+    .select('*')
+    .order('published_at', { ascending: false });
+  if (error) throw error;
+  return data;
+};
 
-const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedSeason, setSelectedSeason] = useState<string>("");
-  const [showDrafts, setShowDrafts] = useState(false);
-  const [searchTerm, setSearchTerm] = useState<string>("");
+const BlogOverview: React.FC = () => {
+  // Filter States
+  const [selectedCategory, setSelectedCategory] = useState<string>('Alle');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const { data: posts, isLoading, error } = useQuery<BlogPost[]>({
-    queryKey: ['blog-posts', selectedCategory, selectedSeason, showDrafts, searchTerm],
-    queryFn: async () => {
-      console.log('[BlogOverview] Lade Blog-Posts mit Parametern:', { 
-        selectedCategory, 
-        selectedSeason, 
-        showDrafts, 
-        searchTerm 
-      });
-      
-      let query = supabase
-        .from('blog_posts')
-        .select('*')
-        .order('published_at', { ascending: false });
-
-      if (!showDrafts) {
-        query = query.eq('published', true);
-      }
-
-      if (selectedCategory) {
-        query = query.eq('category', selectedCategory);
-      }
-
-      if (selectedSeason) {
-        query = query.eq('season', selectedSeason);
-      }
-
-      if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
-      }
-
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('[BlogOverview] Fehler beim Laden der Posts:', error);
-        throw error;
-      }
-
-      console.log('[BlogOverview] Posts geladen:', data?.length, 'Artikel gefunden');
-      console.log('[BlogOverview] Sample data:', data?.slice(0, 2));
-      
-      return data || [];
-    },
+  const { data: blogRows = [], isLoading, error } = useQuery({
+    queryKey: ["all-blog-posts"],
+    queryFn: fetchBlogPosts,
   });
 
-  const { data: categories } = useQuery<string[]>({
-    queryKey: ['blog-categories'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('blog_posts')
-        .select('category')
-        .not('category', 'is', null);
-      
-      const uniqueCategories = [...new Set(data?.map(post => post.category))];
-      console.log('[BlogOverview] Kategorien geladen:', uniqueCategories);
-      return uniqueCategories.filter(Boolean);
-    },
-  });
-
-  // Transform database posts to match BlogPostCard interface
-  const transformedPosts = posts?.map(post => ({
-    id: post.id,
-    slug: post.slug,
-    title: post.title,
-    excerpt: post.excerpt || "",
-    featuredImage: post.featured_image || "/placeholder.svg",
-    category: post.category || "",
-    publishedAt: post.published_at ? new Date(post.published_at).toLocaleDateString('de-DE') : 'Unbekannt',
-    readingTime: post.reading_time || 5,
-    author: post.author || "Mien Tuun Team",
-    tags: post.tags || []
-  })) || [];
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">Lade Blog-Artikel...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center text-red-600">
-          Fehler beim Laden der Artikel: {error.message}
-          <div className="mt-2 text-sm">
-            Details: {JSON.stringify(error, null, 2)}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const pageTitle = variant === "garten" ? "Garten - Mien Tuun" : "Blog - Mien Tuun";
-  const pageHeading = variant === "garten" ? "Unser Garten" : "Unser Blog";
-  const pageDescription = variant === "garten" 
-    ? "Entdecke praktische Gartentipps und saisonale Anleitungen für deinen eigenen Garten"
-    : "Entdecke inspirierende Artikel rund um Garten, Nachhaltigkeit und saisonales Leben";
+  // Filter-Logik mit explizitem Typ
+  const filteredPosts = useMemo(() => {
+    const posts = blogRows as Tables<'blog_posts'>[];
+    return posts.filter((post: Tables<'blog_posts'>) => {
+      // Kategorie
+      if (selectedCategory !== 'Alle' && post.category !== selectedCategory) return false;
+      // Suchbegriff
+      if (
+        searchTerm &&
+        !(
+          post.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          post.excerpt?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [blogRows, selectedCategory, searchTerm]);
 
   return (
     <>
       <Helmet>
-        <title>{pageTitle}</title>
-        <meta name="description" content={pageDescription} />
+        <title>Blog | Mien Tuun</title>
+        <meta name="description" content="Entdecke spannende Artikel rund um Gartenpflege, saisonale Rezepte, Nachhaltigkeit und DIY-Projekte. Lass dich inspirieren und erweitere dein Wissen!" />
+        <meta name="keywords" content="Blog, Gartenpflege, Rezepte, Nachhaltigkeit, DIY, Mien Tuun, Garten, Kochen, Selbermachen, Inspiration" />
+        <meta property="og:title" content="Blog | Mien Tuun" />
+        <meta property="og:description" content="Entdecke spannende Artikel rund um Gartenpflege, saisonale Rezepte, Nachhaltigkeit und DIY-Projekte. Lass dich inspirieren und erweitere dein Wissen!" />
       </Helmet>
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-earth-800 mb-4">{pageHeading}</h1>
-          <p className="text-lg text-earth-600 max-w-2xl mx-auto">
-            {pageDescription}
+      {/* Header */}
+      <section className="bg-gradient-to-br from-accent-50 to-sage-50 py-16 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl md:text-5xl font-serif font-bold text-earth-800 mb-6">
+            Inspiration & Wissen für deinen Garten
+          </h1>
+          <p className="text-xl text-earth-600 mb-8">
+            Entdecke spannende Artikel, praktische Tipps und kreative Ideen rund um Garten, Küche und einen nachhaltigen Lebensstil.
           </p>
+          {/* Filter UI */}
+          <BlogFilter
+            categories={categories}
+            selectedCategory={selectedCategory}
+            setSelectedCategory={setSelectedCategory}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+          />
         </div>
-
-        {/* Debug Toggle für Entwürfe */}
-        <div className="mb-6 text-center">
-          <label className="inline-flex items-center">
-            <input
-              type="checkbox"
-              checked={showDrafts}
-              onChange={(e) => setShowDrafts(e.target.checked)}
-              className="mr-2"
-            />
-            <span className="text-sm text-gray-600">
-              Entwürfe anzeigen (Debug-Modus)
-            </span>
-          </label>
-        </div>
-
-        <BlogFilter
-          categories={categories || []}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          selectedSeason={selectedSeason}
-          setSelectedSeason={setSelectedSeason}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-        />
-
-        <div className="mt-8">
-          {transformedPosts && transformedPosts.length > 0 ? (
-            <>
-              <div className="text-sm text-gray-600 mb-4">
-                {transformedPosts.length} Artikel gefunden {showDrafts && "(inkl. Entwürfe)"}
-              </div>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {transformedPosts.map((post) => (
-                  <BlogPostCard key={post.id} post={post} />
-                ))}
-              </div>
-            </>
+      </section>
+      {/* Blog Posts Grid */}
+      <section className="py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          {isLoading ? (
+            <div className="text-center py-12 text-earth-500">Lade Artikel...</div>
+          ) : error ? (
+            <div className="text-center py-12 text-red-500">Fehler beim Laden der Artikel.</div>
+          ) : filteredPosts.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredPosts.map((post, index) => (
+                <BlogPostCard post={post} index={index} key={post.id} />
+              ))}
+            </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-gray-600">
-                {showDrafts 
-                  ? "Keine Artikel gefunden (auch keine Entwürfe)." 
-                  : "Keine veröffentlichten Artikel gefunden. Aktiviere den Debug-Modus, um Entwürfe zu sehen."
-                }
+              <p className="text-earth-500 text-lg">
+                Keine Artikel gefunden. Versuche andere Filter oder Suchbegriffe.
               </p>
-              <div className="mt-4 text-xs text-gray-500">
-                Debug-Info: Query-Parameter = {JSON.stringify({ selectedCategory, selectedSeason, showDrafts, searchTerm })}
-              </div>
             </div>
           )}
         </div>
-      </div>
+      </section>
     </>
   );
 };

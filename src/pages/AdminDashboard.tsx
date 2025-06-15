@@ -20,7 +20,8 @@ const AdminDashboard: React.FC = () => {
     dataError,
     setRecipes,
     setBlogPosts,
-    setUsers
+    setUsers,
+    loadData
   } = useAdminData(activeView);
 
   const { handleTogglePremium, handleToggleStatus, handleDelete } = useAdminActions();
@@ -81,6 +82,7 @@ const AdminDashboard: React.FC = () => {
               onToggleStatus={onToggleStatus}
               onDelete={onDelete}
               onTogglePremium={onTogglePremium}
+              onDataRefresh={loadData}
             />
           </div>
         </div>
