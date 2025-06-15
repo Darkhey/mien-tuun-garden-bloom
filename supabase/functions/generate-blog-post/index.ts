@@ -47,9 +47,10 @@ serve(async (req) => {
     }
 
     const messages = [
-      { 
-        role: "system", 
-        content: "Du bist eine hilfreiche deutschsprachige Bloggerin für Garten & Küche und schreibst inspirierende, SEO-optimierte Blogartikel. Schreibe zu folgender Idee einen passenden Artikelentwurf als Markdown:" 
+      {
+        role: "system",
+        content:
+          "Du bist eine hilfreiche deutschsprachige Bloggerin für Garten & Küche und schreibst inspirierende, SEO-optimierte Blogartikel. Schreibe zu folgender Idee einen passenden Artikelentwurf als Markdown. Return a Markdown article with an H1 title, 3–5 paragraphs and subheadings."
       },
       { role: "user", content: prompt.trim() }
     ];
