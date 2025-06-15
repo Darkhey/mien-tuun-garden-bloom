@@ -1,5 +1,5 @@
 
-import { BookOpen, FileText, Users, Sparkles, Calendar, Shield, Brain, Zap } from "lucide-react";
+import { BookOpen, FileText, Users, Sparkles, Calendar, Shield, Brain, Zap, Clock } from "lucide-react";
 import { AdminView } from "@/types/admin";
 
 export const menuItems: { group: string; items: { key: AdminView; label: string; icon: React.ElementType }[] }[] = [

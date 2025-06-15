@@ -275,6 +275,173 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_jobs: {
+        Row: {
+          conditions: Json | null
+          created_at: string
+          created_by: string
+          cron_expression: string
+          dependencies: string[] | null
+          description: string | null
+          enabled: boolean
+          function_name: string
+          function_payload: Json | null
+          id: string
+          job_type: Database["public"]["Enums"]["job_type"]
+          last_run_at: string | null
+          name: string
+          next_run_at: string | null
+          retry_count: number
+          status: Database["public"]["Enums"]["cron_job_status"]
+          tags: string[] | null
+          timeout_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          conditions?: Json | null
+          created_at?: string
+          created_by: string
+          cron_expression: string
+          dependencies?: string[] | null
+          description?: string | null
+          enabled?: boolean
+          function_name: string
+          function_payload?: Json | null
+          id?: string
+          job_type?: Database["public"]["Enums"]["job_type"]
+          last_run_at?: string | null
+          name: string
+          next_run_at?: string | null
+          retry_count?: number
+          status?: Database["public"]["Enums"]["cron_job_status"]
+          tags?: string[] | null
+          timeout_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          conditions?: Json | null
+          created_at?: string
+          created_by?: string
+          cron_expression?: string
+          dependencies?: string[] | null
+          description?: string | null
+          enabled?: boolean
+          function_name?: string
+          function_payload?: Json | null
+          id?: string
+          job_type?: Database["public"]["Enums"]["job_type"]
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          retry_count?: number
+          status?: Database["public"]["Enums"]["cron_job_status"]
+          tags?: string[] | null
+          timeout_seconds?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      job_execution_logs: {
+        Row: {
+          completed_at: string | null
+          cron_job_id: string
+          duration_ms: number | null
+          error_message: string | null
+          execution_id: string
+          id: string
+          output: Json | null
+          resource_usage: Json | null
+          retry_attempt: number
+          started_at: string
+          status: Database["public"]["Enums"]["job_execution_status"]
+          triggered_by: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          cron_job_id: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_id: string
+          id?: string
+          output?: Json | null
+          resource_usage?: Json | null
+          retry_attempt?: number
+          started_at?: string
+          status?: Database["public"]["Enums"]["job_execution_status"]
+          triggered_by?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          cron_job_id?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_id?: string
+          id?: string
+          output?: Json | null
+          resource_usage?: Json | null
+          retry_attempt?: number
+          started_at?: string
+          status?: Database["public"]["Enums"]["job_execution_status"]
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_execution_logs_cron_job_id_fkey"
+            columns: ["cron_job_id"]
+            isOneToOne: false
+            referencedRelation: "cron_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      job_templates: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          default_cron_expression: string
+          default_payload: Json | null
+          description: string | null
+          function_name: string
+          id: string
+          is_system_template: boolean
+          job_type: Database["public"]["Enums"]["job_type"]
+          name: string
+          tags: string[] | null
+          usage_count: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_cron_expression: string
+          default_payload?: Json | null
+          description?: string | null
+          function_name: string
+          id?: string
+          is_system_template?: boolean
+          job_type: Database["public"]["Enums"]["job_type"]
+          name: string
+          tags?: string[] | null
+          usage_count?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_cron_expression?: string
+          default_payload?: Json | null
+          description?: string | null
+          function_name?: string
+          id?: string
+          is_system_template?: boolean
+          job_type?: Database["public"]["Enums"]["job_type"]
+          name?: string
+          tags?: string[] | null
+          usage_count?: number
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           confirmation_token: string | null
@@ -535,6 +702,54 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_tasks: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          error_message: string | null
+          executed_at: string | null
+          function_name: string
+          function_payload: Json | null
+          id: string
+          name: string
+          priority: number
+          result: Json | null
+          scheduled_for: string
+          status: Database["public"]["Enums"]["job_execution_status"]
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          function_name: string
+          function_payload?: Json | null
+          id?: string
+          name: string
+          priority?: number
+          result?: Json | null
+          scheduled_for: string
+          status?: Database["public"]["Enums"]["job_execution_status"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          function_name?: string
+          function_payload?: Json | null
+          id?: string
+          name?: string
+          priority?: number
+          result?: Json | null
+          scheduled_for?: string
+          status?: Database["public"]["Enums"]["job_execution_status"]
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -568,6 +783,20 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      cron_job_status: "active" | "inactive" | "paused" | "error"
+      job_execution_status:
+        | "pending"
+        | "running"
+        | "completed"
+        | "failed"
+        | "cancelled"
+      job_type:
+        | "content_generation"
+        | "seo_optimization"
+        | "performance_analysis"
+        | "cleanup"
+        | "backup"
+        | "custom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -684,6 +913,22 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      cron_job_status: ["active", "inactive", "paused", "error"],
+      job_execution_status: [
+        "pending",
+        "running",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
+      job_type: [
+        "content_generation",
+        "seo_optimization",
+        "performance_analysis",
+        "cleanup",
+        "backup",
+        "custom",
+      ],
     },
   },
 } as const
