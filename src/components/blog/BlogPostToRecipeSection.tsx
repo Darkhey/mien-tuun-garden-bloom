@@ -71,11 +71,41 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
         );
       }
 
+      // --- Bild generieren via Edge Function (OpenAI Dall-E) ---
+      let recipeImageUrl = recipe.image || post.featuredImage;
+      try {
+        // Nur generieren, wenn noch kein Bild vorhanden oder das Bild das original Blogbild ist
+        if (!recipe.image || recipe.image === post.featuredImage) {
+          const imgResp = await fetch(
+            "https://ublbxvpmoccmegtwaslh.functions.supabase.co/generate-recipe-image",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                title: recipe.title,
+                description: recipe.description,
+                ingredients: recipe.ingredients,
+                category: post.category,
+              }),
+            }
+          );
+          if (imgResp.ok) {
+            const imgData = await imgResp.json();
+            if (imgData && imgData.imageUrl) {
+              recipeImageUrl = imgData.imageUrl;
+            }
+          }
+        }
+      } catch (imgErr) {
+        // Bildgenerierung darf fehlschlagen, kein Abbruch
+        console.warn("Konnte kein KI-Bild generieren:", imgErr);
+      }
+
       const insertObj = {
         user_id: user.data.user.id,
         title: recipe.title,
         slug: recipeSlug,
-        image_url: recipe.image || post.featuredImage,
+        image_url: recipeImageUrl,
         description: recipe.description || "",
         ingredients: recipe.ingredients ?? null,
         instructions: instructions,
