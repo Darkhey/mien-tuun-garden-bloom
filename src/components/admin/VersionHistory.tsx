@@ -9,21 +9,30 @@ interface VersionHistoryProps {
   itemId: string;
 }
 
+/**
+ * Mapping für Table- und Column-Namen,
+ * explizit als Literal-Typen, damit TypeScript keine Fehlermeldung wirft.
+ */
+const TABLE_MAP = {
+  recipe: "recipe_versions",
+  blog: "blog_post_versions",
+} as const;
+
+const COLUMN_ID_MAP = {
+  recipe: "recipe_id",
+  blog: "blog_post_id",
+} as const;
+
 const VersionHistory: React.FC<VersionHistoryProps> = ({ type, itemId }) => {
   const [versions, setVersions] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchVersions() {
-      let table: string;
-      let idColumn: string;
-      if (type === "recipe") {
-        table = "recipe_versions";
-        idColumn = "recipe_id";
-      } else {
-        table = "blog_post_versions";
-        idColumn = "blog_post_id";
-      }
+      // Wir casten table und idColumn als Literal-Typen
+      const table = TABLE_MAP[type]; // "recipe_versions" | "blog_post_versions"
+      const idColumn = COLUMN_ID_MAP[type]; // "recipe_id" | "blog_post_id"
 
+      // table als Literal-Typen übergeben
       const { data } = await supabase
         .from(table)
         .select("*")
@@ -41,7 +50,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ type, itemId }) => {
     <div className="border-t pt-4 mt-4">
       <h4 className="font-bold mb-2">Versionen</h4>
       <div className="space-y-1 text-xs">
-        {versions.map(v => (
+        {versions.map((v) => (
           <div key={v.id} className="border-b last:border-none py-1">
             <span className="font-mono">
               {v.created_at && new Date(v.created_at).toLocaleString()}
@@ -66,3 +75,4 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ type, itemId }) => {
 };
 
 export default VersionHistory;
+
