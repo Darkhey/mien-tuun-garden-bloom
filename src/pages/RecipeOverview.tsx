@@ -7,8 +7,6 @@ import { useQuery } from '@tanstack/react-query';
 import RecipeCard from "@/components/recipes/RecipeCard";
 import RecipeFilter from "@/components/recipes/RecipeFilter";
 import { supabase } from "@/integrations/supabase/client";
-import type { Recipe } from '@/types/content';
-import { getRecipeImageUrl, parseJsonArray } from "@/utils/recipe";
 
 // Die Kategorien, Saisons und Schwierigkeitsgrade
 const categories = ['Alle', 'Süßes & Kuchen', 'Suppen & Eintöpfe', 'Salate & Vorspeisen', 'Konservieren'];
@@ -25,41 +23,6 @@ const fetchRecipes = async () => {
   return data;
 };
 
-// Hilfsfunktion: Supabase-RecipeRow zu Frontend-Recipe mit Defaults mappen
-function mapRowToRecipe(row: any): Recipe {
-  const prepTime = row.prep_time_minutes || 0;
-  const cookTime = row.cook_time_minutes || 0;
-
-  return {
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
-    description: row.description || '',
-    image: getRecipeImageUrl(row.image_url),
-    prepTime: prepTime,
-    cookTime: cookTime,
-    totalTime: prepTime + cookTime,
-    servings: row.servings || 1,
-    difficulty: row.difficulty || 'einfach',
-    category: row.category || 'Unbekannt',
-    season: row.season || 'ganzjährig',
-    tags: row.tags || [],
-    ingredients: parseJsonArray(row.ingredients),
-    instructions: parseJsonArray(row.instructions),
-    nutrition: undefined,
-    tips: [],
-    relatedRecipes: [],
-    publishedAt: row.created_at,
-    author: row.author || 'Unbekannt',
-    featured: false,
-    seo: {
-      title: row.title,
-      description: row.description || '',
-      keywords: row.tags || [],
-    }
-  }
-}
-
 const RecipeOverview = () => {
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>('Alle');
@@ -73,12 +36,9 @@ const RecipeOverview = () => {
     queryFn: fetchRecipes,
   });
 
-  // Umwandeln in typisierte Recipes
-  const recipes = useMemo(() => recipeRows.map(mapRowToRecipe), [recipeRows]);
-
   // Filter-Logik
   const filteredRecipes = useMemo(() => {
-    return recipes.filter((r) => {
+    return recipeRows.filter((r) => {
       // Kategorie
       if (selectedCategory !== 'Alle' && r.category !== selectedCategory) return false;
       // Saison
@@ -97,7 +57,7 @@ const RecipeOverview = () => {
       }
       return true;
     });
-  }, [recipes, selectedCategory, selectedSeason, selectedDifficulty, searchTerm]);
+  }, [recipeRows, selectedCategory, selectedSeason, selectedDifficulty, searchTerm]);
 
   return (
     <>
@@ -160,4 +120,3 @@ const RecipeOverview = () => {
 };
 
 export default RecipeOverview;
-
