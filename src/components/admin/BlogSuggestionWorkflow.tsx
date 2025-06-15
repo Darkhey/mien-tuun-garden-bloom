@@ -66,7 +66,7 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    setSuggestionSelections(prev => 
+    setSuggestionSelections((prev: string[]) => 
       prev.includes(suggestion) 
         ? prev.filter(s => s !== suggestion)
         : [...prev, suggestion]
