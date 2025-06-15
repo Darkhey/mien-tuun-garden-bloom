@@ -1,10 +1,11 @@
 
 import React from "react";
-import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import BlogTopicSuggestions from "./BlogTopicSuggestions";
 import { buildContextFromMeta } from "./blogHelpers";
 
-const SUGGESTION_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/suggest-blog-topics";
+const SUGGEST_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/suggest-blog-topics";
 
 interface BlogSuggestionWorkflowProps {
   topicInput: string;
@@ -17,7 +18,7 @@ interface BlogSuggestionWorkflowProps {
   excerpt: string;
   imageUrl: string;
   suggestionSelections: string[];
-  setSuggestionSelections: (v: string[]) => void;
+  setSuggestionSelections: (s: string[]) => void;
   setDebugLogs: React.Dispatch<React.SetStateAction<string[]>>;
   loading: boolean;
   setLoading: (l: boolean) => void;
@@ -28,89 +29,70 @@ interface BlogSuggestionWorkflowProps {
 }
 
 const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
-  topicInput, setTopicInput,
-  category, season,
-  audiences, contentType, tags, excerpt, imageUrl,
-  suggestionSelections, setSuggestionSelections,
-  setDebugLogs,
-  loading, setLoading,
-  isSuggesting, setIsSuggesting,
-  suggestions, setSuggestions
+  topicInput, setTopicInput, category, season, audiences, contentType, tags, excerpt, imageUrl,
+  suggestionSelections, setSuggestionSelections, setDebugLogs,
+  loading, setLoading, isSuggesting, setIsSuggesting, suggestions, setSuggestions,
 }) => {
-  const { toast } = useToast();
-
-  // Themenvorschlag per Edge Function holen
-  const handleSuggestTopics = async () => {
+  
+  const handleSuggest = async () => {
     setIsSuggesting(true);
-    setSuggestions([]);
-    setSuggestionSelections([]);
     setDebugLogs(prev => [...prev, "Starte Themenvorschlags-Request an KI-Edge-Function."]);
     try {
-      const context = buildContextFromMeta({
-        topicInput, category, season, audiences, contentType, tags, excerpt, imageUrl
-      });
-      setDebugLogs(prev => [...prev, "Sende POST an: " + SUGGESTION_FUNCTION_URL]);
-      const response = await fetch(SUGGESTION_FUNCTION_URL, {
+      const context = buildContextFromMeta({ category, season, audiences, contentType, tags, excerpt, imageUrl });
+      const keyword = topicInput || context || "Bitte nur knackige, inspirierende Titel zurückgeben.";
+      setDebugLogs(prev => [...prev, "Sende POST an: " + SUGGEST_FUNCTION_URL]);
+      const response = await fetch(SUGGEST_FUNCTION_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword: context }),
+        body: JSON.stringify({ keyword }),
       });
-
-      const data = await response.json().catch(() => ({}));
-      setDebugLogs(prev => [
-        ...prev,
-        "Antwort erhalten (Status: " + response.status + ")",
-        "Edge-Function Rückgabe: " + JSON.stringify(data, null, 2)
-      ]);
-      if (!response.ok || !data.topics) {
-        setDebugLogs(prev => [...prev, "Fehler beim Vorschlag: " + (data?.error || "Unbekannter Fehler")]);
-        toast({ title: "Fehler", description: String(data?.error || "Fehler beim Vorschlag"), variant: "destructive" });
-        setSuggestions([]);
-        setIsSuggesting(false);
-        return;
-      }
-
-      if (!Array.isArray(data.topics) || data.topics.length === 0) {
-        setDebugLogs(prev => [...prev, "Kein Thema extrahiert (topics leeres Array)."]);
-        toast({ title: "Keine Vorschläge", description: "Die KI hat keine brauchbaren Themen zurückgegeben.", variant: "destructive" });
-        setSuggestions([]);
-        setIsSuggesting(false);
-        return;
-      }
-      setDebugLogs(prev => [...prev, "Vorschläge extrahiert: " + JSON.stringify(data.topics)]);
-      setSuggestions(data.topics.slice(0, 3));
+      const data = await response.json();
+      setDebugLogs(prev => [...prev, "Antwort erhalten (Status: " + response.status + ")"]);
+      setDebugLogs(prev => [...prev, "Edge-Function Rückgabe: " + JSON.stringify(data, null, 2)]);
+      if (!response.ok || !data.topics) throw new Error(data?.error ?? "Fehler bei der KI");
+      
+      // Entferne doppelte Anführungszeichen und bereinige die Themen
+      const cleanedTopics = data.topics.map((topic: string) => {
+        // Entferne führende und abschließende Anführungszeichen
+        return topic.replace(/^"(.*)"$/, '$1');
+      });
+      
+      setSuggestions(cleanedTopics);
+      setDebugLogs(prev => [...prev, "Vorschläge extrahiert: " + JSON.stringify(cleanedTopics, null, 2)]);
     } catch (err: any) {
-      setDebugLogs(prev => [...prev, "Fehler beim Themenvorschlag: " + String(err.message || err)]);
-      toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
-      setSuggestions([]);
+      setDebugLogs(prev => [...prev, "Fehler bei Themenvorschlägen: " + String(err.message || err)]);
     }
     setIsSuggesting(false);
   };
 
-  // Inhalt der Vorschlagsauswahl als Main-Prompt oder als Array speichern
-  const handleSuggestionSelect = (s: string) => {
-    // Wir dürfen hier nicht das Callback-Pattern verwenden,
-    // sondern müssen einen neuen Wert direkt ableiten.
-    let nextSelections: string[];
-    if (suggestionSelections.includes(s)) {
-      nextSelections = suggestionSelections.filter(item => item !== s);
-    } else {
-      nextSelections = [...suggestionSelections, s];
-    }
-    setSuggestionSelections(nextSelections);
-  };
-
   return (
-    <BlogTopicSuggestions
-      topicInput={topicInput}
-      setTopicInput={setTopicInput}
-      isSuggesting={isSuggesting}
-      loading={loading}
-      handleSuggestTopics={handleSuggestTopics}
-      suggestions={suggestions}
-      selected={suggestionSelections}
-      onSuggestionClick={handleSuggestionSelect}
-    />
+    <div>
+      <div className="mb-3">
+        <label className="block text-sm font-medium mb-1">Thema/Stichwort (optional)</label>
+        <Input
+          value={topicInput}
+          onChange={(e) => setTopicInput(e.target.value)}
+          placeholder="z.B. 'Herbstgarten', 'Meal Prep', 'Urban Gardening'..."
+          disabled={loading || isSuggesting}
+        />
+      </div>
+      <Button
+        onClick={handleSuggest}
+        disabled={loading || isSuggesting}
+        className="mb-4"
+      >
+        {isSuggesting && <span className="mr-2 w-4 h-4 animate-spin border-2 border-white/20 border-t-white rounded-full inline-block" />}
+        Themenvorschläge generieren
+      </Button>
+      {suggestions.length > 0 && (
+        <BlogTopicSuggestions
+          suggestions={suggestions}
+          selectedSuggestions={suggestionSelections}
+          onSelectionChange={setSuggestionSelections}
+          loading={loading || isSuggesting}
+        />
+      )}
+    </div>
   );
 };
 
