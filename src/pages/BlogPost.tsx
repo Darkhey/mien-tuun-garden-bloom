@@ -1,6 +1,5 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Layout from '@/components/Layout';
 import { ArrowLeft } from 'lucide-react';
 import BlogPostHeader from "@/components/blog/BlogPostHeader";
 import BlogPostImage from "@/components/blog/BlogPostImage";
@@ -72,17 +71,13 @@ const BlogPostPage = () => {
 
   if (isLoading) {
     return (
-      <Layout>
-        <div className="max-w-4xl mx-auto px-4 pt-20 pb-40 text-center text-earth-600">Lade Artikel...</div>
-      </Layout>
+      <div className="max-w-4xl mx-auto px-4 pt-20 pb-40 text-center text-earth-600">Lade Artikel...</div>
     );
   }
 
   if (!row) {
     return (
-      <Layout>
-        <div className="max-w-4xl mx-auto px-4 pt-20 pb-40 text-center text-earth-500">Artikel nicht gefunden.</div>
-      </Layout>
+      <div className="max-w-4xl mx-auto px-4 pt-20 pb-40 text-center text-earth-500">Artikel nicht gefunden.</div>
     );
   }
 
@@ -113,8 +108,7 @@ const BlogPostPage = () => {
   };
 
   return (
-    <Layout title={`${post.title} - Blog`}>
-      {/* Structured Data for Google */}
+    {/* Structured Data for Google */}
       <BlogStructuredData
         title={post.title}
         slug={post.slug}
@@ -163,7 +157,6 @@ const BlogPostPage = () => {
         {/* Blog Kommentare */}
         <BlogComments blogSlug={post.slug} userId={userId} />
       </article>
-    </Layout>
   );
 };
 

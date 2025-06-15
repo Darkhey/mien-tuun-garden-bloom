@@ -1,6 +1,5 @@
 
 import React, { useEffect, useState } from "react";
-import Layout from "@/components/Layout";
 import { useSearchParams } from "react-router-dom";
 
 const NewsletterConfirmPage = () => {
@@ -21,8 +20,7 @@ const NewsletterConfirmPage = () => {
   }, [email, token]);
 
   return (
-    <Layout title="Newsletter-Bestätigung">
-      <div className="max-w-xl mx-auto py-16 px-4 text-center">
+    <div className="max-w-xl mx-auto py-16 px-4 text-center">
         {status === "loading" && <p>Bestätige Anmeldung...</p>}
         {status === "success" && (
           <>
@@ -37,7 +35,6 @@ const NewsletterConfirmPage = () => {
           </>
         )}
       </div>
-    </Layout>
   );
 };
 export default NewsletterConfirmPage;

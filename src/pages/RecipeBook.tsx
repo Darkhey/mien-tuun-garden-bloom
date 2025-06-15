@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { BookOpen } from "lucide-react";
-import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import SavedRecipeCard from "@/components/recipe/SavedRecipeCard";
 
@@ -101,15 +100,13 @@ const RecipeBook = () => {
   }
 
   return (
-    <Layout title="Mein Rezeptbuch">
-      <section className="max-w-5xl mx-auto px-4 py-12">
-        <h1 className="text-4xl font-serif font-bold text-earth-800 mb-8 flex items-center gap-3">
-          <BookOpen className="h-8 w-8 text-sage-600" />
-          Mein Rezeptbuch
-        </h1>
-        {renderContent()}
-      </section>
-    </Layout>
+    <section className="max-w-5xl mx-auto px-4 py-12">
+      <h1 className="text-4xl font-serif font-bold text-earth-800 mb-8 flex items-center gap-3">
+        <BookOpen className="h-8 w-8 text-sage-600" />
+        Mein Rezeptbuch
+      </h1>
+      {renderContent()}
+    </section>
   );
 };
 export default RecipeBook;

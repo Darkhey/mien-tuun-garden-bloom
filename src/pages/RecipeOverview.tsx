@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { Helmet } from "react-helmet";
-import Layout from '@/components/Layout';
 import { siteConfig } from '@/config/site.config';
 import { useQuery } from '@tanstack/react-query';
 import RecipeCard from "@/components/recipes/RecipeCard";
@@ -59,9 +58,8 @@ const RecipeOverview = () => {
   }, [recipeRows, selectedCategory, selectedSeason, selectedDifficulty, searchTerm]);
 
   return (
-    <Layout>
-      <Helmet>
-        <title>Rezepte – saisonal, nachhaltig & lecker | Mien Tuun</title>
+    <Helmet>
+      <title>Rezepte – saisonal, nachhaltig & lecker | Mien Tuun</title>
         <meta name="description" content="Kreative Rezepte mit saisonalen Zutaten, nachhaltige Kochideen und Inspiration für Neulinge & Hobbyköche. Entdecke abwechslungsreiche, gesunde Gerichte!" />
         <meta name="keywords" content="Rezepte, Kochen, saisonal, gesund, nachhaltig, vegetarisch, vegan, Mien Tuun, Küche, Gemüserezepte, schnelle Gerichte" />
         <meta property="og:title" content="Rezepte – saisonal, nachhaltig & lecker | Mien Tuun" />
@@ -114,7 +112,6 @@ const RecipeOverview = () => {
           )}
         </div>
       </section>
-    </Layout>
   );
 };
 

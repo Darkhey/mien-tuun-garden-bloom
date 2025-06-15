@@ -1,6 +1,5 @@
 
 import React, { useState } from "react";
-import Layout from "@/components/Layout";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -42,13 +41,12 @@ const ContactPage = () => {
   };
 
   return (
-    <Layout title="Kontakt">
-      <section className="max-w-xl mx-auto py-16 px-4">
-        <h1 className="text-3xl font-serif font-bold text-earth-800 mb-2">Kontaktformular</h1>
-        <p className="text-earth-600 mb-8">
-          Du hast Fragen, Feedback oder möchtest einfach Hallo sagen? Füll das Formular aus –
-          ich antworte dir so schnell wie möglich!
-        </p>
+    <section className="max-w-xl mx-auto py-16 px-4">
+      <h1 className="text-3xl font-serif font-bold text-earth-800 mb-2">Kontaktformular</h1>
+      <p className="text-earth-600 mb-8">
+        Du hast Fragen, Feedback oder möchtest einfach Hallo sagen? Füll das Formular aus –
+        ich antworte dir so schnell wie möglich!
+      </p>
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div>
             <label htmlFor="name" className="block mb-1 text-earth-700 font-medium">Dein Name</label>
@@ -67,7 +65,6 @@ const ContactPage = () => {
           </Button>
         </form>
       </section>
-    </Layout>
   );
 };
 export default ContactPage;

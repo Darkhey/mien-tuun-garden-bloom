@@ -1,5 +1,4 @@
 import React from 'react';
-import Layout from '@/components/Layout';
 import { siteConfig } from '@/config/site.config';
 import { ExternalLink, Heart, Mail, Flower } from 'lucide-react';
 import LegalLinkTree from "@/components/LegalLinkTree";
@@ -59,8 +58,7 @@ const Links = () => {
   ];
 
   return (
-    <Layout title={`Links - ${siteConfig.title}`}>
-      {/* Header */}
+    {/* Header */}
       <section className="bg-gradient-to-br from-sage-50 to-accent-50 py-16 px-4">
         <div className="max-w-2xl mx-auto text-center">
           <div className="w-24 h-24 bg-sage-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -156,7 +154,6 @@ const Links = () => {
           </div>
         </div>
       </section>
-    </Layout>
   );
 };
 

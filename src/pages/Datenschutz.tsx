@@ -1,10 +1,7 @@
 
 import React from "react";
-import Layout from "@/components/Layout";
-
 const Datenschutz = () => (
-  <Layout title="Datenschutz">
-    <div className="max-w-2xl mx-auto px-4 py-16">
+  <div className="max-w-2xl mx-auto px-4 py-16">
       <h1 className="text-3xl font-serif font-bold mb-6 text-earth-800">
         Datenschutzerklärung
       </h1>
@@ -25,7 +22,6 @@ const Datenschutz = () => (
       </p>
       <div className="mt-8 text-sm text-sage-700">Letzte Aktualisierung: {new Date().getFullYear()}</div>
     </div>
-  </Layout>
 );
 
 export default Datenschutz;
