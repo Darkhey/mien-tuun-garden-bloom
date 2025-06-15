@@ -6,7 +6,8 @@ import TimerModal from "./TimerModal";
 type Step = {
   id?: string;
   step?: number;
-  text: string;
+  text?: string;
+  description?: string;
   image?: string;
   time?: number;
 };
@@ -18,6 +19,14 @@ type Props = {
 
 const RecipeStep: React.FC<Props> = ({ step, stepNumber }) => {
   const [timerOpen, setTimerOpen] = useState(false);
+
+  // Debug: Zeige ankommende Step-Daten in der Konsole
+  React.useEffect(() => {
+    console.log("RecipeStep: received step data:", step);
+  }, [step]);
+
+  // Nutze Fallback für text/description
+  const stepText = step.text || step.description || "";
 
   return (
     <li className="flex flex-col sm:flex-row items-start gap-4">
@@ -37,7 +46,11 @@ const RecipeStep: React.FC<Props> = ({ step, stepNumber }) => {
         )}
       </div>
       <div className="flex-1">
-        <p className="text-earth-700 leading-relaxed">{step.text}</p>
+        {stepText ? (
+          <p className="text-earth-700 leading-relaxed">{stepText}</p>
+        ) : (
+          <p className="text-destructive-600 italic">Zubereitungsschritt fehlt!</p>
+        )}
         {step.image && (
           <img
             src={step.image}
@@ -57,3 +70,4 @@ const RecipeStep: React.FC<Props> = ({ step, stepNumber }) => {
 };
 
 export default RecipeStep;
+
