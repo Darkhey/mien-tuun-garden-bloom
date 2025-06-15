@@ -151,6 +151,14 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
         instructions: instructions,
         source_blog_slug: post.slug,
         status: 'veröffentlicht',
+        prep_time_minutes: recipe.prep_time_minutes || null,
+        cook_time_minutes: recipe.cook_time_minutes || null,
+        servings: recipe.servings || null,
+        difficulty: recipe.difficulty || null,
+        category: recipe.category || post.category,
+        season: recipe.season || null,
+        tags: recipe.tags || null,
+        author: 'Mien Tuun',
       };
       const { error } = await supabase.from("recipes").insert([insertObj]);
       if (error) throw error;
