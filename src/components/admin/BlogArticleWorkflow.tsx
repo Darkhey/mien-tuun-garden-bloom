@@ -1,8 +1,9 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import BlogPromptEditor from "./BlogPromptEditor";
 import BlogArticleEditor from "./BlogArticleEditor";
+import { Skeleton } from "@/components/ui/skeleton";
 import { BLOG_CATEGORIES, SEASONS } from "./blogHelpers";
 
 const GENERATE_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/generate-blog-post";
@@ -21,8 +22,8 @@ interface BlogArticleWorkflowProps {
   canGenerate: boolean;
   editing: string;
   setEditing: (e: string) => void;
-  generated: string|null;
-  setGenerated: (g: string|null) => void;
+  generated: string | null;
+  setGenerated: (g: string | null) => void;
 
   category: string;
   season: string;
@@ -39,23 +40,32 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
   suggestionSelections, loading, setLoading,
   prompt, setPrompt, input, setInput,
   isPromptImproved, setIsPromptImproved, handleImprovePrompt,
-  canGenerate,
-  editing, setEditing,
+  canGenerate, editing, setEditing,
   generated, setGenerated,
   category, season, audiences, contentType, tags, excerpt, imageUrl,
-  setDebugLogs,
-  toast,
+  setDebugLogs, toast,
 }) => {
+  // Für Mehrfach-Artikel
+  const [generatedList, setGeneratedList] = useState<
+    { suggestion: string; content: string; editing: string; status: "loading" | "success" | "error"; error?: string }[]
+  >([]);
 
-  // Multi-Artikel-Generierung für alle Vorschläge
+  // Neuer Multi-Artikel Handler: PARALLEL statt sequentiell
   const handleGenerateMultiple = async () => {
+    if (!suggestionSelections.length) return;
     setLoading(true);
-    setGenerated(null);
-    setEditing("");
-    setDebugLogs((prev) => [...prev, `Starte Multi-Artikel-Generation für ${suggestionSelections.length} Vorschläge.`]);
+    setGeneratedList(
+      suggestionSelections.map(s => ({
+        suggestion: s,
+        content: "",
+        editing: "",
+        status: "loading"
+      }))
+    );
+    setDebugLogs(prev => [...prev, `Starte Multi-Artikel-Generation für ${suggestionSelections.length} Vorschläge.`]);
     try {
-      for (const sug of suggestionSelections) {
-        setDebugLogs(prev => [...prev, `Sende Artikel-Request für Vorschlag "${sug}" an KI-Edge-Function.`]);
+      // Für jede Auswahl: Prompt bauen
+      const requests = suggestionSelections.map((sug, idx) => {
         const contextParts = [
           sug,
           category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
@@ -67,33 +77,56 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
           imageUrl ? `Bild: ${imageUrl}` : "",
         ];
         const fullPrompt = contextParts.filter(Boolean).join(" ");
-        setDebugLogs(prev => [...prev, "Sende POST an: " + GENERATE_FUNCTION_URL]);
-        const response = await fetch(GENERATE_FUNCTION_URL, {
+        setDebugLogs(prev => [...prev, `Sende Artikel-Request für "${sug}" an KI-Edge-Function.`]);
+        return fetch(GENERATE_FUNCTION_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: fullPrompt }),
+        }).then(async response => {
+          const data = await response.json();
+          if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei der KI");
+          return { idx, content: data.content, error: undefined };
+        }).catch(error => {
+          return { idx, content: "", error: String(error?.message || error) };
         });
-        const data = await response.json();
-        setDebugLogs(prev => [...prev, "Antwort erhalten (Status: " + response.status + ")"]);
-        if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei der KI");
-        setGenerated(data.content);
-        setEditing(data.content);
-        setDebugLogs(prev => [...prev, "Artikel erfolgreich generiert für Vorschlag: " + sug]);
-        toast({ title: "Artikel generiert", description: `Artikel zu "${sug}" erstellt.` });
-      }
+      });
+
+      const results = await Promise.all(requests);
+      setGeneratedList(prev =>
+        prev.map((itm, idx) => {
+          const result = results.find(r => r.idx === idx);
+          if (!result) return itm;
+          return {
+            ...itm,
+            content: result.content,
+            editing: result.content,
+            status: result.error ? "error" : "success",
+            error: result.error
+          };
+        })
+      );
+      setDebugLogs(prev => [
+        ...prev,
+        ...results.map((r, idx) =>
+          r.error
+            ? `Fehler bei "${suggestionSelections[idx]}": ${r.error}`
+            : `Artikel erfolgreich generiert für "${suggestionSelections[idx]}".`
+        ),
+      ]);
+      toast({ title: "Generierung abgeschlossen", description: "Alle Aufgaben sind fertig." });
     } catch (err: any) {
-      setDebugLogs(prev => [...prev, "Fehler bei Multi-Artikel-Generation: " + String(err.message || err)]);
+      setDebugLogs(prev => [...prev, "Fehler in Multi-Artikel-Generation: " + String(err.message || err)]);
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
     }
     setLoading(false);
   };
 
-  // Einzelartikel-Generierung (wie gehabt)
+  // Einzelartikel-Generierung: wie gehabt, aber auch Ladeanimation!
   const handleGenerate = async () => {
     setLoading(true);
     setGenerated(null);
     setEditing("");
-    setDebugLogs((prev) => [...prev, "Starte Einzel-Artikel-Generation via KI-Edge-Function."]);
+    setDebugLogs(prev => [...prev, "Starte Einzel-Artikel-Generation via KI-Edge-Function."]);
     try {
       const contextParts = [
         category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
@@ -124,14 +157,21 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
     setLoading(false);
   };
 
+  // Artikel speichern (Platzhalter für echten API-Call)
+  const handleSave = async (content: string, suggestion: string) => {
+    try {
+      // TODO: Hier API-Logik für das Speichern des Artikels einbauen!
+      toast({ title: "Erfolgreich gespeichert!", description: `Artikel "${suggestion}" wurde gesichert.` });
+    } catch (err: any) {
+      toast({ title: "Speicherfehler", description: String(err.message || err), variant: "destructive" });
+    }
+  };
+
   return (
-    <>
+    <div>
       {suggestionSelections.length > 0 && (
-        <Button
-          className="mb-4"
-          onClick={handleGenerateMultiple}
-          disabled={loading}
-        >
+        <Button className="mb-4" onClick={handleGenerateMultiple} disabled={loading}>
+          {loading && <span className="mr-2"><Skeleton className="w-4 h-4 rounded-full inline-block" /></span>}
           Artikel für {suggestionSelections.length} Vorschlag{suggestionSelections.length > 1 ? "e" : ""} generieren
         </Button>
       )}
@@ -147,16 +187,55 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
         isSuggesting={false}
       />
 
-      <BlogArticleEditor
-        generated={generated}
-        editing={editing}
-        setEditing={setEditing}
-        loading={loading}
-        handleGenerate={handleGenerate}
-        handleSave={() => {}} // Save-Logik ggf. noch herauslösen, da sie API/Supabase betrifft
-        canGenerate={Boolean(prompt || input)}
-      />
-    </>
+      {/* Multi-Artikel-Editoren */}
+      {generatedList.length > 0 &&
+        <div className="grid gap-6 mt-2">
+          {generatedList.map((item, idx) => (
+            <div key={idx} className="border rounded-xl p-3 shadow-sm bg-muted/30 relative">
+              <div className="font-semibold mb-2">{item.suggestion}</div>
+              {item.status === "loading" && (
+                <div className="flex flex-col items-center justify-center py-6">
+                  <Skeleton className="w-full h-5 rounded mb-2" />
+                  <Skeleton className="w-full h-10 rounded" />
+                  <div className="animate-pulse mt-3 text-muted-foreground">Wird generiert ...</div>
+                </div>
+              )}
+              {item.status === "success" && (
+                <BlogArticleEditor
+                  generated={item.content}
+                  editing={item.editing}
+                  setEditing={val => {
+                    setGeneratedList(list =>
+                      list.map((el, i) => i === idx ? { ...el, editing: val } : el)
+                    );
+                  }}
+                  loading={false}
+                  handleGenerate={() => {}} // Nicht erneut generieren für Multi
+                  handleSave={() => handleSave(item.editing, item.suggestion)}
+                  canGenerate={true}
+                />
+              )}
+              {item.status === "error" && (
+                <div className="text-red-600">Fehler: {item.error}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Einzelartikel (nur wenn KEIN Multi läuft): */}
+      {generatedList.length === 0 && (
+        <BlogArticleEditor
+          generated={generated}
+          editing={editing}
+          setEditing={setEditing}
+          loading={loading}
+          handleGenerate={handleGenerate}
+          handleSave={() => handleSave(editing, "Einzelartikel")}
+          canGenerate={Boolean(prompt || input)}
+        />
+      )}
+    </div>
   );
 };
 

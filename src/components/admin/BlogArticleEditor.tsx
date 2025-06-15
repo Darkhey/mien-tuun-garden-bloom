@@ -12,7 +12,6 @@ interface BlogArticleEditorProps {
   handleSave: () => void;
   canGenerate: boolean;
 }
-
 const BlogArticleEditor: React.FC<BlogArticleEditorProps> = ({
   generated,
   editing,
@@ -28,14 +27,18 @@ const BlogArticleEditor: React.FC<BlogArticleEditorProps> = ({
       className="mb-2"
       disabled={loading || !canGenerate}
     >
-      {loading && !generated && <span className="w-4 h-4 animate-spin mr-2 inline-block border-2 border-gray-400 rounded-full" />}
+      {loading && !generated && (
+        <span className="w-4 h-4 animate-spin mr-2 inline-block border-2 border-gray-400 rounded-full" />
+      )}
       KI-Artikel generieren
     </Button>
     {generated && (
       <div className="mt-4 border-t pt-4">
-        <div className="text-xs text-sage-700 mb-1">Artikel-Entwurf (anpassbar, Markdown möglich):</div>
-        <Textarea
-          className="mb-2"
+        <div className="text-xs text-sage-700 mb-1">
+          Artikel-Entwurf (anpassbar, Markdown möglich):
+        </div>
+        <textarea
+          className="mb-2 block w-full rounded-md border border-gray-300 px-3 py-2 resize-vertical focus:outline focus:ring focus:ring-primary/30 bg-white"
           rows={12}
           value={editing}
           onChange={e => setEditing(e.target.value)}
@@ -46,7 +49,9 @@ const BlogArticleEditor: React.FC<BlogArticleEditorProps> = ({
           onClick={handleSave}
           disabled={loading}
         >
-          {loading ? <span className="w-4 h-4 animate-spin mr-2 inline-block border-2 border-gray-400 rounded-full" /> : null}
+          {loading ? (
+            <span className="w-4 h-4 animate-spin mr-2 inline-block border-2 border-gray-400 rounded-full" />
+          ) : null}
           Bestätigen & speichern
         </Button>
       </div>
