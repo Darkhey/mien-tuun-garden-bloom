@@ -172,8 +172,12 @@ export class SEOOptimizationService {
     
     const words = content.toLowerCase().split(/\s+/);
     const keywordCount = words.filter(word => word.includes(keyword.toLowerCase())).length;
+    const totalWords = words.length;
     
-    return (keywordCount / words.length) * 100;
+    // Ensure we have valid numbers for calculation
+    if (totalWords === 0) return 0;
+    
+    return (keywordCount / totalWords) * 100;
   }
 
   private calculateReadabilityScore(content: string): number {
