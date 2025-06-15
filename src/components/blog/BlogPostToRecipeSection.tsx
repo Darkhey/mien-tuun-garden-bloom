@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,6 +60,17 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
       const user = await supabase.auth.getUser();
       if (!user.data.user) throw new Error("Nicht eingeloggt!");
 
+      let instructions = recipe.instructions ?? null;
+      if (instructions && Array.isArray(instructions)) {
+        instructions = instructions.map((s: any, i: number) =>
+          typeof s === "string"
+            ? { step: i + 1, text: s }
+            : typeof s === "object" && s !== null
+              ? { step: i + 1, ...(s.text ? { text: s.text } : {}), ...(s.description ? { description: s.description } : {}), ...(s.image ? { image: s.image } : {}), ...(s.time ? { time: s.time } : {}) }
+              : { step: i + 1, text: String(s) }
+        );
+      }
+
       const insertObj = {
         user_id: user.data.user.id,
         title: recipe.title,
@@ -68,7 +78,7 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
         image_url: recipe.image || post.featuredImage,
         description: recipe.description || "",
         ingredients: recipe.ingredients ?? null,
-        instructions: recipe.instructions ?? null,
+        instructions: instructions,
         source_blog_slug: post.slug,
         status: 'veröffentlicht',
       };
@@ -109,4 +119,3 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
 };
 
 export default BlogPostToRecipeSection;
-
