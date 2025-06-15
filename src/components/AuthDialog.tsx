@@ -104,154 +104,127 @@ const AuthDialog: React.FC<Props> = ({ children }) => {
   return (
     <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (o) setTimeout(() => emailRef.current?.focus(), 100); }}>
       <DialogTrigger asChild>
-        {/* Das Child ist meist der Login/Reg Button im Header */}
         {children}
       </DialogTrigger>
-      <DialogContent
-        className="
-          w-full max-w-md rounded-2xl
-          md:rounded-2xl 
-          px-2 md:px-8 py-6
-          !left-1/2 !top-1/2 !-translate-x-1/2 !-translate-y-1/2
-          relative
-          bg-white
-          shadow-xl
-          transition-all
-          data-[state=open]:animate-in
-          data-[state=closed]:animate-out
-          data-[state=open]:duration-200
-          data-[state=closed]:duration-150
-          
-          md:my-16
-          /* Mobile Fullscreen BottomSheet Style */
-          sm:max-w-md
-          sm:rounded-2xl
-          max-h-[95dvh]
-          overflow-y-auto
-          
-          [&]:!p-0
-          flex flex-col
-          "
-        // individuell auf Mobile: ohne großen Rand, fast Fullscreen
-        style={{
-          // ab max-w-md sowieso beschränkt für größere Geräte,
-          // auf mobilen Geräten (max-width: 640px = sm) Volle Breite und bottom-sheet
-          borderRadius: "24px",
-          paddingTop: 0,
-          paddingBottom: 0,
-        }}
-      >
-        <div
-          className="
-            px-6 py-2 pt-5 md:pt-7 rounded-t-2xl w-full 
-            bg-sage-50 border-b border-sage-100
-            flex flex-col items-center
-            sticky top-0 z-10
-          "
-        >
-          <DialogHeader>
-            <DialogTitle className="text-center text-2xl font-bold mb-1">
+      <DialogContent className="w-[95vw] max-w-md mx-auto sm:w-full">
+        <div className="flex flex-col">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-center text-xl font-bold mb-3">
               {isLogin ? "Login" : "Konto anlegen"}
             </DialogTitle>
-            <div className="flex justify-center gap-2 text-sm mb-2">
+            <div className="flex justify-center gap-2 text-sm">
               <button
-                className={`px-3 py-1 rounded-full font-medium transition-colors ${isLogin ? "bg-sage-600 text-white" : "text-sage-700 bg-sage-100 hover:bg-sage-200"}`}
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                  isLogin 
+                    ? "bg-sage-600 text-white" 
+                    : "text-sage-700 bg-sage-100 hover:bg-sage-200"
+                }`}
                 onClick={() => setIsLogin(true)}
-                disabled={isLogin}
                 type="button"
               >
                 Login
               </button>
               <button
-                className={`px-3 py-1 rounded-full font-medium transition-colors ${!isLogin ? "bg-sage-600 text-white" : "text-sage-700 bg-sage-100 hover:bg-sage-200"}`}
+                className={`px-4 py-2 rounded-full font-medium transition-colors ${
+                  !isLogin 
+                    ? "bg-sage-600 text-white" 
+                    : "text-sage-700 bg-sage-100 hover:bg-sage-200"
+                }`}
                 onClick={() => setIsLogin(false)}
-                disabled={!isLogin}
                 type="button"
               >
                 Registrieren
               </button>
             </div>
           </DialogHeader>
-        </div>
 
-        <form className="space-y-4 px-6 pt-4 pb-2 w-full" onSubmit={handleSubmit}>
-          <div>
-            <Label htmlFor="email">E-Mail</Label>
-            <div className="relative">
-              <Input
-                id="email"
-                type="email"
-                autoFocus
-                value={form.email}
-                onChange={e => setForm({ ...form, email: e.target.value })}
-                className={`${errors.email ? "border-destructive" : ""} pl-10`}
-                ref={emailRef}
-              />
-              <Mail className="absolute left-2 top-2.5 h-5 w-5 text-sage-400" />
-            </div>
-            {errors.email && <div className="text-destructive text-xs mt-1">{errors.email}</div>}
-          </div>
-          <div>
-            <Label htmlFor="pw">Passwort</Label>
-            <div className="relative">
-              <Input
-                id="pw"
-                type="password"
-                value={form.password}
-                onChange={e => setForm({ ...form, password: e.target.value })}
-                className={`${errors.password ? "border-destructive" : ""} pl-10`}
-                minLength={8}
-                autoComplete={isLogin ? "current-password" : "new-password"}
-              />
-              <Lock className="absolute left-2 top-2.5 h-5 w-5 text-sage-400" />
-            </div>
-            {errors.password && <div className="text-destructive text-xs mt-1">{errors.password}</div>}
-          </div>
-          {!isLogin && (
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <Label htmlFor="pw2">Passwort bestätigen</Label>
+              <Label htmlFor="email">E-Mail</Label>
               <div className="relative">
                 <Input
-                  id="pw2"
+                  id="email"
+                  type="email"
+                  autoFocus
+                  value={form.email}
+                  onChange={e => setForm({ ...form, email: e.target.value })}
+                  className={`${errors.email ? "border-destructive" : ""} pl-10`}
+                  ref={emailRef}
+                />
+                <Mail className="absolute left-2 top-2.5 h-5 w-5 text-sage-400" />
+              </div>
+              {errors.email && <div className="text-destructive text-xs mt-1">{errors.email}</div>}
+            </div>
+            <div>
+              <Label htmlFor="pw">Passwort</Label>
+              <div className="relative">
+                <Input
+                  id="pw"
                   type="password"
-                  value={form.confirm}
-                  onChange={e => setForm({ ...form, confirm: e.target.value })}
-                  className={`${errors.confirm ? "border-destructive" : ""} pl-10`}
-                  autoComplete="new-password"
+                  value={form.password}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  className={`${errors.password ? "border-destructive" : ""} pl-10`}
+                  minLength={8}
+                  autoComplete={isLogin ? "current-password" : "new-password"}
                 />
                 <Lock className="absolute left-2 top-2.5 h-5 w-5 text-sage-400" />
               </div>
-              {errors.confirm && <div className="text-destructive text-xs mt-1">{errors.confirm}</div>}
+              {errors.password && <div className="text-destructive text-xs mt-1">{errors.password}</div>}
             </div>
-          )}
-          {!isLogin && (
-            <div className="flex items-center gap-3 rounded-lg bg-sage-50 px-2 py-2">
-              <Checkbox id="newsletter" checked={newsletter} onCheckedChange={v => setNewsletter(!!v)} />
-              <Label htmlFor="newsletter" className="cursor-pointer text-sage-800 select-none">
-                Garten-Newsletter abonnieren
-                <span className="block text-xs text-sage-600 font-normal">Tipps, Ideen & Aktionen. Kein Spam!</span>
-              </Label>
-            </div>
-          )}
+            {!isLogin && (
+              <div>
+                <Label htmlFor="pw2">Passwort bestätigen</Label>
+                <div className="relative">
+                  <Input
+                    id="pw2"
+                    type="password"
+                    value={form.confirm}
+                    onChange={e => setForm({ ...form, confirm: e.target.value })}
+                    className={`${errors.confirm ? "border-destructive" : ""} pl-10`}
+                    autoComplete="new-password"
+                  />
+                  <Lock className="absolute left-2 top-2.5 h-5 w-5 text-sage-400" />
+                </div>
+                {errors.confirm && <div className="text-destructive text-xs mt-1">{errors.confirm}</div>}
+              </div>
+            )}
+            {!isLogin && (
+              <div className="flex items-center gap-3 rounded-lg bg-sage-50 px-3 py-3">
+                <Checkbox id="newsletter" checked={newsletter} onCheckedChange={v => setNewsletter(!!v)} />
+                <Label htmlFor="newsletter" className="cursor-pointer text-sage-800 select-none text-sm">
+                  Garten-Newsletter abonnieren
+                  <span className="block text-xs text-sage-600 font-normal">Tipps, Ideen & Aktionen. Kein Spam!</span>
+                </Label>
+              </div>
+            )}
 
-          <Button type="submit" disabled={loading} className="w-full mt-2">
-            {loading ? <><Loader2 className="animate-spin mr-2" /> Bitte warten...</> : (isLogin ? "Login" : "Registrieren")}
-          </Button>
-        </form>
-        <div className="text-center mt-3 pb-4 px-6">
-          <button
-            className="text-primary hover:underline text-xs"
-            type="button"
-            onClick={() => setIsLogin(!isLogin)}
-          >
-            {isLogin
-              ? "Noch keinen Account? Jetzt registrieren."
-              : "Bereits Account? Login hier."}
-          </button>
+            <Button type="submit" disabled={loading} className="w-full mt-4">
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin mr-2 h-4 w-4" /> 
+                  Bitte warten...
+                </>
+              ) : (
+                isLogin ? "Login" : "Registrieren"
+              )}
+            </Button>
+          </form>
+          
+          <div className="text-center mt-4">
+            <button
+              className="text-primary hover:underline text-sm"
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+            >
+              {isLogin
+                ? "Noch keinen Account? Jetzt registrieren."
+                : "Bereits Account? Login hier."}
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
-export default AuthDialog;
 
+export default AuthDialog;
