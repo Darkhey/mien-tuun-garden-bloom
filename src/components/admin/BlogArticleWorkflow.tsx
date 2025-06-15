@@ -4,6 +4,7 @@ import BlogPromptEditor from "./BlogPromptEditor";
 import BlogArticleEditor from "./BlogArticleEditor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BLOG_CATEGORIES, SEASONS } from "./blogHelpers";
+import { supabase } from "@/integrations/supabase/client";
 
 const GENERATE_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/generate-blog-post";
 
@@ -156,13 +157,57 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
     setLoading(false);
   };
 
-  // Artikel speichern (Platzhalter für echten API-Call)
+  // Artikel speichern (tatsächlicher API-Call zu Supabase)
   const handleSave = async (content: string, suggestion: string) => {
+    // Generiere einen Slug
+    const slug = suggestion
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .substring(0, 80)
+      + "-" + Date.now();
+
+    // Fallbacks für Felder
+    const article = {
+      slug,
+      title: suggestion,
+      content,
+      excerpt: excerpt || content.slice(0, 200),
+      category: category || "Unkategorisiert",
+      tags: tags.length ? tags : [],
+      content_types: contentType.length ? contentType : [],
+      season: season || "",
+      audiences: audiences.length ? audiences : [],
+      featured_image: imageUrl || "",
+      og_image: "",
+      original_title: "",
+      seo_description: excerpt || "",
+      seo_title: suggestion,
+      seo_keywords: tags.length ? tags : [],
+      published: false,
+      featured: false,
+      reading_time: Math.ceil(content.split(/\s/).length / 160), // roughly word count / wpm
+      author: "KI-Bot",
+      excerpt: excerpt || content.slice(0, 180),
+    };
+
     try {
-      // TODO: Hier API-Logik für das Speichern des Artikels einbauen!
-      toast({ title: "Erfolgreich gespeichert!", description: `Artikel "${suggestion}" wurde gesichert.` });
+      // API-Call zu Supabase
+      const { error } = await supabase.from("blog_posts").insert([article]);
+      if (error) throw new Error(error.message);
+      toast({
+        title: "Erfolgreich gespeichert!",
+        description: `Artikel "${suggestion}" wurde gespeichert.`,
+        variant: "success",
+      });
     } catch (err: any) {
-      toast({ title: "Speicherfehler", description: String(err.message || err), variant: "destructive" });
+      toast({
+        title: "Fehler beim Speichern",
+        description: String(err.message || err),
+        variant: "destructive",
+      });
     }
   };
 
