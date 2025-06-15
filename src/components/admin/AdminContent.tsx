@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { AdminView, AdminUser, AdminRecipe, AdminBlogPost } from "@/types/admin";
 import RecipesView from "@/components/admin/views/RecipesView";
@@ -8,9 +7,7 @@ import KIRecipeCreator from "@/components/admin/KIRecipeCreator";
 import KIBlogCreator from "@/components/admin/KIBlogCreator";
 import SowingCalendar from "@/components/admin/SowingCalendar";
 import SecurityAuditLog from "@/components/admin/SecurityAuditLog";
-import Phase2Dashboard from "@/components/admin/Phase2Dashboard";
 import Phase3Dashboard from "@/components/admin/Phase3Dashboard";
-import BlogSystemTestDashboard from "@/components/admin/BlogSystemTestDashboard";
 import ContentStrategyDashboard from "@/components/admin/ContentStrategyDashboard";
 import EditRecipeModal from "@/components/admin/EditRecipeModal";
 import EditBlogPostModal from "@/components/admin/EditBlogPostModal";
@@ -121,12 +118,8 @@ const AdminContent: React.FC<AdminContentProps> = ({
       return <SowingCalendar />;
     case "security-log":
       return <SecurityAuditLog />;
-    case "phase2-dashboard":
-      return <Phase2Dashboard />;
-    case "phase3-dashboard":
+    case "automatisierung":
       return <Phase3Dashboard />;
-    case "blog-test-dashboard":
-      return <BlogSystemTestDashboard />;
     case "content-strategy":
       return <ContentStrategyDashboard />;
     default:

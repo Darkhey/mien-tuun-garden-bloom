@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -74,12 +73,12 @@ function App() {
           <Layout>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/blog" element={<BlogOverview variant="blog" />} />
+              <Route path="/blog" element={<BlogOverview />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/rezepte" element={<RecipeOverview />} />
               <Route path="/rezepte/:id" element={<RecipeDetail />} />
               <Route path="/rezeptebuch" element={<RecipeBook />} />
-              <Route path="/garten" element={<BlogOverview variant="garten" />} />
+              <Route path="/garten" element={<BlogOverview />} />
               <Route path="/about" element={<About />} />
               <Route path="/links" element={<Links />} />
               <Route path="/datenschutz" element={<Datenschutz />} />

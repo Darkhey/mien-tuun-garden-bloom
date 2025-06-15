@@ -6,10 +6,8 @@ export type AdminView =
   | "ki-blog" 
   | "sowing-calendar" 
   | "security-log"
-  | "phase2-dashboard"
-  | "phase3-dashboard"
-  | "blog-test-dashboard"
-  | "content-strategy";
+  | "content-strategy"
+  | "automatisierung";
 
 export interface AdminMenuItem {
   key: AdminView;

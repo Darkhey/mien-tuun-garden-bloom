@@ -1,17 +1,14 @@
 
 import { 
   FileText, 
-  Users, 
-  Settings, 
-  BarChart3, 
+  Users,
   Calendar,
   Shield,
-  Cpu,
   Bot,
-  TestTube,
   TrendingUp,
   ChefHat,
-  PenTool
+  PenTool,
+  Zap
 } from "lucide-react";
 import { AdminView } from "@/types/admin";
 
@@ -43,24 +40,12 @@ export const menuItems: MenuGroup[] = [
     ]
   },
   {
-    group: "Content Intelligence",
+    group: "Tools & Analyse",
     items: [
-      { key: "content-strategy", label: "Content-Strategie", icon: TrendingUp }
-    ]
-  },
-  {
-    group: "Tools & Analytics",
-    items: [
+      { key: "content-strategy", label: "Content-Strategie", icon: TrendingUp },
+      { key: "automatisierung", label: "Automatisierung", icon: Zap },
       { key: "sowing-calendar", label: "Aussaat-Kalender", icon: Calendar },
       { key: "security-log", label: "Sicherheits-Log", icon: Shield }
-    ]
-  },
-  {
-    group: "Entwicklung",
-    items: [
-      { key: "phase2-dashboard", label: "Phase 2 Dashboard", icon: Cpu },
-      { key: "phase3-dashboard", label: "Phase 3 Dashboard", icon: BarChart3 },
-      { key: "blog-test-dashboard", label: "Blog-System-Tests", icon: TestTube }
     ]
   }
 ];

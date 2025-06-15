@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Helmet } from "react-helmet";
 import { useQuery } from '@tanstack/react-query';
@@ -7,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from '@/integrations/supabase/types';
 
 // Die Kategorien
-const categories = ['Alle', 'Gartenpflege', 'Rezepte', 'Nachhaltigkeit', 'DIY'];
+const categories = ['Gartenpflege', 'Rezepte', 'Nachhaltigkeit', 'DIY'];
 
 // Blog-Posts aus Supabase laden
 const fetchBlogPosts = async () => {
@@ -21,7 +22,7 @@ const fetchBlogPosts = async () => {
 
 const BlogOverview: React.FC = () => {
   // Filter States
-  const [selectedCategory, setSelectedCategory] = useState<string>('Alle');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
 
   const { data: blogRows = [], isLoading, error } = useQuery({
@@ -34,7 +35,7 @@ const BlogOverview: React.FC = () => {
     const posts = blogRows as Tables<'blog_posts'>[];
     return posts.filter((post: Tables<'blog_posts'>) => {
       // Kategorie
-      if (selectedCategory !== 'Alle' && post.category !== selectedCategory) return false;
+      if (selectedCategory && post.category !== selectedCategory) return false;
       // Suchbegriff
       if (
         searchTerm &&
@@ -86,9 +87,33 @@ const BlogOverview: React.FC = () => {
             <div className="text-center py-12 text-red-500">Fehler beim Laden der Artikel.</div>
           ) : filteredPosts.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredPosts.map((post, index) => (
-                <BlogPostCard post={post} index={index} key={post.id} />
-              ))}
+              {filteredPosts.map((post, index) => {
+                const mappedPost = {
+                  id: post.id,
+                  slug: post.slug,
+                  title: post.title,
+                  excerpt: post.excerpt,
+                  content: post.content,
+                  author: post.author,
+                  publishedAt: post.published_at,
+                  updatedAt: post.updated_at || undefined,
+                  featuredImage: post.featured_image || '/placeholder.svg',
+                  category: post.category || '',
+                  tags: post.tags || [],
+                  readingTime: post.reading_time || 5,
+                  seo: {
+                      title: post.seo_title || post.title,
+                      description: post.seo_description || '',
+                      keywords: post.seo_keywords || [],
+                  },
+                  featured: !!post.featured,
+                  published: !!post.published,
+                  structuredData: post.structured_data || undefined,
+                  originalTitle: post.original_title || undefined,
+                  ogImage: post.og_image || undefined,
+                };
+                return <BlogPostCard post={mappedPost} index={index} key={post.id} />;
+              })}
             </div>
           ) : (
             <div className="text-center py-12">
