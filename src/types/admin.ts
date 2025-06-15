@@ -46,6 +46,19 @@ export interface AdminRecipe {
   image_url?: string;
 }
 
+export type RecipeFormData = {
+  title: string;
+  description: string;
+  category: string;
+  season: string;
+  difficulty: string;
+  servings: number;
+  prep_time_minutes: number;
+  cook_time_minutes: number;
+  image_url: string;
+  status: string;
+};
+
 export interface AdminBlogPost {
   id: string;
   title: string;
