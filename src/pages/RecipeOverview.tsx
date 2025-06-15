@@ -59,7 +59,7 @@ const RecipeOverview = () => {
   }, [recipeRows, selectedCategory, selectedSeason, selectedDifficulty, searchTerm]);
 
   return (
-    <>
+    <Layout>
       <Helmet>
         <title>Rezepte – saisonal, nachhaltig & lecker | Mien Tuun</title>
         <meta name="description" content="Kreative Rezepte mit saisonalen Zutaten, nachhaltige Kochideen und Inspiration für Neulinge & Hobbyköche. Entdecke abwechslungsreiche, gesunde Gerichte!" />
@@ -114,7 +114,7 @@ const RecipeOverview = () => {
           )}
         </div>
       </section>
-    </>
+    </Layout>
   );
 };
 

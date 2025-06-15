@@ -3,7 +3,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Layout from "@/components/Layout";
 import Index from "./pages/Index";
 import BlogOverview from "./pages/BlogOverview";
 import BlogPost from "./pages/BlogPost";
@@ -26,26 +25,24 @@ import { supabase } from "@/integrations/supabase/client";
 const queryClient = new QueryClient();
 
 const LayoutRoutes = () => (
-  <Layout>
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/blog" element={<BlogOverview variant="blog" />} />
-      <Route path="/blog/:slug" element={<BlogPost />} />
-      <Route path="/rezepte" element={<RecipeOverview />} />
-      <Route path="/rezepte/:id" element={<RecipeDetail />} />
-      <Route path="/rezeptebuch" element={<RecipeBook />} />
-      <Route path="/garten" element={<BlogOverview variant="garten" />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/links" element={<Links />} />
-      <Route path="/datenschutz" element={<Datenschutz />} />
-      <Route path="/impressum" element={<Impressum />} />
-      <Route path="/profil" element={<ProfilePage />} />
-      <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-      <Route path="/kontakt" element={<ContactPage />} />
-      <Route path="/newsletter-confirm" element={<NewsletterConfirmPage />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  </Layout>
+  <Routes>
+    <Route path="/" element={<Index />} />
+    <Route path="/blog" element={<BlogOverview variant="blog" />} />
+    <Route path="/blog/:slug" element={<BlogPost />} />
+    <Route path="/rezepte" element={<RecipeOverview />} />
+    <Route path="/rezepte/:id" element={<RecipeDetail />} />
+    <Route path="/rezeptebuch" element={<RecipeBook />} />
+    <Route path="/garten" element={<BlogOverview variant="garten" />} />
+    <Route path="/about" element={<About />} />
+    <Route path="/links" element={<Links />} />
+    <Route path="/datenschutz" element={<Datenschutz />} />
+    <Route path="/impressum" element={<Impressum />} />
+    <Route path="/profil" element={<ProfilePage />} />
+    <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+    <Route path="/kontakt" element={<ContactPage />} />
+    <Route path="/newsletter-confirm" element={<NewsletterConfirmPage />} />
+    <Route path="*" element={<NotFound />} />
+  </Routes>
 );
 
 // AdminProtectedRoute: Nur Admins erlaubt
