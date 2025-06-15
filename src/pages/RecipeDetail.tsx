@@ -145,10 +145,11 @@ const RecipeDetail = () => {
   }
 
   return (
-    <RecipeStructuredData
-      recipe={recipe}
-      averageRating={recipeRating.average ?? undefined}
-      ratingCount={recipeRating.count}
+    <>
+      <RecipeStructuredData
+        recipe={recipe}
+        averageRating={recipeRating.average ?? undefined}
+        ratingCount={recipeRating.count}
       />
       <section className="max-w-3xl mx-auto px-4 py-10">
         <Link
@@ -180,6 +181,7 @@ const RecipeDetail = () => {
       <section className="max-w-3xl mx-auto px-4 pb-16">
         <RecipeComments recipeId={slug!} userId={userId} />
       </section>
+    </>
   );
 };
 

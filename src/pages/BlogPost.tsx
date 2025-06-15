@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -108,7 +109,8 @@ const BlogPostPage = () => {
   };
 
   return (
-    {/* Structured Data for Google */}
+    <>
+      {/* Structured Data for Google */}
       <BlogStructuredData
         title={post.title}
         slug={post.slug}
@@ -157,6 +159,7 @@ const BlogPostPage = () => {
         {/* Blog Kommentare */}
         <BlogComments blogSlug={post.slug} userId={userId} />
       </article>
+    </>
   );
 };
 
