@@ -260,6 +260,19 @@ const KIBlogCreator: React.FC = () => {
     setLoading(false);
   };
 
+  // Prompt-Optimierung: Hier als Placeholder einfach das aktuelle input-Feld in den Prompt schreiben
+  const handleImprovePrompt = async () => {
+    setLoading(true);
+    try {
+      // Placeholder: einfach das user input als prompt setzen (ersetzt durch KI-Call wenn gewünscht)
+      setPrompt(input);
+      setIsPromptImproved(true);
+    } catch (err: any) {
+      toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
   return (
     <div className="bg-white p-5 rounded-xl shadow max-w-xl mx-auto">
       <h2 className="font-bold text-lg mb-4">KI Blogartikel Generator</h2>
