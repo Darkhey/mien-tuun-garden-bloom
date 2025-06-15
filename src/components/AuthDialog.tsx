@@ -1,13 +1,10 @@
 
 import React, { useState, useRef } from "react";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Mail, Lock, User as UserIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AuthToggleButtons from "./auth/AuthToggleButtons";
+import AuthForm from "./auth/AuthForm";
 
 type Props = {
   children: React.ReactNode;
@@ -21,7 +18,6 @@ const AuthDialog: React.FC<Props> = ({ children }) => {
   const [form, setForm] = useState({ email: "", password: "", confirm: "" });
   const [errors, setErrors] = useState<{ email?: string; password?: string; confirm?: string }>({});
 
-  // Focus auf das erste Feld wenn Dialog öffnet
   const emailRef = useRef<HTMLInputElement | null>(null);
 
   const resetForm = () => {
@@ -77,7 +73,7 @@ const AuthDialog: React.FC<Props> = ({ children }) => {
         return;
       }
       toast.success("Bitte bestätige deine E-Mail für die Anmeldung.");
-      // Newsletter separate Endpoint
+      
       if (newsletter && form.email) {
         try {
           const res = await fetch("/functions/v1/send-newsletter-confirmation", {
@@ -112,103 +108,20 @@ const AuthDialog: React.FC<Props> = ({ children }) => {
             <DialogTitle className="text-center text-xl font-bold mb-3">
               {isLogin ? "Login" : "Konto anlegen"}
             </DialogTitle>
-            <div className="flex justify-center gap-2 text-sm">
-              <button
-                className={`px-4 py-2 rounded-full font-medium transition-colors ${
-                  isLogin 
-                    ? "bg-sage-600 text-white" 
-                    : "text-sage-700 bg-sage-100 hover:bg-sage-200"
-                }`}
-                onClick={() => setIsLogin(true)}
-                type="button"
-              >
-                Login
-              </button>
-              <button
-                className={`px-4 py-2 rounded-full font-medium transition-colors ${
-                  !isLogin 
-                    ? "bg-sage-600 text-white" 
-                    : "text-sage-700 bg-sage-100 hover:bg-sage-200"
-                }`}
-                onClick={() => setIsLogin(false)}
-                type="button"
-              >
-                Registrieren
-              </button>
-            </div>
+            <AuthToggleButtons isLogin={isLogin} onToggle={setIsLogin} />
           </DialogHeader>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <Label htmlFor="email">E-Mail</Label>
-              <div className="relative">
-                <Input
-                  id="email"
-                  type="email"
-                  autoFocus
-                  value={form.email}
-                  onChange={e => setForm({ ...form, email: e.target.value })}
-                  className={`${errors.email ? "border-destructive" : ""} pl-10`}
-                  ref={emailRef}
-                />
-                <Mail className="absolute left-2 top-2.5 h-5 w-5 text-sage-400" />
-              </div>
-              {errors.email && <div className="text-destructive text-xs mt-1">{errors.email}</div>}
-            </div>
-            <div>
-              <Label htmlFor="pw">Passwort</Label>
-              <div className="relative">
-                <Input
-                  id="pw"
-                  type="password"
-                  value={form.password}
-                  onChange={e => setForm({ ...form, password: e.target.value })}
-                  className={`${errors.password ? "border-destructive" : ""} pl-10`}
-                  minLength={8}
-                  autoComplete={isLogin ? "current-password" : "new-password"}
-                />
-                <Lock className="absolute left-2 top-2.5 h-5 w-5 text-sage-400" />
-              </div>
-              {errors.password && <div className="text-destructive text-xs mt-1">{errors.password}</div>}
-            </div>
-            {!isLogin && (
-              <div>
-                <Label htmlFor="pw2">Passwort bestätigen</Label>
-                <div className="relative">
-                  <Input
-                    id="pw2"
-                    type="password"
-                    value={form.confirm}
-                    onChange={e => setForm({ ...form, confirm: e.target.value })}
-                    className={`${errors.confirm ? "border-destructive" : ""} pl-10`}
-                    autoComplete="new-password"
-                  />
-                  <Lock className="absolute left-2 top-2.5 h-5 w-5 text-sage-400" />
-                </div>
-                {errors.confirm && <div className="text-destructive text-xs mt-1">{errors.confirm}</div>}
-              </div>
-            )}
-            {!isLogin && (
-              <div className="flex items-center gap-3 rounded-lg bg-sage-50 px-3 py-3">
-                <Checkbox id="newsletter" checked={newsletter} onCheckedChange={v => setNewsletter(!!v)} />
-                <Label htmlFor="newsletter" className="cursor-pointer text-sage-800 select-none text-sm">
-                  Garten-Newsletter abonnieren
-                  <span className="block text-xs text-sage-600 font-normal">Tipps, Ideen & Aktionen. Kein Spam!</span>
-                </Label>
-              </div>
-            )}
-
-            <Button type="submit" disabled={loading} className="w-full mt-4">
-              {loading ? (
-                <>
-                  <Loader2 className="animate-spin mr-2 h-4 w-4" /> 
-                  Bitte warten...
-                </>
-              ) : (
-                isLogin ? "Login" : "Registrieren"
-              )}
-            </Button>
-          </form>
+          <AuthForm
+            isLogin={isLogin}
+            loading={loading}
+            form={form}
+            errors={errors}
+            newsletter={newsletter}
+            emailRef={emailRef}
+            onFormChange={setForm}
+            onNewsletterChange={setNewsletter}
+            onSubmit={handleSubmit}
+          />
           
           <div className="text-center mt-4">
             <button
