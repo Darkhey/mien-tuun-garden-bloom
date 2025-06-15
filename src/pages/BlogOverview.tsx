@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Helmet } from "react-helmet";
 import { useQuery } from '@tanstack/react-query';
@@ -6,6 +5,7 @@ import BlogPostCard from "@/components/blog/BlogPostCard";
 import BlogFilter from "@/components/blog/BlogFilter";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from '@/integrations/supabase/types';
+import type { BlogPost } from '@/types/content';
 
 // Die Kategorien
 const categories = ['Gartenpflege', 'Rezepte', 'Nachhaltigkeit', 'DIY'];
@@ -87,8 +87,8 @@ const BlogOverview: React.FC = () => {
             <div className="text-center py-12 text-red-500">Fehler beim Laden der Artikel.</div>
           ) : filteredPosts.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredPosts.map((post, index) => {
-                const mappedPost = {
+              {filteredPosts.map((post) => {
+                const mappedPost: BlogPost = {
                   id: post.id,
                   slug: post.slug,
                   title: post.title,
@@ -112,7 +112,7 @@ const BlogOverview: React.FC = () => {
                   originalTitle: post.original_title || undefined,
                   ogImage: post.og_image || undefined,
                 };
-                return <BlogPostCard post={mappedPost} index={index} key={post.id} />;
+                return <BlogPostCard post={mappedPost} key={post.id} />;
               })}
             </div>
           ) : (
