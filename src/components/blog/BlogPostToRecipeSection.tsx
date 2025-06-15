@@ -64,20 +64,15 @@ type BlogPostToRecipeSectionProps = {
 
 const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post }) => {
   const [saving, setSaving] = useState(false);
-  const [preview, setPreview] = useState<any | null>(null);
   const [savedRecipeSlug, setSavedRecipeSlug] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Early return if this is not a recipe-related post
-  if (!isRecipeRelated(post)) {
-    return null;
-  }
-
-  // KI Vorschau holen
-  const handlePreviewRecipe = async () => {
+  // --- Neuen Button-Handler: Kombiniere Extraktion & Direkt-Speichern ---
+  const handleCreateRecipe = async () => {
     setSaving(true);
-    setPreview(null);
+    setSavedRecipeSlug(null);
     try {
+      // Extrahiere Rezept per KI
       const resp = await fetch(
         `https://ublbxvpmoccmegtwaslh.functions.supabase.co/blog-to-recipe`,
         {
@@ -92,51 +87,19 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
       );
       if (!resp.ok) throw new Error("Fehler bei der KI-Antwort");
       const { recipe } = await resp.json();
-      setPreview(recipe);
-    } catch (err: any) {
-      toast({
-        title: "Fehler",
-        description: String(err.message || err),
-        variant: "destructive",
-      });
-    }
-    setSaving(false);
-  };
+      if (!recipe) throw new Error("Keine Rezept-Antwort erhalten.");
 
-  // Speichern (in DB übernehmen)
-  const handleSaveRecipe = async () => {
-    setSaving(true);
-    try {
-      // Hole KI-Extrakt
-      let recipe = preview;
-      if (!recipe) {
-        const resp = await fetch(
-          `https://ublbxvpmoccmegtwaslh.functions.supabase.co/blog-to-recipe`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              title: post.title,
-              content: post.content,
-              image: post.featuredImage,
-            }),
-          }
-        );
-        if (!resp.ok) throw new Error("Fehler bei der KI-Antwort");
-        const data = await resp.json();
-        recipe = data.recipe;
-      }
-
-      // Slug generieren: bevorzugt KI-Antwort, sonst aus Titel generieren
+      // Slug generieren
       const recipeSlug =
         (recipe && typeof recipe.slug === "string" && recipe.slug.length > 0)
           ? recipe.slug
           : slugify(recipe?.title || post.title);
 
+      // User holen (für user_id)
       const user = await supabase.auth.getUser();
       if (!user.data.user) throw new Error("Nicht eingeloggt!");
 
-      // Insert
+      // Rezept in DB speichern
       const insertObj = {
         user_id: user.data.user.id,
         title: recipe.title,
@@ -148,16 +111,14 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
         source_blog_slug: post.slug,
         status: 'veröffentlicht',
       };
-
       const { error } = await supabase.from("recipes").insert([insertObj]);
       if (error) throw error;
 
-      // Set the saved recipe slug for the link
       setSavedRecipeSlug(recipeSlug);
 
       toast({
-        title: "Rezept gespeichert!",
-        description: "Das Rezept wurde in dein Rezeptbuch übernommen und ist jetzt verfügbar.",
+        title: "Rezept erstellt!",
+        description: "Das Rezept wurde erfolgreich in dein Rezeptbuch übernommen.",
       });
     } catch (err: any) {
       toast({
@@ -171,31 +132,24 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
 
   return (
     <div className="max-w-4xl mx-auto px-4 mt-8 flex gap-4 flex-col">
+      {/* Rezept-Button immer sichtbar */}
       <div className="flex gap-4 flex-wrap">
         <button
-          onClick={handlePreviewRecipe}
-          disabled={saving}
-          className="bg-sage-500 text-white px-6 py-2 rounded-full hover:bg-sage-600 transition-colors flex items-center gap-2"
-        >
-          {saving && <Loader className="animate-spin h-4 w-4" />}
-          Vorschau KI-Rezept
-        </button>
-        <button
-          onClick={handleSaveRecipe}
+          onClick={handleCreateRecipe}
           disabled={saving}
           className="bg-sage-600 text-white px-6 py-2 rounded-full hover:bg-sage-700 transition-colors flex items-center gap-2"
         >
           {saving && <Loader className="animate-spin h-4 w-4" />}
-          Als Rezept speichern
+          Rezept zum Thema erstellen
         </button>
       </div>
 
-      {/* Success message with link to saved recipe */}
+      {/* Erfolgsnachricht mit Link zum neuen Rezept */}
       {savedRecipeSlug && (
         <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="flex items-center gap-2 text-green-800">
             <span>✅</span>
-            <span className="font-semibold">Rezept erfolgreich gespeichert!</span>
+            <span className="font-semibold">Rezept erfolgreich erstellt!</span>
           </div>
           <p className="text-green-700 mt-2">
             Das Rezept wurde zu deinen Rezepten hinzugefügt und ist jetzt für alle sichtbar.
@@ -206,59 +160,6 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
           >
             Zum Rezept gehen →
           </Link>
-        </div>
-      )}
-
-      {/* Vorschau (alles dynamisch) */}
-      {preview && (
-        <div className="mt-8 bg-white rounded-xl shadow p-6">
-          <h3 className="font-serif text-2xl font-bold text-earth-800 mb-4 flex gap-2 items-center">
-            <span>🎉</span> Vorschau auf das extrahierte Rezept
-          </h3>
-          <div className="mb-2">
-            <div className="text-sage-800 text-lg font-bold">{preview.title}</div>
-            {preview.image && (
-              <img src={preview.image} className="my-3 w-full max-h-64 object-cover rounded-md" />
-            )}
-            <div className="mb-2 text-sage-700">{preview.description}</div>
-          </div>
-          {/* Zutaten */}
-          {preview.ingredients && parseArray(preview.ingredients).length > 0 && (
-            <div className="mb-3">
-              <div className="font-semibold">Zutaten:</div>
-              <ul className="pl-4 list-disc">
-                {parseArray(preview.ingredients).map((ing: any, idx: number) =>
-                  <li key={idx}>
-                    {typeof ing === "string"
-                      ? ing
-                      : ing.name + (ing.amount ? ` (${ing.amount} ${ing.unit || ""})` : "")}
-                  </li>
-                )}
-              </ul>
-            </div>
-          )}
-          {/* Schritte */}
-          {preview.instructions && parseArray(preview.instructions).length > 0 && (
-            <div className="mb-3">
-              <div className="font-semibold">Schritte:</div>
-              <ol className="list-decimal pl-6">
-                {parseArray(preview.instructions).map((step: any, idx: number) =>
-                  <li key={idx}>{typeof step === "string" ? step : (step.text || JSON.stringify(step))}</li>
-                )}
-              </ol>
-            </div>
-          )}
-          {/* Tipps */}
-          {preview.tips && parseArray(preview.tips).length > 0 && (
-            <div>
-              <div className="font-semibold">Tipps:</div>
-              <ul className="pl-4 list-disc">
-                {parseArray(preview.tips).map((tip: any, idx: number) =>
-                  <li key={idx}>{typeof tip === "string" ? tip : JSON.stringify(tip)}</li>
-                )}
-              </ul>
-            </div>
-          )}
         </div>
       )}
     </div>
