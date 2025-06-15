@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.5";
@@ -124,7 +123,45 @@ serve(async (req) => {
     });
     const ideaData = await ideaResp.json();
     const topicIdea = ideaData.choices?.[0]?.message?.content?.replace(/["\.]/g,"").trim() || "Neuer Blogartikel";
-    
+
+    // === NEU: EINFACHE DUPLIKATERKENNUNG ===
+    const slug = generateSlug(topicIdea);
+
+    // Hole die letzten 20 Slugs aus Supabase
+    const supabase = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
+    const { data: existingPosts, error: postsError } = await supabase
+      .from("blog_posts")
+      .select("slug,title")
+      .order("published_at", { ascending: false })
+      .limit(20);
+
+    if (postsError) {
+      console.error("Fehler beim Laden bestehender Artikel:", postsError);
+      return new Response(JSON.stringify({ error: postsError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const isDuplicate = existingPosts?.some((post: any) => {
+      // Einfacher Slug-Abgleich (exakte Übereinstimmung Hauptteil)
+      // Ignoriere numerische Suffixe etc.
+      const postSlugMain = post.slug.replace(/-\d+$/, "");
+      return postSlugMain === slug;
+    });
+
+    if (isDuplicate) {
+      // Kein neuer Artikel, da Thema zu ähnlich!
+      return new Response(JSON.stringify({
+        status: "duplicate",
+        slug,
+        title: topicIdea,
+        message: "Dieses Thema wurde kürzlich schon veröffentlicht.",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     // 3. Prompt zusammensetzen
     const prompt = `Thema: ${topicIdea}. ${contextPrompt} Schreibe einen originellen, inspirierenden SEO-Blogartikel auf Deutsch. Baue Trends & Saisonalität ein.`;
 
@@ -157,10 +194,7 @@ serve(async (req) => {
     const seoDescription = excerpt;
     const seoKeywords = [topicIdea, category, season, trend];
 
-    // 7. Slug vorbereiten
-    const slug = generateSlug(topicIdea);
-
-    // 8. KI-generiertes Bild erzeugen & hochladen
+    // 7. KI-generiertes Bild erzeugen & hochladen
     let featured_image: string = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&h=600&fit=crop"; // Fallback
     try {
       const imageB64 = await generateImage({ theme: topicIdea, category, season, trend });
@@ -171,7 +205,7 @@ serve(async (req) => {
       // Fallback-Bild bleibt gesetzt
     }
 
-    // 9. Speichern via Service Role Key
+    // 8. Speichern via Service Role Key
     const supabase = createClient(
       SUPABASE_URL!,
       SERVICE_ROLE_KEY!,
