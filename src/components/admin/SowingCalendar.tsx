@@ -404,10 +404,16 @@ const SowingCalendar: React.FC = () => {
         </TableCaption>
         <TableHeader>
           <TableRow>
-            <TableHead className="min-w-[110px]">Pflanze</TableHead>
-            <TableHead className="min-w-[56px] text-center">Art</TableHead>
+            <TableHead className="min-w-[110px] sticky left-0 bg-white z-10 shadow">
+              Pflanze
+            </TableHead>
+            <TableHead className="min-w-[56px] text-center">
+              Art
+            </TableHead>
             {MONTHS.map((m, i) => (
-              <TableHead key={i} className="text-center w-7">{m}</TableHead>
+              <TableHead key={i} className="text-center w-7">
+                {m}
+              </TableHead>
             ))}
           </TableRow>
         </TableHeader>
@@ -421,8 +427,12 @@ const SowingCalendar: React.FC = () => {
           )}
           {filteredRows.map(row => (
             <TableRow key={row.plant} className="hover:bg-green-50/40">
-              <TableCell className="font-semibold">{row.plant}</TableCell>
-              <TableCell className="text-xs text-center">{row.type}</TableCell>
+              <TableCell className="font-semibold sticky left-0 bg-white z-10 shadow">
+                {row.plant}
+              </TableCell>
+              <TableCell className="text-xs text-center">
+                {row.type}
+              </TableCell>
               {Array.from({ length: 12 }, (_, col) => (
                 <TableCell key={col} className="text-center px-1 py-0">
                   <div className="flex flex-wrap gap-0.5 justify-center items-center min-h-[1.3rem]">
