@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, Save, Eye, TrendingUp, Target } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, RefreshCw, Save, Eye, TrendingUp, Target, Zap } from "lucide-react";
 import ContentQualityIndicator from "./ContentQualityIndicator";
 import { contentGenerationService, GeneratedContent } from "@/services/ContentGenerationService";
 import { contextAnalyzer, TrendData } from "@/services/ContextAnalyzer";
@@ -111,45 +112,40 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
     }
   };
 
-  // Re-analyze quality when content changes
-  useEffect(() => {
-    if (generatedContent && editingContent !== generatedContent.content) {
-      // Debounce quality analysis
-      const timer = setTimeout(() => {
-        // Could implement real-time quality analysis here
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [editingContent, generatedContent]);
-
   return (
     <div className="space-y-4">
       {/* Trend-Insights */}
       {currentTrends.length > 0 && (
-        <div className="p-3 bg-blue-50 rounded-lg border">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="h-4 w-4 text-blue-600" />
-            <span className="font-medium text-blue-800">Aktuelle Trends</span>
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {currentTrends.map((trend, idx) => (
-              <Badge key={idx} variant="outline" className="text-xs">
-                {trend.keyword} ({Math.round(trend.relevance * 100)}%)
-              </Badge>
-            ))}
-          </div>
-        </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+              <span className="font-medium text-blue-800">Aktuelle Trends eingebunden</span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {currentTrends.map((trend, idx) => (
+                <Badge key={idx} variant="outline" className="text-xs">
+                  {trend.keyword} ({Math.round(trend.relevance * 100)}%)
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Optimierter Prompt Anzeige */}
       {optimizedPrompt !== initialPrompt && (
-        <div className="p-3 bg-green-50 rounded-lg border">
-          <div className="flex items-center gap-2 mb-2">
-            <Target className="h-4 w-4 text-green-600" />
-            <span className="font-medium text-green-800">KI-optimierter Prompt</span>
-          </div>
-          <p className="text-sm text-green-700">{optimizedPrompt}</p>
-        </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Target className="h-4 w-4 text-green-600" />
+              <span className="font-medium text-green-800">KI-optimierter Prompt</span>
+            </div>
+            <p className="text-sm text-green-700 bg-green-50 p-2 rounded">
+              {optimizedPrompt}
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       <div className="flex gap-2">
@@ -161,8 +157,9 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            "KI-Artikel generieren"
+            <Zap className="h-4 w-4" />
           )}
+          Enhanced Artikel generieren
         </Button>
 
         {generatedContent && (
@@ -209,20 +206,27 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
           <ContentQualityIndicator quality={generatedContent.quality} />
 
           {showPreview ? (
-            <div className="prose max-w-none p-4 border rounded-lg bg-white">
-              <div dangerouslySetInnerHTML={{ __html: editingContent.replace(/\n/g, '<br>') }} />
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Vorschau</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="prose max-w-none">
+                  <div dangerouslySetInnerHTML={{ __html: editingContent.replace(/\n/g, '<br>') }} />
+                </div>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
-                Artikel bearbeiten (Markdown möglich):
+                Enhanced Artikel bearbeiten (Markdown möglich):
               </label>
               <Textarea
                 value={editingContent}
                 onChange={(e) => setEditingContent(e.target.value)}
                 rows={15}
                 className="font-mono text-sm"
-                placeholder="Generierter Artikel-Inhalt..."
+                placeholder="Generierter Enhanced Artikel-Inhalt..."
               />
             </div>
           )}
@@ -234,7 +238,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
               className="flex items-center gap-2"
             >
               <Save className="h-4 w-4" />
-              Artikel speichern
+              Enhanced Artikel speichern
             </Button>
           </div>
         </div>
