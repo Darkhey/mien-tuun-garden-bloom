@@ -115,7 +115,7 @@ const KIBlogCreator: React.FC = () => {
     ]);
   };
 
-  // Themenvorschlag per Edge Function holen (nun nur noch 3 Vorschläge, Input inkl. aller Metadaten)
+  // Themenvorschlag per Edge Function holen (nun robustes Logging + Antwort immer Array)
   const handleSuggestTopics = async () => {
     setIsSuggesting(true);
     setSuggestions([]);
@@ -129,21 +129,33 @@ const KIBlogCreator: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ keyword: context }),
       });
-      const data = await response.json();
+
+      // Logge komplette Antwort (Rohtext)
+      const data = await response.json().catch(() => ({}));
       addDebugLog("Antwort erhalten (Status: " + response.status + ")");
-      if (!response.ok || !data.topics) throw new Error(data?.error ?? "Fehler beim Vorschlag");
-      // Maximal 3 Vorschläge aus der KI-Antwort extrahieren
-      const regex = /(?:\d+\.\s*)?(.*?)(?:\n|$)/g;
-      const topics = [];
-      let match;
-      while ((match = regex.exec(data.topics))) {
-        if (match[1]?.trim()) topics.push(match[1].trim());
+      addDebugLog("Edge-Function Rückgabe: " + JSON.stringify(data, null, 2));
+
+      if (!response.ok || !data.topics) {
+        addDebugLog("Fehler beim Vorschlag: " + (data?.error || "Unbekannter Fehler"));
+        toast({ title: "Fehler", description: String(data?.error || "Fehler beim Vorschlag"), variant: "destructive" });
+        setSuggestions([]);
+        return;
       }
-      setSuggestions(topics.slice(0, 3));
-      addDebugLog("Vorschläge extrahiert: " + JSON.stringify(topics.slice(0, 3)));
+
+      // topics ist immer ein Array!
+      if (!Array.isArray(data.topics) || data.topics.length === 0) {
+        addDebugLog("Kein Thema extrahiert (topics leeres Array).");
+        toast({ title: "Keine Vorschläge", description: "Die KI hat keine brauchbaren Themen zurückgegeben.", variant: "destructive" });
+        setSuggestions([]);
+        return;
+      }
+
+      addDebugLog("Vorschläge extrahiert: " + JSON.stringify(data.topics));
+      setSuggestions(data.topics.slice(0, 3));
     } catch (err: any) {
       addDebugLog("Fehler beim Themenvorschlag: " + String(err.message || err));
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
+      setSuggestions([]);
     }
     setIsSuggesting(false);
   };
