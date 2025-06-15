@@ -35,6 +35,8 @@ const KIBlogCreator: React.FC = () => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestionSelections, setSuggestionSelections] = useState<string[]>([]);
+  // Track which suggestions were successfully saved
+  const [savedSuggestions, setSavedSuggestions] = useState<string[]>([]);
   
   // Enhanced Editor State
   const [selectedPrompt, setSelectedPrompt] = useState("");
@@ -62,9 +64,11 @@ const KIBlogCreator: React.FC = () => {
         description: `"${title}" wurde mit Quality Score ${quality.score} gespeichert.`,
       });
       
-      // Entferne gespeicherten Vorschlag aus der Auswahl
       if (suggestion) {
-        setSuggestionSelections(prev => prev.filter(s => s !== suggestion));
+        // Markiere den Vorschlag als gespeichert, lasse ihn aber sichtbar
+        setSavedSuggestions(prev =>
+          prev.includes(suggestion) ? prev : [...prev, suggestion]
+        );
 
         if (selectedPrompt === suggestion) {
           setSelectedPrompt("");
@@ -168,20 +172,24 @@ const KIBlogCreator: React.FC = () => {
                   {suggestionSelections.map((suggestion, idx) => (
                     <div key={idx} className="p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-purple-50">
                       <h4 className="font-medium mb-3 text-lg">{suggestion}</h4>
-                      <EnhancedBlogArticleEditor
-                        initialPrompt={suggestion}
-                        onSave={(content, title, quality) =>
-                          handleSaveArticle(content, title, quality, suggestion)
-                        }
-                        category={category}
-                        season={season}
-                        audiences={audiences}
-                        contentType={contentType}
-                        tags={tags}
-                        excerpt={excerpt}
-                        imageUrl={imageUrl}
-                        toast={toast}
-                      />
+                      {savedSuggestions.includes(suggestion) ? (
+                        <div className="text-green-600 font-medium">✅ Gespeichert</div>
+                      ) : (
+                        <EnhancedBlogArticleEditor
+                          initialPrompt={suggestion}
+                          onSave={(content, title, quality) =>
+                            handleSaveArticle(content, title, quality, suggestion)
+                          }
+                          category={category}
+                          season={season}
+                          audiences={audiences}
+                          contentType={contentType}
+                          tags={tags}
+                          excerpt={excerpt}
+                          imageUrl={imageUrl}
+                          toast={toast}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
