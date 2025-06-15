@@ -184,12 +184,14 @@ export class SEOOptimizationService {
     // Exakter Wort-Match statt "includes"
     // Zähle wie oft Keyword als vollständiges Wort vorkommt
     const keywordNormalized = keyword.toLowerCase().trim();
-    const keywordCount = words.filter(word => word === keywordNormalized).length;
-    const totalWords = words.length;
+    const keywordCount = Number(words.filter(word => word === keywordNormalized).length);
+    const totalWords = Number(words.length);
 
-    if (totalWords === 0) return 0;
+    if (!totalWords || isNaN(totalWords)) return 0;
+
     // Density: Anteil am Gesamttext: z.B. 2% bei 3/150 Wörtern = 2
-    return Number(((keywordCount / totalWords) * 100).toFixed(2));
+    const density = (keywordCount / totalWords) * 100;
+    return isNaN(density) ? 0 : Number(density.toFixed(2));
   }
 
   private calculateReadabilityScore(content: string): number {
