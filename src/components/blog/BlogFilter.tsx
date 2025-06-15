@@ -29,6 +29,16 @@ const BlogFilter: React.FC<BlogFilterProps> = ({
         />
       </div>
       <div className="flex flex-wrap gap-2 justify-center mb-6">
+        <button
+          onClick={() => setSelectedCategory("")}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            selectedCategory === ""
+              ? 'bg-sage-600 text-white'
+              : 'bg-sage-50 text-sage-700 hover:bg-sage-100'
+          }`}
+        >
+          Alle
+        </button>
         {categories.map((category) => (
           <button
             key={category}

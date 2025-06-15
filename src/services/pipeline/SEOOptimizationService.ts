@@ -118,7 +118,7 @@ export class SEOOptimizationService {
       .filter(word => word.length > 4);
     
     // Häufigkeitsanalyse
-    const wordCount = {};
+    const wordCount: Record<string, number> = {};
     words.forEach(word => {
       wordCount[word] = (wordCount[word] || 0) + 1;
     });
@@ -192,7 +192,7 @@ export class SEOOptimizationService {
 
     // Density: Anteil am Gesamttext
     const density = (keywordCount / totalWords) * 100;
-    return Number(density.toFixed(2));
+    return parseFloat(density.toFixed(2));
   }
 
   private calculateReadabilityScore(content: string): number {

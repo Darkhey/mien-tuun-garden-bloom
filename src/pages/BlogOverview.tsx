@@ -6,13 +6,18 @@ import BlogPostCard from "@/components/blog/BlogPostCard";
 import BlogFilter from "@/components/blog/BlogFilter";
 import { Helmet } from "react-helmet";
 
-const BlogOverview = () => {
+interface BlogOverviewProps {
+  variant?: string;
+}
+
+const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedSeason, setSelectedSeason] = useState<string>("");
   const [showDrafts, setShowDrafts] = useState(false);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
   const { data: posts, isLoading, error } = useQuery({
-    queryKey: ['blog-posts', selectedCategory, selectedSeason, showDrafts],
+    queryKey: ['blog-posts', selectedCategory, selectedSeason, showDrafts, searchTerm],
     queryFn: async () => {
       console.log('[BlogOverview] Lade Blog-Posts...');
       let query = supabase
@@ -31,6 +36,10 @@ const BlogOverview = () => {
 
       if (selectedSeason) {
         query = query.eq('season', selectedSeason);
+      }
+
+      if (searchTerm) {
+        query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
       }
 
       const { data, error } = await query;
@@ -58,6 +67,20 @@ const BlogOverview = () => {
     },
   });
 
+  // Transform database posts to match BlogPostCard interface
+  const transformedPosts = posts?.map(post => ({
+    id: post.id,
+    slug: post.slug,
+    title: post.title,
+    excerpt: post.excerpt || "",
+    featuredImage: post.featured_image || "/placeholder.svg",
+    category: post.category || "",
+    publishedAt: new Date(post.published_at).toLocaleDateString('de-DE'),
+    readingTime: post.reading_time || 5,
+    author: post.author || "Mien Tuun Team",
+    tags: post.tags || []
+  })) || [];
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -76,18 +99,24 @@ const BlogOverview = () => {
     );
   }
 
+  const pageTitle = variant === "garten" ? "Garten - Mien Tuun" : "Blog - Mien Tuun";
+  const pageHeading = variant === "garten" ? "Unser Garten" : "Unser Blog";
+  const pageDescription = variant === "garten" 
+    ? "Entdecke praktische Gartentipps und saisonale Anleitungen für deinen eigenen Garten"
+    : "Entdecke inspirierende Artikel rund um Garten, Nachhaltigkeit und saisonales Leben";
+
   return (
     <>
       <Helmet>
-        <title>Blog - Mien Tuun</title>
-        <meta name="description" content="Entdecke inspirierende Artikel rund um Garten, Nachhaltigkeit und saisonales Leben." />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
       </Helmet>
       
       <div className="container mx-auto px-4 py-8">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-earth-800 mb-4">Unser Blog</h1>
+          <h1 className="text-4xl font-bold text-earth-800 mb-4">{pageHeading}</h1>
           <p className="text-lg text-earth-600 max-w-2xl mx-auto">
-            Entdecke inspirierende Artikel rund um Garten, Nachhaltigkeit und saisonales Leben
+            {pageDescription}
           </p>
         </div>
 
@@ -109,19 +138,19 @@ const BlogOverview = () => {
         <BlogFilter
           categories={categories || []}
           selectedCategory={selectedCategory}
-          selectedSeason={selectedSeason}
-          onCategoryChange={setSelectedCategory}
-          onSeasonChange={setSelectedSeason}
+          setSelectedCategory={setSelectedCategory}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
         />
 
         <div className="mt-8">
-          {posts && posts.length > 0 ? (
+          {transformedPosts && transformedPosts.length > 0 ? (
             <>
               <div className="text-sm text-gray-600 mb-4">
-                {posts.length} Artikel gefunden {showDrafts && "(inkl. Entwürfe)"}
+                {transformedPosts.length} Artikel gefunden {showDrafts && "(inkl. Entwürfe)"}
               </div>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {posts.map((post, index) => (
+                {transformedPosts.map((post, index) => (
                   <BlogPostCard key={post.id} post={post} index={index} />
                 ))}
               </div>
