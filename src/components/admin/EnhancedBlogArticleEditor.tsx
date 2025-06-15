@@ -3,9 +3,10 @@ import React, { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, Save, Eye } from "lucide-react";
+import { Loader2, RefreshCw, Save, Eye, TrendingUp, Target } from "lucide-react";
 import ContentQualityIndicator from "./ContentQualityIndicator";
 import { contentGenerationService, GeneratedContent } from "@/services/ContentGenerationService";
+import { contextAnalyzer, TrendData } from "@/services/ContextAnalyzer";
 
 interface EnhancedBlogArticleEditorProps {
   initialPrompt: string;
@@ -35,6 +36,22 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
   const [loading, setLoading] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [optimizedPrompt, setOptimizedPrompt] = useState("");
+  const [currentTrends, setCurrentTrends] = useState<TrendData[]>([]);
+
+  // Trend-Analyse und Prompt-Optimierung beim Laden
+  useEffect(() => {
+    const trends = contextAnalyzer.getCurrentTrends(category, season);
+    setCurrentTrends(trends.slice(0, 5)); // Top 5 Trends
+    
+    const optimized = contextAnalyzer.optimizePrompt(initialPrompt, {
+      category,
+      season,
+      audience: audiences,
+      trends: trends.slice(0, 3)
+    });
+    setOptimizedPrompt(optimized);
+  }, [initialPrompt, category, season, audiences]);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -42,7 +59,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
       console.log("[EnhancedEditor] Generating content with enhanced service");
       
       const result = await contentGenerationService.generateBlogPost({
-        prompt: initialPrompt,
+        prompt: optimizedPrompt || initialPrompt,
         category,
         season,
         audiences,
@@ -70,7 +87,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
     setRegenerating(true);
     try {
       const result = await contentGenerationService.generateBlogPost({
-        prompt: initialPrompt + " (Neue Variante)",
+        prompt: optimizedPrompt + " (Neue Variante)",
         category,
         season,
         audiences,
@@ -107,6 +124,34 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Trend-Insights */}
+      {currentTrends.length > 0 && (
+        <div className="p-3 bg-blue-50 rounded-lg border">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="h-4 w-4 text-blue-600" />
+            <span className="font-medium text-blue-800">Aktuelle Trends</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {currentTrends.map((trend, idx) => (
+              <Badge key={idx} variant="outline" className="text-xs">
+                {trend.keyword} ({Math.round(trend.relevance * 100)}%)
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Optimierter Prompt Anzeige */}
+      {optimizedPrompt !== initialPrompt && (
+        <div className="p-3 bg-green-50 rounded-lg border">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className="h-4 w-4 text-green-600" />
+            <span className="font-medium text-green-800">KI-optimierter Prompt</span>
+          </div>
+          <p className="text-sm text-green-700">{optimizedPrompt}</p>
+        </div>
+      )}
+
       <div className="flex gap-2">
         <Button
           onClick={handleGenerate}

@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
 
 export interface ContentGenerationOptions {
   prompt: string;
@@ -50,8 +49,8 @@ class ContentGenerationService {
       const quality = this.analyzeContentQuality(content);
       const generationTime = Date.now() - startTime;
       
-      // Log performance metrics
-      await this.logGenerationMetrics({
+      // Log performance metrics (simplified - no database call for now)
+      console.log("[ContentGeneration] Metrics:", {
         type: 'blog_post',
         prompt: fullPrompt,
         contentLength: content.length,
@@ -75,7 +74,7 @@ class ContentGenerationService {
     } catch (error) {
       console.error("[ContentGeneration] Error:", error);
       
-      await this.logGenerationMetrics({
+      console.log("[ContentGeneration] Error metrics:", {
         type: 'blog_post',
         prompt: options.prompt,
         error: String(error),
@@ -197,18 +196,6 @@ class ContentGenerationService {
     }
     
     return null;
-  }
-
-  private async logGenerationMetrics(metrics: any) {
-    try {
-      // Store metrics in database for analytics
-      await supabase.from('content_generation_logs').insert([{
-        ...metrics,
-        created_at: new Date().toISOString()
-      }]);
-    } catch (error) {
-      console.warn("[ContentGeneration] Failed to log metrics:", error);
-    }
   }
 
   async generateMultipleArticles(suggestions: string[], baseOptions: ContentGenerationOptions): Promise<GeneratedContent[]> {
