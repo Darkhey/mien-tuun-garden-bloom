@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery, QueryFunctionContext } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +9,7 @@ import { Database } from "@/integrations/supabase/types";
 type BlogPostRow = Database['public']['Tables']['blog_posts']['Row'];
 type QueryKey = readonly (string | boolean)[];
 
-const fetchBlogPosts = async (ctx: QueryFunctionContext<QueryKey>): Promise<BlogPostRow[]> => {
+const fetchBlogPosts = async (ctx: QueryFunctionContext): Promise<BlogPostRow[]> => {
   const [_, selectedCategory, selectedSeason, showDrafts, searchTerm] = ctx.queryKey;
   
   console.log('[BlogOverview] Lade Blog-Posts...');
@@ -57,7 +56,7 @@ const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
   const [showDrafts, setShowDrafts] = useState(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const { data: posts, isLoading, error } = useQuery<BlogPostRow[], Error, BlogPostRow[], QueryKey>({
+  const { data: posts, isLoading, error } = useQuery({
     queryKey: ['blog-posts', selectedCategory, selectedSeason, showDrafts, searchTerm],
     queryFn: fetchBlogPosts,
   });
