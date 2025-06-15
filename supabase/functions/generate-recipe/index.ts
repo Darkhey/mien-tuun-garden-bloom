@@ -45,6 +45,7 @@ Antworte NUR mit einem strukturierten JSON-Objekt mit den Feldern:
 - instructions (Array string, kurz & verständlich)
 - tips (Array string, optional; z.B. Variationen, Lagerung)
 - nutrition (optional: { calories, protein, carbs, fat, fiber, sugar })
+- story (string, 3-8 Sätze, motivierender und inspirierender Fließtext aus Sicht eines*r Foodblogger*in, erklärt den besonderen Reiz oder Hintergrund des Rezepts, bezieht sich gezielt auf mindestens einen der Tags, auf Saison und Kategorie, SEO-optimiert, ideal um Neugier und Lust zu machen!)
 
 Vorgaben:
 ${title ? "Titel: " + title : ""}
@@ -71,7 +72,7 @@ Wähle Zutaten und Zubereitung sinnvoll und saisonal passend. Kompakte, gültige
           { role: "system", content: systemPrompt },
         ],
         temperature: 0.15,
-        max_tokens: 1200,
+        max_tokens: 1400,
         response_format: { type: "json_object" },
       }),
     });
