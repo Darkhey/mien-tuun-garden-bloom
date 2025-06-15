@@ -9,23 +9,36 @@ interface VersionHistoryProps {
   itemId: string;
 }
 
+// Use a mapping to enforce valid table names for type safety
 const TABLE_MAP = {
   recipe: "recipe_versions",
-  blog: "blog_post_versions"
-};
+  blog: "blog_post_versions",
+} as const;
+
+const COLUMN_ID_MAP = {
+  recipe: "recipe_id",
+  blog: "blog_post_id",
+} as const;
+
+type TableKey = keyof typeof TABLE_MAP;
 
 const VersionHistory: React.FC<VersionHistoryProps> = ({ type, itemId }) => {
   const [versions, setVersions] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchVersions() {
-      const col = type === "recipe" ? "recipe_id" : "blog_post_id";
-      const table = TABLE_MAP[type];
+      // Column to filter on
+      const col = COLUMN_ID_MAP[type as TableKey];
+      // Table to read from (ensure type safety for Supabase client)
+      const table = TABLE_MAP[type as TableKey];
+
+      // Typescript checks that table is a valid relation
       const { data } = await supabase
-        .from(table)
+        .from<typeof table>(table)
         .select("*")
         .eq(col, itemId)
         .order("created_at", { ascending: false });
+
       setVersions(data || []);
     }
     if (itemId) fetchVersions();
@@ -41,9 +54,13 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ type, itemId }) => {
           <div key={v.id} className="border-b last:border-none py-1">
             <span className="font-mono">{v.created_at && new Date(v.created_at).toLocaleString()}</span>
             {type === "recipe" ? (
-              <div>Titel: <b>{v.title}</b> | Status: <b>{v.status}</b></div>
+              <div>
+                Titel: <b>{v.title}</b> | Status: <b>{v.status}</b>
+              </div>
             ) : (
-              <div>Titel: <b>{v.title}</b> | Status: <b>{v.status}</b> | Slug: {v.slug}</div>
+              <div>
+                Titel: <b>{v.title}</b> | Status: <b>{v.status}</b> | Slug: {v.slug}
+              </div>
             )}
           </div>
         ))}

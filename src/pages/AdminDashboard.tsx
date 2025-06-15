@@ -3,6 +3,8 @@ import { Loader2 } from "lucide-react";
 import KIRecipeCreator from "@/components/admin/KIRecipeCreator";
 import KIBlogCreator from "@/components/admin/KIBlogCreator";
 import { supabase } from "@/integrations/supabase/client";
+import EditRecipeModal from "@/components/admin/EditRecipeModal";
+import EditBlogPostModal from "@/components/admin/EditBlogPostModal";
 
 interface AdminUser {
   id: string;
