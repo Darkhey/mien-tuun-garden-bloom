@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Brain, Zap, TrendingUp } from "lucide-react";
+import { Brain, Zap, TrendingUp, TestTube } from "lucide-react";
 import TagSelector from "./TagSelector";
 import BlogMetaSection from "./BlogMetaSection";
 import MetaDebugTerminal from "./MetaDebugTerminal";
@@ -11,7 +10,9 @@ import BlogSuggestionWorkflow from "./BlogSuggestionWorkflow";
 import EnhancedBlogArticleEditor from "./EnhancedBlogArticleEditor";
 import SmartPromptOptimizer from "./SmartPromptOptimizer";
 import PersonalizedContentGenerator from "./PersonalizedContentGenerator";
+import BlogSystemTestDashboard from "./BlogSystemTestDashboard";
 import { getTrendTags, buildContextFromMeta } from "./blogHelpers";
+import { supabase } from "@/integrations/supabase/client";
 
 const TAG_OPTIONS = [
   "Schnell", "Kinder", "Tipps", "DIY", "Low Budget", "Bio", "Natur", "Regional", "Saisonal", "Nachhaltig", "Praktisch", "Dekor", "Haushalt",
@@ -29,8 +30,6 @@ const KIBlogCreator: React.FC = () => {
   const [imageUrl, setImageUrl] = useState("");
   const [dynamicTags, setDynamicTags] = useState<string[]>([]);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
-  
-  // Suggestion Workflow State
   const [topicInput, setTopicInput] = useState("");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -45,10 +44,24 @@ const KIBlogCreator: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Dynamische Tag-Sammlung je nach Kategorie & Saison
-    const trendTags = getTrendTags(category, season);
-    setDynamicTags(Array.from(new Set([...TAG_OPTIONS, ...trendTags])));
-    setDebugLogs(prev => [...prev, `Enhanced KI Blog Creator geladen - ${trendTags.length} Trend-Tags aktiv`]);
+    // Enhanced Debug-Informationen
+    const initializeSystem = async () => {
+      const trendTags = getTrendTags(category, season);
+      setDynamicTags(Array.from(new Set([...TAG_OPTIONS, ...trendTags])));
+      
+      // Test Supabase-Verbindung
+      try {
+        const { data, error } = await supabase.from('blog_posts').select('count').limit(1);
+        if (error) throw error;
+        setDebugLogs(prev => [...prev, `✅ Supabase-Verbindung erfolgreich - System bereit`]);
+      } catch (error: any) {
+        setDebugLogs(prev => [...prev, `❌ Supabase-Verbindung fehlgeschlagen: ${error.message}`]);
+      }
+      
+      setDebugLogs(prev => [...prev, `Enhanced KI Blog Creator geladen - ${trendTags.length} Trend-Tags aktiv`]);
+    };
+    
+    initializeSystem();
   }, [category, season]);
 
   const handleSaveArticle = async (
@@ -102,7 +115,7 @@ const KIBlogCreator: React.FC = () => {
       </div>
       
       <Tabs defaultValue="creator" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="creator" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             Smart Creator
@@ -114,6 +127,10 @@ const KIBlogCreator: React.FC = () => {
           <TabsTrigger value="personalized" className="flex items-center gap-2">
             <Brain className="h-4 w-4" />
             Personalisiert
+          </TabsTrigger>
+          <TabsTrigger value="testing" className="flex items-center gap-2">
+            <TestTube className="h-4 w-4" />
+            System-Tests
           </TabsTrigger>
         </TabsList>
 
@@ -230,6 +247,10 @@ const KIBlogCreator: React.FC = () => {
         <TabsContent value="personalized" className="mt-6">
           <PersonalizedContentGenerator />
         </TabsContent>
+
+        <TabsContent value="testing" className="mt-6">
+          <BlogSystemTestDashboard />
+        </TabsContent>
       </Tabs>
 
       {/* Debug Terminal */}
@@ -239,4 +260,3 @@ const KIBlogCreator: React.FC = () => {
 };
 
 export default KIBlogCreator;
-

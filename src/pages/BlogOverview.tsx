@@ -5,9 +5,19 @@ import { supabase } from "@/integrations/supabase/client";
 import BlogPostCard from "@/components/blog/BlogPostCard";
 import BlogFilter from "@/components/blog/BlogFilter";
 import { Helmet } from "react-helmet";
-import { Database } from "@/integrations/supabase/types";
 
-type BlogPostRow = Database['public']['Tables']['blog_posts']['Row'];
+interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  featured_image: string;
+  category: string;
+  published_at: string;
+  reading_time: number;
+  author: string;
+  tags: string[];
+}
 
 interface BlogOverviewProps {
   variant?: string;
@@ -19,16 +29,21 @@ const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
   const [showDrafts, setShowDrafts] = useState(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  const { data: posts, isLoading, error } = useQuery({
-    queryKey: ['blog-posts', selectedCategory, selectedSeason, showDrafts, searchTerm] as const,
+  const { data: posts, isLoading, error } = useQuery<BlogPost[]>({
+    queryKey: ['blog-posts', selectedCategory, selectedSeason, showDrafts, searchTerm],
     queryFn: async () => {
-      console.log('[BlogOverview] Lade Blog-Posts...');
+      console.log('[BlogOverview] Lade Blog-Posts mit Parametern:', { 
+        selectedCategory, 
+        selectedSeason, 
+        showDrafts, 
+        searchTerm 
+      });
+      
       let query = supabase
         .from('blog_posts')
         .select('*')
         .order('published_at', { ascending: false });
 
-      // Filter nur anwenden wenn nicht alle Artikel (inklusive Entwürfe) angezeigt werden sollen
       if (!showDrafts) {
         query = query.eq('published', true);
       }
@@ -53,12 +68,14 @@ const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
       }
 
       console.log('[BlogOverview] Posts geladen:', data?.length, 'Artikel gefunden');
+      console.log('[BlogOverview] Sample data:', data?.slice(0, 2));
+      
       return data || [];
     },
   });
 
-  const { data: categories } = useQuery({
-    queryKey: ['blog-categories'] as const,
+  const { data: categories } = useQuery<string[]>({
+    queryKey: ['blog-categories'],
     queryFn: async () => {
       const { data } = await supabase
         .from('blog_posts')
@@ -66,6 +83,7 @@ const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
         .not('category', 'is', null);
       
       const uniqueCategories = [...new Set(data?.map(post => post.category))];
+      console.log('[BlogOverview] Kategorien geladen:', uniqueCategories);
       return uniqueCategories.filter(Boolean);
     },
   });
@@ -97,6 +115,9 @@ const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center text-red-600">
           Fehler beim Laden der Artikel: {error.message}
+          <div className="mt-2 text-sm">
+            Details: {JSON.stringify(error, null, 2)}
+          </div>
         </div>
       </div>
     );
@@ -168,6 +189,9 @@ const BlogOverview: React.FC<BlogOverviewProps> = ({ variant }) => {
                   : "Keine veröffentlichten Artikel gefunden. Aktiviere den Debug-Modus, um Entwürfe zu sehen."
                 }
               </p>
+              <div className="mt-4 text-xs text-gray-500">
+                Debug-Info: Query-Parameter = {JSON.stringify({ selectedCategory, selectedSeason, showDrafts, searchTerm })}
+              </div>
             </div>
           )}
         </div>
