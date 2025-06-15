@@ -9,6 +9,7 @@ import BlogMetaSection from "./BlogMetaSection";
 import BlogTopicSuggestions from "./BlogTopicSuggestions";
 import BlogPromptEditor from "./BlogPromptEditor";
 import BlogArticleEditor from "./BlogArticleEditor";
+import DebugTerminal from "./DebugTerminal";
 
 const BLOG_CATEGORIES = [
   { value: "gartenplanung", label: "Gartenplanung" },
@@ -373,18 +374,3 @@ const KIBlogCreator: React.FC = () => {
 };
 
 export default KIBlogCreator;
-
-// Debug-Terminal-Komponente (einfaches Panel unten)
-function DebugTerminal({ logs }: { logs: string[] }) {
-  if (logs.length === 0) return null;
-  return (
-    <div className="bg-black/90 text-green-200 text-xs font-mono rounded mt-6 p-2 max-h-52 overflow-y-auto">
-      <div className="mb-1 font-bold text-green-400">Debug Terminal:</div>
-      {logs.map((log, i) => (
-        <div key={i} className="whitespace-pre-line">{log}</div>
-      ))}
-    </div>
-  );
-}
-
-// Das File ist inzwischen recht lang (>286 Zeilen). Bitte nach Bedarf eine Aufsplittung in kleinere Komponenten erwägen!
