@@ -238,10 +238,10 @@ const SEASONS = ["Frühling", "Sommer", "Herbst", "Winter"];
 const TYPES = ["Gemüse", "Obst"];
 
 const CATEGORIES = [
-  { key: "directSow", color: "bg-green-400", label: "Aussaat draußen" },
-  { key: "indoor", color: "bg-blue-400", label: "Vorziehen" },
-  { key: "plantOut", color: "bg-yellow-400", label: "Auspflanzen" },
-  { key: "harvest", color: "bg-orange-400", label: "Ernte" },
+  { key: "directSow", color: "bg-green-500", label: "Aussaat draußen" },
+  { key: "indoor", color: "bg-blue-500", label: "Vorziehen" },
+  { key: "plantOut", color: "bg-yellow-500", label: "Auspflanzen" },
+  { key: "harvest", color: "bg-orange-500", label: "Ernte" },
 ];
 
 function renderMonthDots(row: typeof SOWING_DATA[number], col: number, categoryFilter: Record<string, boolean>) {
@@ -249,7 +249,7 @@ function renderMonthDots(row: typeof SOWING_DATA[number], col: number, categoryF
     categoryFilter[key] && (row[key as keyof typeof row] as number[]).includes(col + 1) ? (
       <span
         key={key}
-        className={`${color} inline-block w-3 h-3 rounded-full mx-[1px] shadow`}
+        className={`${color} inline-block w-3 h-3 rounded-full mx-0.5 shadow-sm border border-white`}
         title={label}
       />
     ) : null
@@ -264,7 +264,6 @@ const SowingCalendar: React.FC = () => {
     plantOut: true,
     harvest: true,
   });
-  // Initialisiere alle Filter-States mit "ALL"!
   const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
   const [selectedSeason, setSelectedSeason] = useState<string>("ALL");
   const [selectedType, setSelectedType] = useState<string>("ALL");
@@ -293,157 +292,169 @@ const SowingCalendar: React.FC = () => {
   }, [search, selectedType, selectedSeason, categoryFilter, selectedMonth]);
 
   return (
-    <div className="w-full max-w-full md:max-w-5xl mx-auto bg-white shadow rounded-lg p-4 overflow-x-auto animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-        <h2 className="text-xl font-bold">Aussaatkalender für Obst &amp; Gemüse</h2>
-        <form
-          onSubmit={e => e.preventDefault()}
-          className="flex items-center gap-2"
-        >
-          <Input
-            type="search"
-            placeholder="Suche Kultur…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-40 px-2 py-1 text-sm"
-          />
-          <Button variant="ghost" size="icon" tabIndex={-1} aria-label="Suchen">
-            <Search className="w-4 h-4" />
-          </Button>
-        </form>
-      </div>
-      <div className="flex flex-wrap gap-2 mb-2 items-center">
-        {CATEGORIES.map(cat => (
-          <Button
-            key={cat.key}
-            type="button"
-            size="sm"
-            variant={categoryFilter[cat.key] ? "default" : "outline"}
-            className={`gap-1 px-2 py-1 rounded-full ${cat.color} text-xs font-semibold 
-              ${categoryFilter[cat.key] ? " opacity-100 ring-2 ring-green-300" : "opacity-60"}`}
-            onClick={() =>
-              setCategoryFilter(f => ({
-                ...f,
-                [cat.key]: !f[cat.key],
-              }))
-            }
-          >
-            <span className={`${cat.color} w-2 h-2 rounded-full inline-block`}></span>
-            {cat.label}
-          </Button>
-        ))}
-        <span className="text-muted-foreground ml-2">
-          <Filter className="inline mr-1 -mt-1" size={16} />
-          Filter:
-        </span>
-        <Select
-          value={selectedMonth}
-          onValueChange={setSelectedMonth}
-        >
-          <SelectTrigger className="w-28 text-xs mr-1" aria-label="Monat wählen">
-            <SelectValue placeholder="Monat" />
-          </SelectTrigger>
-          <SelectContent>
-            {/* Wert ist jetzt "ALL" statt "" */}
-            <SelectItem value="ALL">Alle Monate</SelectItem>
-            {MONTHS.map((m, i) => (
-              <SelectItem key={m} value={m}>{m}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={selectedSeason}
-          onValueChange={setSelectedSeason}
-        >
-          <SelectTrigger className="w-28 text-xs mr-1" aria-label="Saison wählen">
-            <SelectValue placeholder="Saison" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Alle Saisons</SelectItem>
-            {SEASONS.map(s => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={selectedType}
-          onValueChange={setSelectedType}
-        >
-          <SelectTrigger className="w-28 text-xs mr-1" aria-label="Art wählen">
-            <SelectValue placeholder="Art" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">Obst &amp; Gemüse</SelectItem>
-            {TYPES.map(t => (
-              <SelectItem key={t} value={t}>{t}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <p className="text-sage-700 text-xs mb-2">
-        <span className="inline-block align-middle">
-          <span className="bg-green-400 inline-block w-3 h-3 rounded-full mr-1"></span>
-          Aussaat draußen
-        </span>
-        <span className="ml-3 inline-block align-middle">
-          <span className="bg-blue-400 inline-block w-3 h-3 rounded-full mr-1"></span>
-          Vorziehen im Haus
-        </span>
-        <span className="ml-3 inline-block align-middle">
-          <span className="bg-yellow-400 inline-block w-3 h-3 rounded-full mr-1"></span>
-          Auspflanzen
-        </span>
-        <span className="ml-3 inline-block align-middle">
-          <span className="bg-orange-400 inline-block w-3 h-3 rounded-full mr-1"></span>
-          Ernte
-        </span>
-      </p>
-      <Table>
-        <TableCaption>
-          Tipp: Je nach Region kann es Abweichungen geben. Tabelle orientiert sich an Mitteleuropa.
-        </TableCaption>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-[110px] sticky left-0 bg-white z-10 shadow">
-              Pflanze
-            </TableHead>
-            <TableHead className="min-w-[56px] text-center">
-              Art
-            </TableHead>
-            {MONTHS.map((m, i) => (
-              <TableHead key={i} className="text-center w-7">
-                {m}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredRows.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={14} className="text-center text-muted-foreground italic">
-                Keine passenden Einträge gefunden.
-              </TableCell>
-            </TableRow>
-          )}
-          {filteredRows.map(row => (
-            <TableRow key={row.plant} className="hover:bg-green-50/40">
-              <TableCell className="font-semibold sticky left-0 bg-white z-10 shadow">
-                {row.plant}
-              </TableCell>
-              <TableCell className="text-xs text-center">
-                {row.type}
-              </TableCell>
-              {Array.from({ length: 12 }, (_, col) => (
-                <TableCell key={col} className="text-center px-1 py-0">
-                  <div className="flex flex-wrap gap-0.5 justify-center items-center min-h-[1.3rem]">
-                    {renderMonthDots(row, col, categoryFilter)}
-                  </div>
-                </TableCell>
-              ))}
-            </TableRow>
+    <div className="w-full max-w-6xl mx-auto bg-white shadow-lg rounded-xl p-6 overflow-hidden animate-fade-in">
+      {/* Header Section */}
+      <div className="mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
+          <h2 className="text-2xl font-bold font-serif text-earth-800">
+            Aussaatkalender für Obst &amp; Gemüse
+          </h2>
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="relative flex-1 lg:w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-sage-400" />
+              <Input
+                type="search"
+                placeholder="Suche Kultur…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-10 border-sage-200 focus:border-sage-400 focus:ring-sage-400"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Category Filter Buttons */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {CATEGORIES.map(cat => (
+            <Button
+              key={cat.key}
+              type="button"
+              size="sm"
+              variant={categoryFilter[cat.key] ? "default" : "outline"}
+              className={`gap-2 px-3 py-2 rounded-full transition-all duration-200 ${
+                categoryFilter[cat.key] 
+                  ? `${cat.color} text-white shadow-md hover:shadow-lg` 
+                  : "bg-white border-sage-200 text-sage-700 hover:bg-sage-50"
+              }`}
+              onClick={() =>
+                setCategoryFilter(f => ({
+                  ...f,
+                  [cat.key]: !f[cat.key],
+                }))
+              }
+            >
+              <span className={`${cat.color} w-3 h-3 rounded-full border border-white shadow-sm`}></span>
+              <span className="text-sm font-medium">{cat.label}</span>
+            </Button>
           ))}
-        </TableBody>
-      </Table>
+        </div>
+
+        {/* Dropdown Filters */}
+        <div className="flex flex-wrap gap-3 items-center">
+          <span className="text-sage-600 font-medium flex items-center gap-1">
+            <Filter size={16} />
+            Filter:
+          </span>
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-32 border-sage-200 focus:border-sage-400">
+              <SelectValue placeholder="Monat" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Alle Monate</SelectItem>
+              {MONTHS.map((m, i) => (
+                <SelectItem key={m} value={m}>{m}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+            <SelectTrigger className="w-32 border-sage-200 focus:border-sage-400">
+              <SelectValue placeholder="Saison" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Alle Saisons</SelectItem>
+              {SEASONS.map(s => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedType} onValueChange={setSelectedType}>
+            <SelectTrigger className="w-36 border-sage-200 focus:border-sage-400">
+              <SelectValue placeholder="Art" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Obst &amp; Gemüse</SelectItem>
+              {TYPES.map(t => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Table Container with fixed height and scroll */}
+      <div className="border border-sage-200 rounded-lg overflow-hidden bg-white">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-sage-50">
+              <TableRow className="border-sage-200">
+                <TableHead className="min-w-[120px] sticky left-0 bg-sage-50 border-r border-sage-200 font-semibold text-earth-800 z-20">
+                  Pflanze
+                </TableHead>
+                <TableHead className="min-w-[80px] text-center font-semibold text-earth-800">
+                  Art
+                </TableHead>
+                {MONTHS.map((month, i) => (
+                  <TableHead key={i} className="text-center w-16 font-semibold text-earth-800">
+                    <div className="text-xs">{month}</div>
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={14} className="text-center text-sage-500 py-8 italic">
+                    Keine passenden Einträge gefunden.
+                  </TableCell>
+                </TableRow>
+              )}
+              {filteredRows.map((row, index) => (
+                <TableRow 
+                  key={row.plant} 
+                  className={`hover:bg-sage-25 transition-colors duration-150 border-sage-100 ${
+                    index % 2 === 0 ? 'bg-white' : 'bg-sage-25/30'
+                  }`}
+                >
+                  <TableCell className="font-semibold sticky left-0 bg-inherit border-r border-sage-200 z-10 text-earth-800">
+                    {row.plant}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                      row.type === 'Gemüse' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-orange-100 text-orange-800'
+                    }`}>
+                      {row.type}
+                    </span>
+                  </TableCell>
+                  {Array.from({ length: 12 }, (_, col) => (
+                    <TableCell key={col} className="text-center px-2 py-3">
+                      <div className="flex flex-wrap gap-0.5 justify-center items-center min-h-[1.5rem]">
+                        {renderMonthDots(row, col, categoryFilter)}
+                      </div>
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+            <TableCaption className="text-sage-600 bg-sage-25 p-3 border-t border-sage-200">
+              💡 Tipp: Je nach Region kann es Abweichungen geben. Tabelle orientiert sich an Mitteleuropa.
+            </TableCaption>
+          </Table>
+        </div>
+      </div>
+
+      {/* Fixed Legend at Bottom */}
+      <div className="mt-4 p-4 bg-sage-25 rounded-lg border border-sage-200">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center text-sm">
+          {CATEGORIES.map(cat => (
+            <div key={cat.key} className="flex items-center gap-2">
+              <span className={`${cat.color} w-3 h-3 rounded-full border border-white shadow-sm`}></span>
+              <span className="text-sage-700 font-medium">{cat.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
