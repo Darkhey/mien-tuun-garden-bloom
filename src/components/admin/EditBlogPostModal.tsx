@@ -58,6 +58,8 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
 
     setGeneratingImage(true);
     try {
+      console.log("Starte KI-Bildgenerierung für Blog-Artikel:", formData.title);
+      
       // Erstelle einen aussagekräftigen Prompt basierend auf Titel und Inhalt
       const contentPreview = formData.content.slice(0, 200);
       const imagePrompt = `Hyperrealistisches, stimmungsvolles Garten- oder Küchenbild passend zum Thema "${formData.title}". Basierend auf: ${contentPreview}. Natürliches Licht, viel Atmosphäre, hochwertiger Fotografie-Stil. Ohne Text.`;
@@ -66,7 +68,12 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
         body: { prompt: imagePrompt }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Fehler bei Supabase function invoke:", error);
+        throw error;
+      }
+
+      console.log("KI-Bildgenerierung Antwort:", data);
 
       if (data.imageUrl) {
         setFormData(prev => ({ ...prev, featured_image: data.imageUrl }));
@@ -74,6 +81,8 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
           title: "Erfolg",
           description: "Bild wurde erfolgreich generiert!"
         });
+      } else {
+        throw new Error("Keine Bild-URL in der Antwort erhalten");
       }
     } catch (error: any) {
       console.error("Fehler bei der Bildgenerierung:", error);
@@ -165,10 +174,10 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
             <Label>Artikel-Bild</Label>
             <div className="space-y-3">
               <ImageUploadField
-                currentImageUrl={formData.featured_image}
-                onImageUploaded={(imageUrl) => handleInputChange("featured_image", imageUrl)}
-                bucketName="blog-images"
-                label="Bild hochladen"
+                value={formData.featured_image}
+                onChange={(imageUrl) => handleInputChange("featured_image", imageUrl)}
+                bucket="blog-images"
+                disabled={loading || generatingImage}
               />
               
               <div className="flex items-center gap-2">

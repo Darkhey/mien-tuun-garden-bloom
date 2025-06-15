@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import BlogPromptEditor from "./BlogPromptEditor";
@@ -5,8 +6,6 @@ import BlogArticleEditor from "./BlogArticleEditor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BLOG_CATEGORIES, SEASONS } from "./blogHelpers";
 import { supabase } from "@/integrations/supabase/client";
-
-const GENERATE_FUNCTION_URL = "https://ublbxvpmoccmegtwaslh.functions.supabase.co/generate-blog-post";
 
 interface BlogArticleWorkflowProps {
   suggestionSelections: string[];
@@ -50,6 +49,33 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
     { suggestion: string; content: string; editing: string; status: "loading" | "success" | "error"; error?: string }[]
   >([]);
 
+  // Hilfsfunktion für Artikel-Generierung
+  const generateSingleArticle = async (fullPrompt: string, suggestion: string) => {
+    console.log(`Generiere Artikel für "${suggestion}" mit Prompt:`, fullPrompt);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-blog-post', {
+        body: { prompt: fullPrompt }
+      });
+
+      if (error) {
+        console.error(`Supabase function error für "${suggestion}":`, error);
+        throw new Error(`Edge Function Fehler: ${error.message || error}`);
+      }
+
+      if (!data || !data.content) {
+        console.error(`Keine Inhalte erhalten für "${suggestion}":`, data);
+        throw new Error("Keine Inhalte von der KI erhalten");
+      }
+
+      console.log(`Artikel erfolgreich generiert für "${suggestion}"`);
+      return data.content;
+    } catch (err: any) {
+      console.error(`Fehler bei Artikel-Generierung für "${suggestion}":`, err);
+      throw err;
+    }
+  };
+
   // Neuer Multi-Artikel Handler: PARALLEL statt sequentiell
   const handleGenerateMultiple = async () => {
     if (!suggestionSelections.length) return;
@@ -63,9 +89,10 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       }))
     );
     setDebugLogs(prev => [...prev, `Starte Multi-Artikel-Generation für ${suggestionSelections.length} Vorschläge.`]);
+    
     try {
-      // Für jede Auswahl: Prompt bauen
-      const requests = suggestionSelections.map((sug, idx) => {
+      // Für jede Auswahl: Prompt bauen und parallel generieren
+      const requests = suggestionSelections.map(async (sug, idx) => {
         const contextParts = [
           sug,
           category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
@@ -77,21 +104,19 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
           imageUrl ? `Bild: ${imageUrl}` : "",
         ];
         const fullPrompt = contextParts.filter(Boolean).join(" ");
+        
         setDebugLogs(prev => [...prev, `Sende Artikel-Request für "${sug}" an KI-Edge-Function.`]);
-        return fetch(GENERATE_FUNCTION_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: fullPrompt }),
-        }).then(async response => {
-          const data = await response.json();
-          if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei der KI");
-          return { idx, content: data.content, error: undefined };
-        }).catch(error => {
+        
+        try {
+          const content = await generateSingleArticle(fullPrompt, sug);
+          return { idx, content, error: undefined };
+        } catch (error: any) {
           return { idx, content: "", error: String(error?.message || error) };
-        });
+        }
       });
 
       const results = await Promise.all(requests);
+      
       setGeneratedList(prev =>
         prev.map((itm, idx) => {
           const result = results.find(r => r.idx === idx);
@@ -105,6 +130,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
           };
         })
       );
+      
       setDebugLogs(prev => [
         ...prev,
         ...results.map((r, idx) =>
@@ -113,8 +139,14 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
             : `Artikel erfolgreich generiert für "${suggestionSelections[idx]}".`
         ),
       ]);
-      toast({ title: "Generierung abgeschlossen", description: "Alle Aufgaben sind fertig." });
+      
+      const successCount = results.filter(r => !r.error).length;
+      toast({ 
+        title: "Generierung abgeschlossen", 
+        description: `${successCount} von ${results.length} Artikeln erfolgreich generiert.` 
+      });
     } catch (err: any) {
+      console.error("Fehler in Multi-Artikel-Generation:", err);
       setDebugLogs(prev => [...prev, "Fehler in Multi-Artikel-Generation: " + String(err.message || err)]);
       toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
     }
@@ -127,6 +159,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
     setGenerated(null);
     setEditing("");
     setDebugLogs(prev => [...prev, "Starte Einzel-Artikel-Generation via KI-Edge-Function."]);
+    
     try {
       const contextParts = [
         category ? `Kategorie: ${BLOG_CATEGORIES.find(c => c.value === category)?.label ?? category}.` : "",
@@ -138,17 +171,11 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
         imageUrl ? `Bild: ${imageUrl}` : "",
       ];
       const fullPrompt = [prompt || input, ...contextParts].filter(Boolean).join(" ");
-      setDebugLogs(prev => [...prev, "Sende POST an: " + GENERATE_FUNCTION_URL]);
-      const response = await fetch(GENERATE_FUNCTION_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: fullPrompt }),
-      });
-      const data = await response.json();
-      setDebugLogs(prev => [...prev, "Antwort erhalten (Status: " + response.status + ")"]);
-      if (!response.ok || !data.content) throw new Error(data?.error ?? "Fehler bei der KI");
-      setGenerated(data.content);
-      setEditing(data.content);
+      
+      const content = await generateSingleArticle(fullPrompt, "Einzelartikel");
+      
+      setGenerated(content);
+      setEditing(content);
       setDebugLogs(prev => [...prev, "Artikel erfolgreich generiert"]);
     } catch (err: any) {
       setDebugLogs(prev => [...prev, "Fehler bei Einzel-Artikel-Generation: " + String(err.message || err)]);
@@ -193,15 +220,20 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
     };
 
     try {
+      console.log("Speichere Artikel:", article);
       // API-Call zu Supabase
       const { error } = await supabase.from("blog_posts").insert([article]);
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error("Fehler beim Speichern in Supabase:", error);
+        throw new Error(error.message);
+      }
       toast({
         title: "Erfolgreich gespeichert!",
         description: `Artikel "${suggestion}" wurde gespeichert.`,
         variant: "default",
       });
     } catch (err: any) {
+      console.error("Fehler beim Speichern:", err);
       toast({
         title: "Fehler beim Speichern",
         description: String(err.message || err),
@@ -259,7 +291,10 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
                 />
               )}
               {item.status === "error" && (
-                <div className="text-red-600">Fehler: {item.error}</div>
+                <div className="text-red-600 p-4 bg-red-50 rounded">
+                  <div className="font-semibold">Fehler beim Generieren:</div>
+                  <div className="text-sm mt-1">{item.error}</div>
+                </div>
               )}
             </div>
           ))}
