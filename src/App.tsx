@@ -26,29 +26,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
 
-const LayoutRoutes = () => (
-  <Layout>
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/blog" element={<BlogOverview variant="blog" />} />
-      <Route path="/blog/:slug" element={<BlogPost />} />
-      <Route path="/rezepte" element={<RecipeOverview />} />
-      <Route path="/rezepte/:id" element={<RecipeDetail />} />
-      <Route path="/rezeptebuch" element={<RecipeBook />} />
-      <Route path="/garten" element={<BlogOverview variant="garten" />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/links" element={<Links />} />
-      <Route path="/datenschutz" element={<Datenschutz />} />
-      <Route path="/impressum" element={<Impressum />} />
-      <Route path="/profil" element={<ProfilePage />} />
-      <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-      <Route path="/kontakt" element={<ContactPage />} />
-      <Route path="/newsletter-confirm" element={<NewsletterConfirmPage />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  </Layout>
-);
-
 // AdminProtectedRoute: Nur Admins erlaubt
 const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAllowed, setIsAllowed] = useState<null | boolean>(null);
@@ -59,7 +36,7 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children
     const check = async () => {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
-        navigate("/"); // Kein /auth Route mehr
+        navigate("/");
         return;
       }
       const userId = sessionData.session.user.id;
@@ -94,9 +71,26 @@ function App() {
       <Sonner />
       <BrowserRouter>
         <TooltipProvider>
-          <Routes>
-            <Route path="/*" element={<LayoutRoutes />} />
-          </Routes>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/blog" element={<BlogOverview variant="blog" />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/rezepte" element={<RecipeOverview />} />
+              <Route path="/rezepte/:id" element={<RecipeDetail />} />
+              <Route path="/rezeptebuch" element={<RecipeBook />} />
+              <Route path="/garten" element={<BlogOverview variant="garten" />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/links" element={<Links />} />
+              <Route path="/datenschutz" element={<Datenschutz />} />
+              <Route path="/impressum" element={<Impressum />} />
+              <Route path="/profil" element={<ProfilePage />} />
+              <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+              <Route path="/kontakt" element={<ContactPage />} />
+              <Route path="/newsletter-confirm" element={<NewsletterConfirmPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Layout>
         </TooltipProvider>
       </BrowserRouter>
     </QueryClientProvider>
