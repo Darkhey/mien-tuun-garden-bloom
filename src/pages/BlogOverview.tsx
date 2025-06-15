@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-// Layout-Import entfällt
+import { Helmet } from "react-helmet";
 import { siteConfig } from '@/config/site.config';
 import BlogPostCard from "@/components/blog/BlogPostCard";
 import BlogFilter from "@/components/blog/BlogFilter";
@@ -8,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from '@tanstack/react-query';
 import type { BlogPost } from '@/types/content';
 
-const BlogOverview = () => {
+// "variant": "blog" | "garten"; falls nicht gesetzt -> blog
+const BlogOverview = ({ variant = "blog" }: { variant?: "blog" | "garten" }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Alle');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -72,16 +73,55 @@ const BlogOverview = () => {
     })
   }, [posts, selectedCategory, searchTerm]);
 
+  // SEO differenziert nach Variante
+  const meta =
+    variant === "garten"
+      ? {
+        title: "Gartenblog – Tipps & Inspiration für deinen Garten | Mien Tuun",
+        description: "Gartenideen, nachhaltige Gartentipps & saisonale Inspiration – So wird dein Garten ein Wohlfühlort. Lass dich von Expertenwissen und DIY-Anleitungen inspirieren.",
+        keywords:
+          "Garten, Gartentipps, Gartenideen, nachhaltiges Gärtnern, DIY Garten, Pflanzen, Hochbeet, Gemüse, Permakultur, Gartenblog, Mien Tuun"
+      }
+      : {
+        title: "Mien Tuun Blog – Nachhaltigkeit, Garten & Küche",
+        description: "Entdecke saisonale Rezepte, nachhaltige Gartentipps & Inspiration für ein bewusstes Leben im Blog von Mien Tuun. Idee für deinen Garten & deine Küche!",
+        keywords:
+          "Blog, Garten, Nachhaltigkeit, Rezepte, Gartenblog, Kochen, Pflanzen, Umwelt, Do it yourself, Tipps & Tricks, saisonal, Leben, Inspiration"
+      };
+
+  const hero =
+    variant === "garten" ? (
+      <>
+        <h1 className="text-4xl md:text-5xl font-serif font-bold text-earth-800 mb-6">
+          Gartenblog: Naturnah & kreativ gärtnern
+        </h1>
+        <p className="text-xl text-earth-600 mb-8">
+          Entdecke inspirierende Gartentipps, DIY-Ideen & Ratgeber-Artikel rund ums nachhaltige Gärtnern, Pflanzen und Wohlfühlen im eigenen Grün.
+        </p>
+      </>
+    ) : (
+      <>
+        <h1 className="text-4xl md:text-5xl font-serif font-bold text-earth-800 mb-6">
+          Garten & Küche Blog
+        </h1>
+        <p className="text-xl text-earth-600 mb-8">
+          Entdecke saisonale Rezepte, nachhaltige Gartentipps und Inspiration für ein bewusstes Leben
+        </p>
+      </>
+    );
+
   return (
     <>
+      <Helmet>
+        <title>{meta.title}</title>
+        <meta name="description" content={meta.description} />
+        <meta name="keywords" content={meta.keywords} />
+        <meta property="og:title" content={meta.title} />
+        <meta property="og:description" content={meta.description} />
+      </Helmet>
       <section className="bg-gradient-to-br from-sage-50 to-accent-50 py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold text-earth-800 mb-6">
-            Garten & Küche Blog
-          </h1>
-          <p className="text-xl text-earth-600 mb-8">
-            Entdecke saisonale Rezepte, nachhaltige Gartentipps und Inspiration für ein bewusstes Leben
-          </p>
+          {hero}
           <BlogFilter
             categories={categories}
             selectedCategory={selectedCategory}
