@@ -1,13 +1,5 @@
+
 project_id = "ublbxvpmoccmegtwaslh"
 
-[functions.generate-blog-post]
-verify_jwt = false
-
-[functions.suggest-blog-topics]
-verify_jwt = false
-
-[functions.generate-recipe]
-verify_jwt = false
-
-[functions.auto-blog-post]
+[functions.blog-to-recipe]
 verify_jwt = false
