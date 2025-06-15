@@ -65,6 +65,14 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
     setIsSuggesting(false);
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    setSuggestionSelections(prev => 
+      prev.includes(suggestion) 
+        ? prev.filter(s => s !== suggestion)
+        : [...prev, suggestion]
+    );
+  };
+
   return (
     <div>
       <div className="mb-3">
@@ -86,10 +94,14 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
       </Button>
       {suggestions.length > 0 && (
         <BlogTopicSuggestions
+          topicInput={topicInput}
+          setTopicInput={setTopicInput}
+          isSuggesting={isSuggesting}
+          loading={loading}
+          handleSuggestTopics={handleSuggest}
           suggestions={suggestions}
-          selectedSuggestions={suggestionSelections}
-          onSelectionChange={setSuggestionSelections}
-          loading={loading || isSuggesting}
+          selected={suggestionSelections}
+          onSuggestionClick={handleSuggestionClick}
         />
       )}
     </div>
