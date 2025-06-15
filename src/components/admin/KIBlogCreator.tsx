@@ -49,7 +49,12 @@ const KIBlogCreator: React.FC = () => {
     setDebugLogs(prev => [...prev, `Enhanced KI Blog Creator geladen - ${trendTags.length} Trend-Tags aktiv`]);
   }, [category, season]);
 
-  const handleSaveArticle = async (content: string, title: string, quality: any) => {
+  const handleSaveArticle = async (
+    content: string,
+    title: string,
+    quality: any,
+    suggestion?: string
+  ) => {
     try {
       console.log("Speichere Enhanced Artikel:", { title, quality: quality.score });
       toast({
@@ -57,10 +62,21 @@ const KIBlogCreator: React.FC = () => {
         description: `"${title}" wurde mit Quality Score ${quality.score} gespeichert.`,
       });
       
-      // Reset nach dem Speichern
-      setSelectedPrompt("");
-      setSuggestionSelections([]);
-      setDebugLogs(prev => [...prev, `Enhanced Artikel "${title}" erfolgreich gespeichert (Quality: ${quality.score})`]);
+      // Entferne gespeicherten Vorschlag aus der Auswahl
+      if (suggestion) {
+        setSuggestionSelections(prev => prev.filter(s => s !== suggestion));
+
+        if (selectedPrompt === suggestion) {
+          setSelectedPrompt("");
+        }
+      } else {
+        setSelectedPrompt("");
+      }
+
+      setDebugLogs(prev => [
+        ...prev,
+        `Enhanced Artikel "${title}" erfolgreich gespeichert (Quality: ${quality.score})`
+      ]);
     } catch (error: any) {
       console.error("Fehler beim Speichern:", error);
       toast({
@@ -154,7 +170,9 @@ const KIBlogCreator: React.FC = () => {
                       <h4 className="font-medium mb-3 text-lg">{suggestion}</h4>
                       <EnhancedBlogArticleEditor
                         initialPrompt={suggestion}
-                        onSave={handleSaveArticle}
+                        onSave={(content, title, quality) =>
+                          handleSaveArticle(content, title, quality, suggestion)
+                        }
                         category={category}
                         season={season}
                         audiences={audiences}
@@ -180,7 +198,9 @@ const KIBlogCreator: React.FC = () => {
               <CardContent>
                 <EnhancedBlogArticleEditor
                   initialPrompt={selectedPrompt}
-                  onSave={handleSaveArticle}
+                  onSave={(content, title, quality) =>
+                    handleSaveArticle(content, title, quality, selectedPrompt)
+                  }
                   category={category}
                   season={season}
                   audiences={audiences}
