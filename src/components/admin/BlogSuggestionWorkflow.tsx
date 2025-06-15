@@ -18,7 +18,7 @@ interface BlogSuggestionWorkflowProps {
   excerpt: string;
   imageUrl: string;
   suggestionSelections: string[];
-  setSuggestionSelections: (s: string[]) => void;
+  setSuggestionSelections: React.Dispatch<React.SetStateAction<string[]>>;
   setDebugLogs: React.Dispatch<React.SetStateAction<string[]>>;
   loading: boolean;
   setLoading: (l: boolean) => void;
