@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Flower, Calendar, User, Instagram } from 'lucide-react';
 import NewsletterSignup from "@/components/NewsletterSignup";
 import NewsletterInlineCard from "@/components/NewsletterInlineCard";
+import { useIsMobile } from "@/hooks/use-mobile";
+import MobileLandingPage from "./MobileLandingPage";
 
 // Foto-Quellen und zentrale Werte aus siteConfig für maximale Flexibilität:
 const mainHeroImage =
@@ -62,6 +64,12 @@ const socialLinks = [
 ];
 
 const Index = () => {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return <MobileLandingPage />;
+  }
+
   return (
     <div>
       {/* HERO */}
