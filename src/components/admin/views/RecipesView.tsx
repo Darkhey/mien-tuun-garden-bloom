@@ -57,7 +57,7 @@ const RecipesView: React.FC<RecipesViewProps> = ({ recipes, loading, error, onTo
             <TableCell>{recipe.author}</TableCell>
             <TableCell>{recipe.category || "-"}</TableCell>
             <TableCell>{recipe.difficulty || "-"}</TableCell>
-            <TableCell>{new Date(recipe.created_at).toLocaleDate'('de-DE')}</TableCell>
+            <TableCell>{new Date(recipe.created_at).toLocaleDateString('de-DE')}</TableCell>
             <TableCell>
               <div className="flex gap-2">
                 <Button
