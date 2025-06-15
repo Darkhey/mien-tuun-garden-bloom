@@ -11,12 +11,20 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Filter } from "lucide-react";
 
-// Daten (aus: https://www.garten-und-freizeit.de/magazin/aussaatkalender – teilauszug & logische Gruppen)
 const SOWING_DATA = [
   {
     plant: "Radieschen",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer", "Herbst"],
     directSow: [3, 4, 5, 6, 7, 8, 9],
     indoor: [],
     plantOut: [],
@@ -24,6 +32,8 @@ const SOWING_DATA = [
   },
   {
     plant: "Möhren",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer", "Herbst"],
     directSow: [3, 4, 5, 6, 7],
     indoor: [],
     plantOut: [],
@@ -31,6 +41,8 @@ const SOWING_DATA = [
   },
   {
     plant: "Salat",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer", "Herbst"],
     directSow: [3, 4, 5, 6, 7, 8],
     indoor: [2, 3, 4],
     plantOut: [4, 5, 6],
@@ -38,13 +50,35 @@ const SOWING_DATA = [
   },
   {
     plant: "Tomaten",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer"],
     directSow: [],
     indoor: [2, 3, 4],
     plantOut: [5, 6],
     harvest: [7, 8, 9, 10],
   },
   {
+    plant: "Erdbeeren",
+    type: "Obst",
+    season: ["Frühling", "Sommer"],
+    directSow: [],
+    indoor: [],
+    plantOut: [3, 4, 8, 9],
+    harvest: [6, 7, 8, 9],
+  },
+  {
+    plant: "Apfel",
+    type: "Obst",
+    season: ["Herbst"],
+    directSow: [],
+    indoor: [],
+    plantOut: [],
+    harvest: [9, 10, 11],
+  },
+  {
     plant: "Gurken",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer"],
     directSow: [5, 6],
     indoor: [4, 5],
     plantOut: [5, 6],
@@ -52,13 +86,44 @@ const SOWING_DATA = [
   },
   {
     plant: "Zucchini",
+    type: "Gemüse",
+    season: ["Sommer"],
     directSow: [5, 6],
     indoor: [4, 5],
     plantOut: [5, 6],
     harvest: [7, 8, 9],
   },
   {
+    plant: "Kirsche",
+    type: "Obst",
+    season: ["Sommer"],
+    directSow: [],
+    indoor: [],
+    plantOut: [],
+    harvest: [6, 7],
+  },
+  {
+    plant: "Birne",
+    type: "Obst",
+    season: ["Herbst"],
+    directSow: [],
+    indoor: [],
+    plantOut: [],
+    harvest: [8, 9, 10],
+  },
+  {
+    plant: "Heidelbeeren",
+    type: "Obst",
+    season: ["Sommer"],
+    directSow: [],
+    indoor: [],
+    plantOut: [3, 4],
+    harvest: [7, 8, 9],
+  },
+  {
     plant: "Paprika",
+    type: "Gemüse",
+    season: ["Sommer"],
     directSow: [],
     indoor: [2, 3],
     plantOut: [5, 6],
@@ -66,34 +131,44 @@ const SOWING_DATA = [
   },
   {
     plant: "Kürbis",
+    type: "Gemüse",
+    season: ["Herbst"],
     directSow: [5, 6],
     indoor: [4, 5],
     plantOut: [5, 6],
     harvest: [8, 9, 10],
   },
   {
-    plant: "Zwiebeln",
-    directSow: [3, 4],
+    plant: "Johannisbeere",
+    type: "Obst",
+    season: ["Sommer"],
+    directSow: [],
     indoor: [],
-    plantOut: [],
-    harvest: [7, 8, 9],
-  },
-  {
-    plant: "Erbsen",
-    directSow: [3, 4, 5],
-    indoor: [],
-    plantOut: [],
-    harvest: [6, 7, 8],
+    plantOut: [3, 4, 10, 11],
+    harvest: [7, 8],
   },
   {
     plant: "Bohnen",
+    type: "Gemüse",
+    season: ["Sommer"],
     directSow: [5, 6, 7],
     indoor: [],
     plantOut: [],
     harvest: [7, 8, 9],
   },
   {
+    plant: "Apfelbeere (Aronia)",
+    type: "Obst",
+    season: ["Sommer", "Herbst"],
+    directSow: [],
+    indoor: [],
+    plantOut: [3, 4],
+    harvest: [8, 9],
+  },
+  {
     plant: "Blumenkohl",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer", "Herbst"],
     directSow: [4, 5],
     indoor: [2, 3],
     plantOut: [4, 5],
@@ -101,13 +176,26 @@ const SOWING_DATA = [
   },
   {
     plant: "Brokkoli",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer", "Herbst"],
     directSow: [4, 5],
     indoor: [2, 3],
     plantOut: [4, 5],
     harvest: [6, 7, 8, 9],
   },
   {
+    plant: "Himbeeren",
+    type: "Obst",
+    season: ["Sommer"],
+    directSow: [],
+    indoor: [],
+    plantOut: [3, 4, 10, 11],
+    harvest: [6, 7, 8, 9],
+  },
+  {
     plant: "Rote Bete",
+    type: "Gemüse",
+    season: ["Sommer", "Herbst"],
     directSow: [4, 5, 6],
     indoor: [],
     plantOut: [],
@@ -115,6 +203,8 @@ const SOWING_DATA = [
   },
   {
     plant: "Spinat",
+    type: "Gemüse",
+    season: ["Frühling", "Herbst"],
     directSow: [3, 4, 8, 9],
     indoor: [],
     plantOut: [],
@@ -122,17 +212,30 @@ const SOWING_DATA = [
   },
   {
     plant: "Kohlrabi",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer", "Herbst"],
     directSow: [4, 5, 6, 7],
     indoor: [2, 3],
     plantOut: [4, 5, 6],
     harvest: [6, 7, 8, 9, 10],
   },
-  // Mehr Gemüse nach Bedarf ergänzbar …
+  {
+    plant: "Pflaume",
+    type: "Obst",
+    season: ["Sommer", "Herbst"],
+    directSow: [],
+    indoor: [],
+    plantOut: [],
+    harvest: [8, 9],
+  },
+  // Weitere Obst-/Gemüsesorten nach Wunsch einfügen ...
 ];
 
 const MONTHS = [
   "Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"
 ];
+const SEASONS = ["Frühling", "Sommer", "Herbst", "Winter"];
+const TYPES = ["Gemüse", "Obst"];
 
 const CATEGORIES = [
   { key: "directSow", color: "bg-green-400", label: "Aussaat draußen" },
@@ -142,7 +245,6 @@ const CATEGORIES = [
 ];
 
 function renderMonthDots(row: typeof SOWING_DATA[number], col: number, categoryFilter: Record<string, boolean>) {
-  // Zeigt alle farbigen Punkte für gewählte Kategorien in dieser Zelle
   return CATEGORIES.map(({ key, color, label }) =>
     categoryFilter[key] && (row[key as keyof typeof row] as number[]).includes(col + 1) ? (
       <span
@@ -156,32 +258,50 @@ function renderMonthDots(row: typeof SOWING_DATA[number], col: number, categoryF
 
 const SowingCalendar: React.FC = () => {
   const [search, setSearch] = useState("");
-  // Welche Kategorien werden angezeigt?
   const [categoryFilter, setCategoryFilter] = useState({
     directSow: true,
     indoor: true,
     plantOut: true,
     harvest: true,
   });
+  const [selectedMonth, setSelectedMonth] = useState<string>("");
+  const [selectedSeason, setSelectedSeason] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("");
 
-  // Suche & Filter anwenden
+  // Filtere alle rows, die den Kriterien entsprechen
   const filteredRows = useMemo(() => {
-    return SOWING_DATA.filter(row =>
-      row.plant.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [search]);
+    return SOWING_DATA.filter(row => {
+      // Type-Filter
+      if (selectedType && row.type !== selectedType) return false;
+      // Saison-Filter
+      if (selectedSeason && !row.season.includes(selectedSeason)) return false;
+      // Textsuche auf Name
+      if (search && !row.plant.toLowerCase().includes(search.toLowerCase())) return false;
+      // Monat-Filter: nur zeigen, wenn in diesem Monat eine relevante Kategorie belegt ist
+      if (selectedMonth) {
+        const monthNum = MONTHS.indexOf(selectedMonth) + 1;
+        // Wenn für eine aktivierte Kategorie in diesem Monat kein Eintrag -> Zeile ausblenden
+        const anyCategory = CATEGORIES.some(cat =>
+          categoryFilter[cat.key] &&
+          (row[cat.key as keyof typeof row] as number[]).includes(monthNum)
+        );
+        if (!anyCategory) return false;
+      }
+      return true;
+    });
+  }, [search, selectedType, selectedSeason, categoryFilter, selectedMonth]);
 
   return (
-    <div className="w-full max-w-full md:max-w-4xl mx-auto bg-white shadow rounded-lg p-4 overflow-x-auto animate-fade-in">
+    <div className="w-full max-w-full md:max-w-5xl mx-auto bg-white shadow rounded-lg p-4 overflow-x-auto animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-        <h2 className="text-xl font-bold">Aussaatkalender für Gemüse</h2>
+        <h2 className="text-xl font-bold">Aussaatkalender für Obst &amp; Gemüse</h2>
         <form
           onSubmit={e => e.preventDefault()}
           className="flex items-center gap-2"
         >
           <Input
             type="search"
-            placeholder="Suche Gemüse…"
+            placeholder="Suche Kultur…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-40 px-2 py-1 text-sm"
@@ -191,7 +311,7 @@ const SowingCalendar: React.FC = () => {
           </Button>
         </form>
       </div>
-      <div className="flex flex-wrap gap-2 mb-2">
+      <div className="flex flex-wrap gap-2 mb-2 items-center">
         {CATEGORIES.map(cat => (
           <Button
             key={cat.key}
@@ -211,6 +331,52 @@ const SowingCalendar: React.FC = () => {
             {cat.label}
           </Button>
         ))}
+        <span className="text-muted-foreground ml-2">
+          <Filter className="inline mr-1 -mt-1" size={16} />
+          Filter:
+        </span>
+        <Select
+          value={selectedMonth}
+          onValueChange={setSelectedMonth}
+        >
+          <SelectTrigger className="w-28 text-xs mr-1" aria-label="Monat wählen">
+            <SelectValue placeholder="Monat" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Alle Monate</SelectItem>
+            {MONTHS.map((m, i) => (
+              <SelectItem key={m} value={m}>{m}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={selectedSeason}
+          onValueChange={setSelectedSeason}
+        >
+          <SelectTrigger className="w-28 text-xs mr-1" aria-label="Saison wählen">
+            <SelectValue placeholder="Saison" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Alle Saisons</SelectItem>
+            {SEASONS.map(s => (
+              <SelectItem key={s} value={s}>{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={selectedType}
+          onValueChange={setSelectedType}
+        >
+          <SelectTrigger className="w-28 text-xs mr-1" aria-label="Art wählen">
+            <SelectValue placeholder="Art" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Obst &amp; Gemüse</SelectItem>
+            {TYPES.map(t => (
+              <SelectItem key={t} value={t}>{t}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <p className="text-sage-700 text-xs mb-2">
         <span className="inline-block align-middle">
@@ -237,6 +403,7 @@ const SowingCalendar: React.FC = () => {
         <TableHeader>
           <TableRow>
             <TableHead className="min-w-[110px]">Pflanze</TableHead>
+            <TableHead className="min-w-[56px] text-center">Art</TableHead>
             {MONTHS.map((m, i) => (
               <TableHead key={i} className="text-center w-7">{m}</TableHead>
             ))}
@@ -245,14 +412,15 @@ const SowingCalendar: React.FC = () => {
         <TableBody>
           {filteredRows.length === 0 && (
             <TableRow>
-              <TableCell colSpan={13} className="text-center text-muted-foreground italic">
-                Keine passenden Gemüse gefunden.
+              <TableCell colSpan={14} className="text-center text-muted-foreground italic">
+                Keine passenden Einträge gefunden.
               </TableCell>
             </TableRow>
           )}
           {filteredRows.map(row => (
             <TableRow key={row.plant} className="hover:bg-green-50/40">
               <TableCell className="font-semibold">{row.plant}</TableCell>
+              <TableCell className="text-xs text-center">{row.type}</TableCell>
               {Array.from({ length: 12 }, (_, col) => (
                 <TableCell key={col} className="text-center px-1 py-0">
                   <div className="flex flex-wrap gap-0.5 justify-center items-center min-h-[1.3rem]">
