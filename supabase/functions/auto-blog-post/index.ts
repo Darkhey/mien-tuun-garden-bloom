@@ -22,12 +22,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Env-Keys (müssen gesetzt sein!)
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-// Hilfsfunktion: Slug erzeugen (wie in src/utils/blogSeo.ts)
+// Hilfsfunktion: Slug erzeugen
 function generateSlug(title: string): string {
   return title
     .toLowerCase()
@@ -42,6 +41,53 @@ function generateSlug(title: string): string {
 }
 function getRandom(arr: any[]) {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// Hilfsfunktion: Bild generieren via OpenAI
+async function generateImage({ theme, category, season, trend }) {
+  // Prompt als kurzer deutscher Satz, sehr bildlich & hyperrealistisch
+  const basePrompt = `Hyperrealistisches, stimmungsvolles Garten- oder Küchenbild passend zum Thema "${theme}" (${category}, ${season}, Trend: ${trend}). Natürliches Licht, viel Atmosphäre, hochwertiger Fotografie-Stil. Ohne Text.`;
+  const response = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "gpt-image-1",
+      prompt: basePrompt,
+      n: 1,
+      size: "1024x1024",
+      output_format: "png",
+      quality: "high",
+    }),
+  });
+  const data = await response.json();
+  // Für gpt-image-1: Es kommt base64!
+  if (!data.data?.[0]?.b64_json) throw new Error("Bildgenerierung fehlgeschlagen");
+  return data.data[0].b64_json;
+}
+
+// Hilfsfunktion: Bild im Storage speichern
+async function uploadImageToSupabase({ imageB64, fileName }) {
+  // Storage: bucket = blog-images
+  const supabase = createClient(
+    SUPABASE_URL!,
+    SERVICE_ROLE_KEY!,
+  );
+  // base64 zu Uint8Array/Buffer
+  const binary = Uint8Array.from(atob(imageB64), c => c.charCodeAt(0));
+  // Lade unter: blog-images/<fileName>
+  const { data, error } = await supabase
+    .storage
+    .from("blog-images")
+    .upload(fileName, binary, {
+      contentType: "image/png",
+      upsert: true,
+    });
+  if (error) throw new Error("Bilder-Upload fehlgeschlagen: " + error.message);
+  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/blog-images/${fileName}`;
+  return publicUrl;
 }
 
 serve(async (req) => {
@@ -111,11 +157,21 @@ serve(async (req) => {
     const seoDescription = excerpt;
     const seoKeywords = [topicIdea, category, season, trend];
 
-    // 7. Slug & Dummy-/Platzhalterbild wählen
+    // 7. Slug vorbereiten
     const slug = generateSlug(topicIdea);
-    const featured_image = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&h=600&fit=crop"; // Platzhalter
 
-    // 8. Speichern via Service Role Key
+    // 8. KI-generiertes Bild erzeugen & hochladen
+    let featured_image: string = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&h=600&fit=crop"; // Fallback
+    try {
+      const imageB64 = await generateImage({ theme: topicIdea, category, season, trend });
+      const fileName = `${slug}-${now.getTime()}.png`;
+      featured_image = await uploadImageToSupabase({ imageB64, fileName });
+    } catch (imgErr) {
+      console.error("Fehler bei der KI-Bildgenerierung:", imgErr);
+      // Fallback-Bild bleibt gesetzt
+    }
+
+    // 9. Speichern via Service Role Key
     const supabase = createClient(
       SUPABASE_URL!,
       SERVICE_ROLE_KEY!,
@@ -155,7 +211,8 @@ serve(async (req) => {
       title: topicIdea,
       excerpt,
       content: articleContent,
-      author
+      author,
+      featured_image,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
