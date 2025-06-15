@@ -1,3 +1,4 @@
+
 import { generateSlug, generateMetaTitle, generateMetaDescription } from '@/utils/blogSeo';
 
 export interface SEOAnalysis {
@@ -140,7 +141,8 @@ export class SEOOptimizationService {
     }
     
     // Content-Länge (20 Punkte)
-    const wordCount = content.content.split(/\s+/).length;
+    const contentText = String(content.content || '');
+    const wordCount = contentText.split(/\s+/).length;
     if (wordCount >= 300 && wordCount <= 2000) {
       score += 20;
     } else if (wordCount >= 200) {
@@ -150,7 +152,7 @@ export class SEOOptimizationService {
     }
     
     // Keyword-Dichte (20 Punkte)
-    const keywordDensity = this.calculateKeywordDensity(content.content, keywords[0] || '');
+    const keywordDensity = this.calculateKeywordDensity(contentText, keywords[0] || '');
     if (keywordDensity >= 0.5 && keywordDensity <= 3) {
       score += 20;
     } else {
@@ -158,7 +160,7 @@ export class SEOOptimizationService {
     }
     
     // Struktur (20 Punkte)
-    const headers = (content.content.match(/^#{1,6}\s/gm) || []).length;
+    const headers = (contentText.match(/^#{1,6}\s/gm) || []).length;
     if (headers >= 3) {
       score += 20;
     } else if (headers >= 1) {
@@ -168,42 +170,41 @@ export class SEOOptimizationService {
     }
     
     // Lesbarkeit (20 Punkte)
-    const readabilityScore = this.calculateReadabilityScore(content.content);
+    const readabilityScore = this.calculateReadabilityScore(contentText);
     score += Math.min(20, Math.floor(readabilityScore / 5));
     
     return Math.min(100, score);
   }
 
   private calculateKeywordDensity(content: string, keyword: string): number {
-    if (!keyword) return 0;
-    if (!content) return 0;
+    if (!keyword || !content) return 0;
+    
     // Entferne HTML und Sonderzeichen, splitte exakt nach Wortgrenzen
-    const plainText = content.replace(/<[^>]*>/g, '').replace(/[^\wäöüßÄÖÜ\s\-]/gi, ' ');
+    const plainText = String(content).replace(/<[^>]*>/g, '').replace(/[^\wäöüßÄÖÜ\s\-]/gi, ' ');
     const words = plainText.toLowerCase().split(/\s+/).filter(Boolean);
 
     // Exakter Wort-Match statt "includes"
-    // Zähle wie oft Keyword als vollständiges Wort vorkommt
-    const keywordNormalized = keyword.toLowerCase().trim();
-    const keywordCount = Number(words.filter(word => word === keywordNormalized).length);
-    const totalWords = Number(words.length);
+    const keywordNormalized = String(keyword).toLowerCase().trim();
+    const keywordCount = words.filter(word => word === keywordNormalized).length;
+    const totalWords = words.length;
 
-    if (!totalWords || isNaN(totalWords)) return 0;
+    if (totalWords === 0) return 0;
 
-    // Density: Anteil am Gesamttext: z.B. 2% bei 3/150 Wörtern = 2
+    // Density: Anteil am Gesamttext
     const density = (keywordCount / totalWords) * 100;
-    return isNaN(density) ? 0 : Number(density.toFixed(2));
+    return Number(density.toFixed(2));
   }
 
   private calculateReadabilityScore(content: string): number {
-    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    const words = content.split(/\s+/);
+    const contentText = String(content || '');
+    const sentences = contentText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const words = contentText.split(/\s+/).filter(Boolean);
     
-    // Ensure we have valid numbers for calculation
     const sentenceCount = sentences.length || 1;
     const wordCount = words.length || 1;
     const avgWordsPerSentence = wordCount / sentenceCount;
     
-    // Flesch Reading Ease approximation - ensure all operations are on numbers
+    // Flesch Reading Ease approximation
     const score = 206.835 - (1.015 * avgWordsPerSentence);
     return Math.max(0, score);
   }

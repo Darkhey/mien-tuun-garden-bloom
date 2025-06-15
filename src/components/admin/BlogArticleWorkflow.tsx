@@ -44,52 +44,75 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
   category, season, audiences, contentType, tags, excerpt, imageUrl,
   setDebugLogs, toast,
 }) => {
-  // Für Mehrfach-Artikel mit Enhanced Editor
   const [enhancedArticles, setEnhancedArticles] = useState<
     { suggestion: string; status: "loading" | "editing" | "saved" }[]
   >([]);
 
   const handleSaveArticle = async (content: string, title: string, quality: any, suggestion: string) => {
-    // Generiere einen Slug
-    const slug = (title || suggestion)
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "")
-      .substring(0, 80)
-      + "-" + Date.now();
-
-    // Fallbacks für Felder
-    const article = {
-      slug,
-      title: title || suggestion,
-      content,
-      excerpt: excerpt || content.slice(0, 200),
-      category: category || "Unkategorisiert",
-      tags: tags.length ? tags : [],
-      content_types: contentType.length ? contentType : [],
-      season: season || "",
-      audiences: audiences.length ? audiences : [],
-      featured_image: imageUrl || "",
-      og_image: "",
-      original_title: "",
-      seo_description: excerpt || "",
-      seo_title: title || suggestion,
-      seo_keywords: tags.length ? tags : [],
-      published: false,
-      featured: false,
-      reading_time: Math.ceil(content.split(/\s/).length / 160),
-      author: "KI-Bot"
-    };
-
+    console.log('[BlogWorkflow] Starte Artikel-Speicherung:', { title, suggestion, quality });
+    setDebugLogs(prev => [...prev, `[SAVE] Beginne Speicherung: "${title}"`]);
+    
     try {
-      console.log("Speichere Enhanced Artikel:", { title, quality: quality.score });
-      const { error } = await supabase.from("blog_posts").insert([article]);
-      if (error) {
-        console.error("Fehler beim Speichern in Supabase:", error);
-        throw new Error(error.message);
+      // Validierung der Eingabedaten
+      if (!title || !content) {
+        throw new Error('Titel und Inhalt sind erforderlich');
       }
+
+      // Generiere einen eindeutigen Slug
+      const baseSlug = (title || suggestion)
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+        .substring(0, 80);
+      
+      const slug = `${baseSlug}-${Date.now()}`;
+      console.log('[BlogWorkflow] Generierter Slug:', slug);
+
+      // Bereite Artikel-Daten vor
+      const article = {
+        slug,
+        title: title || suggestion,
+        content,
+        excerpt: excerpt || content.slice(0, 200),
+        category: category || "Allgemein",
+        tags: tags.length ? tags : [],
+        content_types: contentType.length ? contentType : ["blog"],
+        season: season || "",
+        audiences: audiences.length ? audiences : ["anfaenger"],
+        featured_image: imageUrl || "",
+        og_image: imageUrl || "",
+        original_title: title || suggestion,
+        seo_description: excerpt || content.slice(0, 156),
+        seo_title: title || suggestion,
+        seo_keywords: tags.length ? tags : [],
+        published: false,
+        featured: quality?.score > 90,
+        reading_time: Math.ceil(content.split(/\s+/).length / 160),
+        author: "KI-Enhanced Pipeline",
+        status: "entwurf"
+      };
+
+      console.log('[BlogWorkflow] Artikel-Daten vorbereitet:', article);
+      setDebugLogs(prev => [...prev, `[SAVE] Daten vorbereitet für Slug: ${slug}`]);
+
+      // Speichere in Supabase
+      console.log('[BlogWorkflow] Sende Insert-Request an Supabase...');
+      const { data, error } = await supabase
+        .from("blog_posts")
+        .insert([article])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[BlogWorkflow] Supabase Insert Fehler:', error);
+        setDebugLogs(prev => [...prev, `[ERROR] Supabase Fehler: ${error.message}`]);
+        throw new Error(`Supabase Fehler: ${error.message}`);
+      }
+
+      console.log('[BlogWorkflow] Artikel erfolgreich gespeichert:', data);
+      setDebugLogs(prev => [...prev, `[SUCCESS] Artikel gespeichert mit ID: ${data.id}`]);
       
       // Update Status in Enhanced Articles
       setEnhancedArticles(prev => 
@@ -101,17 +124,20 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       );
       
       toast({
-        title: "Enhanced Artikel gespeichert!",
-        description: `"${title}" wurde mit Quality Score ${quality.score} gespeichert.`,
+        title: "✅ Enhanced Artikel erfolgreich gespeichert!",
+        description: `"${title}" wurde in der Datenbank gespeichert (ID: ${data.id})`,
         variant: "default",
       });
       
-      setDebugLogs(prev => [...prev, `Enhanced Artikel "${title}" erfolgreich gespeichert (Quality: ${quality.score})`]);
+      setDebugLogs(prev => [...prev, `[COMPLETE] Artikel-Speicherung abgeschlossen für "${title}"`]);
+
     } catch (err: any) {
-      console.error("Fehler beim Speichern:", err);
+      console.error('[BlogWorkflow] Fehler beim Speichern:', err);
+      setDebugLogs(prev => [...prev, `[ERROR] Speicher-Fehler: ${err.message}`]);
+      
       toast({
-        title: "Fehler beim Speichern",
-        description: String(err.message || err),
+        title: "❌ Fehler beim Speichern",
+        description: `Artikel konnte nicht gespeichert werden: ${err.message}`,
         variant: "destructive",
       });
     }
