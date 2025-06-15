@@ -62,7 +62,8 @@ export function buildContextFromMeta({
     tags && tags.length ? `Tags: ${tags.join(", ")}.` : "",
     excerpt ? `Kurzbeschreibung/Teaser: ${excerpt}` : "",
     imageUrl ? `Bild: ${imageUrl}` : "",
-    "Bitte nur knackige, inspirierende Titel zurückgeben."
   ];
+  
+  // Kombiniere Thema/Input mit Kontext, aber ohne die Systemanweisung
   return [topicInput || input, ...contextParts].filter(Boolean).join(" ");
 }
