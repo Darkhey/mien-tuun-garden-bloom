@@ -2,14 +2,54 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.5";
-
 import { CATEGORIES, SEASONS, AUTHORS, TAGS, corsHeaders } from "./constants.ts";
 import { generateSlug, getRandom } from "./helpers.ts";
 import { generateImage, generateTopicIdea, generateArticle } from "./openai.ts";
-import { uploadImageToSupabase, checkBlacklist, isDuplicate, saveBlogPost } from "./supabase-helpers.ts";
+import { uploadImageToSupabase, checkBlacklist, isDuplicate, saveBlogPost, logTopicAttempt } from "./supabase-helpers.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+// Mehrfachversuch (max 3)
+async function getUniqueTopic(supabase, contextPrompt, maxTries = 3) {
+  let topicIdea = "";
+  let slug = "";
+  let title = "";
+  let attempt = 1;
+  let finalReason = "";
+  let lastErr = null;
+
+  while (attempt <= maxTries) {
+    // 1. Themen-Idee mit OpenAI generieren
+    topicIdea = await generateTopicIdea(contextPrompt);
+    slug = generateSlug(topicIdea);
+    title = topicIdea;
+
+    // 2. Blacklist-Prüfung
+    let isBlack = await checkBlacklist(supabase, topicIdea);
+    if (isBlack) {
+      finalReason = "blacklisted";
+      await logTopicAttempt(supabase, { slug, title, reason: "blacklisted", try_count: attempt, context: { contextPrompt } });
+      attempt++;
+      continue;
+    }
+
+    // 3. Dubletten-Prüfung
+    let dupl = await isDuplicate(supabase, slug, title);
+    if (dupl) {
+      finalReason = "duplicate";
+      await logTopicAttempt(supabase, { slug, title, reason: "duplicate", try_count: attempt, context: { contextPrompt } });
+      attempt++;
+      continue;
+    }
+
+    // 4. Thema ist verwendbar!
+    return { topicIdea, slug, title, attempt, reason: "used" };
+  }
+  // Kein eindeutiges Thema gefunden → gib das letzte
+  await logTopicAttempt(supabase, { slug, title, reason: finalReason, try_count: attempt - 1, context: { contextPrompt } });
+  throw new Error(`Konnte kein neues Thema nach ${maxTries} Versuchen generieren (letzte Sperre: ${finalReason})`);
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -19,41 +59,16 @@ serve(async (req) => {
   try {
     const supabase = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
 
-    // 1. Thema + Kontext generieren
+    // 1. Kontext zusammenbauen
     const now = new Date();
     const season = getRandom(SEASONS);
     const category = getRandom(CATEGORIES);
     const author = getRandom(AUTHORS);
     const trend = getRandom(TAGS);
-
     const contextPrompt = `Kategorie: ${category}, Saison: ${season}, Trend: ${trend}. Schreibe einen Blogartikel, der zum Kontext und aktuellen Zeit passt – inspiriere HobbygärtnerInnen oder Kochbegeisterte.`;
 
-    // 2. Themen-Idee mit OpenAI generieren
-    const topicIdea = await generateTopicIdea(contextPrompt);
-
-    // === THEMEN-BLACKLIST PRÜFEN ===
-    if (await checkBlacklist(supabase, topicIdea)) {
-      return new Response(JSON.stringify({
-        status: "blacklisted",
-        title: topicIdea,
-        message: "Dieses Thema steht auf der Blacklist und wurde übersprungen.",
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
-
-    // === DUPLIKATERKENNUNG ===
-    const slug = generateSlug(topicIdea);
-    if (await isDuplicate(supabase, slug)) {
-      return new Response(JSON.stringify({
-        status: "duplicate",
-        slug,
-        title: topicIdea,
-        message: "Dieses Thema wurde kürzlich schon veröffentlicht.",
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
+    // 2. Uniques Thema besorgen (max 3 Versuche -> siehe getUniqueTopic)
+    const { topicIdea, slug, title, attempt } = await getUniqueTopic(supabase, contextPrompt, 3);
 
     // 3. Prompt zusammensetzen & Artikel generieren
     const prompt = `Thema: ${topicIdea}. ${contextPrompt} Schreibe einen originellen, inspirierenden SEO-Blogartikel auf Deutsch. Baue Trends & Saisonalität ein.`;
@@ -78,7 +93,7 @@ serve(async (req) => {
       console.error("Fehler bei der KI-Bildgenerierung:", imgErr);
     }
 
-    // 7. Speichern
+    // 7. Artikel-Objekt aufbauen
     const postData = {
       slug: slug + "-" + now.getTime(),
       title: topicIdea,
@@ -100,8 +115,20 @@ serve(async (req) => {
       audiences: ["Automatisch"],
       content_types: ["Inspiration"],
     };
+
+    // 8. In Blog speichern
     await saveBlogPost(supabase, postData);
-    
+
+    // 9. Thema als "used" in History loggen (inkl. context-Daten, Suffix slug)
+    await logTopicAttempt(supabase, {
+      slug: slug + "-" + now.getTime(),
+      title: topicIdea,
+      reason: "used",
+      used_in_post: slug + "-" + now.getTime(),
+      try_count: attempt,
+      context: { contextPrompt }
+    });
+
     return new Response(JSON.stringify({
       status: "success",
       slug,
@@ -122,3 +149,4 @@ serve(async (req) => {
     });
   }
 });
+

@@ -153,6 +153,39 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_topic_history: {
+        Row: {
+          context: Json | null
+          generated_at: string
+          id: string
+          reason: string | null
+          slug: string
+          title: string
+          try_count: number | null
+          used_in_post: string | null
+        }
+        Insert: {
+          context?: Json | null
+          generated_at?: string
+          id?: string
+          reason?: string | null
+          slug: string
+          title: string
+          try_count?: number | null
+          used_in_post?: string | null
+        }
+        Update: {
+          context?: Json | null
+          generated_at?: string
+          id?: string
+          reason?: string | null
+          slug?: string
+          title?: string
+          try_count?: number | null
+          used_in_post?: string | null
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           confirmation_token: string | null
