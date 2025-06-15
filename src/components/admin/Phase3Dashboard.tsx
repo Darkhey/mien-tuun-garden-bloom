@@ -2,7 +2,7 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, Pipeline, Settings, BarChart3, Workflow, Bot } from "lucide-react";
+import { Zap, Workflow, Settings, BarChart3, Bot } from "lucide-react";
 import AutomationDashboard from "./AutomationDashboard";
 import ContentPipelineManager from "./ContentPipelineManager";
 
@@ -24,7 +24,7 @@ const Phase3Dashboard: React.FC = () => {
             Automation Rules
           </TabsTrigger>
           <TabsTrigger value="pipelines" className="flex items-center gap-2">
-            <Pipeline className="h-4 w-4" />
+            <Workflow className="h-4 w-4" />
             Content Pipelines
           </TabsTrigger>
         </TabsList>
@@ -59,7 +59,7 @@ const Phase3Dashboard: React.FC = () => {
                 <p className="text-sm text-gray-600">Laufende Pipelines</p>
                 <p className="text-2xl font-bold">3</p>
               </div>
-              <Pipeline className="h-8 w-8 text-green-500" />
+              <Workflow className="h-8 w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>

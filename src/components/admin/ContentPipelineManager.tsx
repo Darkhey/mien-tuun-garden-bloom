@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  Pipeline, 
+  Workflow, 
   Play, 
   Pause, 
   RotateCcw, 
@@ -188,18 +188,18 @@ const ContentPipelineManager: React.FC = () => {
 
   const getPipelineTypeIcon = (type: string) => {
     switch (type) {
-      case 'blog_creation': return <Pipeline className="h-5 w-5 text-blue-500" />;
+      case 'blog_creation': return <Workflow className="h-5 w-5 text-blue-500" />;
       case 'recipe_generation': return <Zap className="h-5 w-5 text-green-500" />;
       case 'seo_optimization': return <TrendingUp className="h-5 w-5 text-purple-500" />;
       case 'content_analysis': return <Settings className="h-5 w-5 text-orange-500" />;
-      default: return <Pipeline className="h-5 w-5 text-gray-500" />;
+      default: return <Workflow className="h-5 w-5 text-gray-500" />;
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6">
-        <Pipeline className="h-8 w-8 text-blue-600" />
+        <Workflow className="h-8 w-8 text-blue-600" />
         <div>
           <h1 className="text-3xl font-bold">Content Pipeline Manager</h1>
           <p className="text-gray-600">Vollautomatisierte Content-Produktions-Pipelines</p>
