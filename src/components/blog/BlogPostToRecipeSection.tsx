@@ -4,6 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { slugify } from "@/utils/slugify";
 import { Link } from "react-router-dom";
+import BlogRecipeCreateButton from "./BlogRecipeCreateButton";
+import BlogRecipeSuccessMessage from "./BlogRecipeSuccessMessage";
 
 /**
  * Helper: robustly extract array from maybe-string/array
@@ -63,11 +65,11 @@ type BlogPostToRecipeSectionProps = {
 };
 
 const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post }) => {
-  const [saving, setSaving] = useState(false);
-  const [savedRecipeSlug, setSavedRecipeSlug] = useState<string | null>(null);
+  const [saving, setSaving] = React.useState(false);
+  const [savedRecipeSlug, setSavedRecipeSlug] = React.useState<string | null>(null);
   const { toast } = useToast();
 
-  // --- Neuen Button-Handler: Kombiniere Extraktion & Direkt-Speichern ---
+  // Handler ausgelagert wie gehabt
   const handleCreateRecipe = async () => {
     setSaving(true);
     setSavedRecipeSlug(null);
@@ -132,36 +134,14 @@ const BlogPostToRecipeSection: React.FC<BlogPostToRecipeSectionProps> = ({ post 
 
   return (
     <div className="max-w-4xl mx-auto px-4 mt-8 flex gap-4 flex-col">
-      {/* Rezept-Button immer sichtbar */}
       <div className="flex gap-4 flex-wrap">
-        <button
-          onClick={handleCreateRecipe}
+        <BlogRecipeCreateButton
           disabled={saving}
-          className="bg-sage-600 text-white px-6 py-2 rounded-full hover:bg-sage-700 transition-colors flex items-center gap-2"
-        >
-          {saving && <Loader className="animate-spin h-4 w-4" />}
-          Rezept zum Thema erstellen
-        </button>
+          loading={saving}
+          onClick={handleCreateRecipe}
+        />
       </div>
-
-      {/* Erfolgsnachricht mit Link zum neuen Rezept */}
-      {savedRecipeSlug && (
-        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 text-green-800">
-            <span>✅</span>
-            <span className="font-semibold">Rezept erfolgreich erstellt!</span>
-          </div>
-          <p className="text-green-700 mt-2">
-            Das Rezept wurde zu deinen Rezepten hinzugefügt und ist jetzt für alle sichtbar.
-          </p>
-          <Link
-            to={`/rezept/${savedRecipeSlug}`}
-            className="inline-flex items-center gap-2 mt-3 bg-sage-600 text-white px-4 py-2 rounded-full hover:bg-sage-700 transition-colors"
-          >
-            Zum Rezept gehen →
-          </Link>
-        </div>
-      )}
+      {savedRecipeSlug && <BlogRecipeSuccessMessage slug={savedRecipeSlug} />}
     </div>
   );
 };
