@@ -4,21 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Pause, RotateCcw, Workflow, Zap, TrendingUp, Settings } from "lucide-react";
-import PipelineStage, { PipelineStageData } from "./PipelineStage";
-
-export interface ContentPipeline {
-  id: string;
-  name: string;
-  type: 'blog_creation' | 'recipe_generation' | 'seo_optimization' | 'content_analysis';
-  stages: PipelineStageData[];
-  isActive: boolean;
-  throughput: number;
-  efficiency: number;
-  lastRun?: Date;
-}
+import { AutomationPipeline } from "@/services/PipelineService";
+import PipelineStage from "./PipelineStage";
 
 interface PipelineCardProps {
-  pipeline: ContentPipeline;
+  pipeline: AutomationPipeline;
   onStart: (id: string) => void;
   onStop: (id: string) => void;
   onReset: (id: string) => void;
@@ -40,6 +30,24 @@ const PipelineCard: React.FC<PipelineCardProps> = ({
     }
   };
 
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'active': return 'default';
+      case 'paused': return 'secondary';
+      case 'error': return 'destructive';
+      default: return 'outline';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'active': return 'Aktiv';
+      case 'paused': return 'Pausiert';
+      case 'error': return 'Fehler';
+      default: return 'Inaktiv';
+    }
+  };
+
   return (
     <Card className="relative">
       <CardHeader>
@@ -48,8 +56,8 @@ const PipelineCard: React.FC<PipelineCardProps> = ({
             {getPipelineTypeIcon(pipeline.type)}
             <CardTitle className="text-lg">{pipeline.name}</CardTitle>
           </div>
-          <Badge variant={pipeline.isActive ? "default" : "secondary"}>
-            {pipeline.isActive ? "Aktiv" : "Inaktiv"}
+          <Badge variant={getStatusBadgeVariant(pipeline.status)}>
+            {getStatusText(pipeline.status)}
           </Badge>
         </div>
       </CardHeader>
@@ -75,10 +83,11 @@ const PipelineCard: React.FC<PipelineCardProps> = ({
 
         {/* Controls */}
         <div className="flex gap-2">
-          {!pipeline.isActive ? (
+          {pipeline.status !== 'active' ? (
             <Button
               onClick={() => onStart(pipeline.id)}
               className="flex-1 flex items-center gap-2"
+              disabled={pipeline.status === 'error'}
             >
               <Play className="h-4 w-4" />
               Starten
@@ -98,9 +107,9 @@ const PipelineCard: React.FC<PipelineCardProps> = ({
           </Button>
         </div>
 
-        {pipeline.lastRun && (
+        {pipeline.last_run_at && (
           <div className="text-xs text-gray-500 mt-2">
-            Letzte Ausführung: {pipeline.lastRun.toLocaleString()}
+            Letzte Ausführung: {new Date(pipeline.last_run_at).toLocaleString()}
           </div>
         )}
       </CardContent>

@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      automation_pipelines: {
+        Row: {
+          config: Json | null
+          created_at: string
+          efficiency: number
+          id: string
+          last_run_at: string | null
+          name: string
+          stages: Json | null
+          status: string
+          throughput: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          efficiency?: number
+          id?: string
+          last_run_at?: string | null
+          name: string
+          stages?: Json | null
+          status?: string
+          throughput?: number
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          efficiency?: number
+          id?: string
+          last_run_at?: string | null
+          name?: string
+          stages?: Json | null
+          status?: string
+          throughput?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blog_comments: {
         Row: {
           blog_slug: string
@@ -471,6 +513,83 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      pipeline_config: {
+        Row: {
+          auto_publish: boolean
+          batch_size: number
+          created_at: string
+          id: string
+          quality_threshold: number
+          target_category: string
+          updated_at: string
+        }
+        Insert: {
+          auto_publish?: boolean
+          batch_size?: number
+          created_at?: string
+          id?: string
+          quality_threshold?: number
+          target_category?: string
+          updated_at?: string
+        }
+        Update: {
+          auto_publish?: boolean
+          batch_size?: number
+          created_at?: string
+          id?: string
+          quality_threshold?: number
+          target_category?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pipeline_executions: {
+        Row: {
+          completed_at: string | null
+          created_by: string | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          pipeline_id: string
+          results: Json | null
+          stages_progress: Json | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          pipeline_id: string
+          results?: Json | null
+          stages_progress?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          pipeline_id?: string
+          results?: Json | null
+          stages_progress?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_executions_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "automation_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
