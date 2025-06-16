@@ -1,6 +1,6 @@
 
-import { 
-  FileText, 
+import {
+  FileText,
   Users,
   Calendar,
   Shield,
@@ -8,7 +8,9 @@ import {
   TrendingUp,
   ChefHat,
   PenTool,
-  Zap
+  Zap,
+  Brain,
+  Workflow
 } from "lucide-react";
 import { AdminView } from "@/types/admin";
 
@@ -46,6 +48,13 @@ export const menuItems: MenuGroup[] = [
       { key: "automatisierung", label: "Automatisierung", icon: Zap },
       { key: "sowing-calendar", label: "Aussaat-Kalender", icon: Calendar },
       { key: "security-log", label: "Sicherheits-Log", icon: Shield }
+    ]
+  },
+  {
+    group: "Dashboards",
+    items: [
+      { key: "phase2", label: "Content Hub", icon: Brain },
+      { key: "phase3", label: "Automation Hub", icon: Workflow }
     ]
   }
 ];
