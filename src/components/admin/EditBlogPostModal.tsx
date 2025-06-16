@@ -98,6 +98,42 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
   const handleSave = async () => {
     setLoading(true);
     try {
+      const { data: current, error: fetchError } = await supabase
+        .from("blog_posts")
+        .select("*")
+        .eq("id", post.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (current) {
+        const user = await supabase.auth.getUser();
+        const versionData = {
+          blog_post_id: current.id,
+          user_id: user.data.user?.id || "",
+          title: current.title,
+          slug: current.slug,
+          content: current.content,
+          excerpt: current.excerpt,
+          category: current.category,
+          tags: current.tags,
+          content_types: current.content_types,
+          season: current.season,
+          audiences: current.audiences,
+          featured_image: current.featured_image,
+          og_image: current.og_image,
+          seo_title: current.seo_title,
+          seo_description: current.seo_description,
+          seo_keywords: current.seo_keywords,
+          status: current.status,
+          published: current.published,
+          featured: current.featured,
+          reading_time: current.reading_time,
+          author: current.author,
+        };
+        await supabase.from("blog_post_versions").insert([versionData]);
+      }
+
       const { error } = await supabase
         .from("blog_posts")
         .update(formData)
