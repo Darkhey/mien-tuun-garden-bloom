@@ -10,6 +10,8 @@ import SowingCalendarView from "./views/SowingCalendarView";
 import AutomatisierungView from "./views/AutomatisierungView";
 import ContentStrategyView from "./views/ContentStrategyView";
 import SecurityLogView from "./views/SecurityLogView";
+import Phase2Dashboard from "./Phase2Dashboard";
+import Phase3Dashboard from "./Phase3Dashboard";
 
 interface AdminContentProps {
   activeView: AdminView;
@@ -89,6 +91,10 @@ const AdminContent: React.FC<AdminContentProps> = ({
         return <SowingCalendarView />;
       case "security-log":
         return <SecurityLogView />;
+      case "phase2":
+        return <Phase2Dashboard />;
+      case "phase3":
+        return <Phase3Dashboard />;
       default:
         return <div>View nicht gefunden</div>;
     }
