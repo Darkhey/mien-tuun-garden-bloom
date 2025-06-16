@@ -52,6 +52,63 @@ export const useAdminActions = () => {
     
     try {
       const table = type === 'recipe' ? 'recipes' : 'blog_posts';
+      const versionTable = type === 'recipe' ? 'recipe_versions' : 'blog_post_versions';
+
+      const { data: current, error: fetchError } = await supabase
+        .from(table)
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (fetchError) throw fetchError;
+
+      if (current) {
+        const user = await supabase.auth.getUser();
+        const versionData =
+          type === 'recipe'
+            ? {
+                recipe_id: current.id,
+                user_id: user.data.user?.id || current.user_id,
+                title: current.title,
+                image_url: current.image_url,
+                description: current.description,
+                ingredients: current.ingredients,
+                instructions: current.instructions,
+                category: current.category,
+                season: current.season,
+                tags: current.tags,
+                author: current.author,
+                prep_time_minutes: current.prep_time_minutes,
+                cook_time_minutes: current.cook_time_minutes,
+                servings: current.servings,
+                difficulty: current.difficulty,
+                status: current.status,
+              }
+            : {
+                blog_post_id: current.id,
+                user_id: user.data.user?.id || '',
+                title: current.title,
+                slug: current.slug,
+                content: current.content,
+                excerpt: current.excerpt,
+                category: current.category,
+                tags: current.tags,
+                content_types: current.content_types,
+                season: current.season,
+                audiences: current.audiences,
+                featured_image: current.featured_image,
+                og_image: current.og_image,
+                seo_title: current.seo_title,
+                seo_description: current.seo_description,
+                seo_keywords: current.seo_keywords,
+                status: current.status,
+                published: current.published,
+                featured: current.featured,
+                reading_time: current.reading_time,
+                author: current.author,
+              };
+        await supabase.from(versionTable).insert([versionData]);
+      }
+
       const { error } = await supabase
         .from(table)
         .update({ status: newStatus })
@@ -100,6 +157,63 @@ export const useAdminActions = () => {
 
     try {
       const table = type === 'recipe' ? 'recipes' : 'blog_posts';
+      const versionTable = type === 'recipe' ? 'recipe_versions' : 'blog_post_versions';
+
+      const { data: current, error: fetchError } = await supabase
+        .from(table)
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (fetchError) throw fetchError;
+
+      if (current) {
+        const user = await supabase.auth.getUser();
+        const versionData =
+          type === 'recipe'
+            ? {
+                recipe_id: current.id,
+                user_id: user.data.user?.id || current.user_id,
+                title: current.title,
+                image_url: current.image_url,
+                description: current.description,
+                ingredients: current.ingredients,
+                instructions: current.instructions,
+                category: current.category,
+                season: current.season,
+                tags: current.tags,
+                author: current.author,
+                prep_time_minutes: current.prep_time_minutes,
+                cook_time_minutes: current.cook_time_minutes,
+                servings: current.servings,
+                difficulty: current.difficulty,
+                status: current.status,
+              }
+            : {
+                blog_post_id: current.id,
+                user_id: user.data.user?.id || '',
+                title: current.title,
+                slug: current.slug,
+                content: current.content,
+                excerpt: current.excerpt,
+                category: current.category,
+                tags: current.tags,
+                content_types: current.content_types,
+                season: current.season,
+                audiences: current.audiences,
+                featured_image: current.featured_image,
+                og_image: current.og_image,
+                seo_title: current.seo_title,
+                seo_description: current.seo_description,
+                seo_keywords: current.seo_keywords,
+                status: current.status,
+                published: current.published,
+                featured: current.featured,
+                reading_time: current.reading_time,
+                author: current.author,
+              };
+        await supabase.from(versionTable).insert([versionData]);
+      }
+
       const { error } = await supabase
         .from(table)
         .delete()

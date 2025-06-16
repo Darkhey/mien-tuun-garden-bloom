@@ -54,6 +54,36 @@ const EditRecipeModal: React.FC<EditRecipeModalProps> = ({ recipe, onClose, onSa
   const handleSave = async () => {
     setLoading(true);
     try {
+      const { data: current, error: fetchError } = await supabase
+        .from("recipes")
+        .select("*")
+        .eq("id", recipe.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (current) {
+        const versionData = {
+          recipe_id: current.id,
+          user_id: current.user_id,
+          title: current.title,
+          image_url: current.image_url,
+          description: current.description,
+          ingredients: current.ingredients,
+          instructions: current.instructions,
+          category: current.category,
+          season: current.season,
+          tags: current.tags,
+          author: current.author,
+          prep_time_minutes: current.prep_time_minutes,
+          cook_time_minutes: current.cook_time_minutes,
+          servings: current.servings,
+          difficulty: current.difficulty,
+          status: current.status,
+        };
+        await supabase.from("recipe_versions").insert([versionData]);
+      }
+
       const { error } = await supabase
         .from("recipes")
         .update(formData)
