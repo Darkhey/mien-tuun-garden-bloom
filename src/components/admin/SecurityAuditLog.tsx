@@ -4,14 +4,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Shield, AlertTriangle, Eye, Trash2 } from 'lucide-react';
+import { Shield, AlertTriangle, Eye, Trash2, Loader2 } from 'lucide-react';
 
 interface SecurityEvent {
   id: string;
   event_type: string;
   user_id: string | null;
+  target_user_id: string | null;
   details: any;
   ip_address: string | null;
+  user_agent: string | null;
   created_at: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
 }
@@ -26,12 +28,19 @@ const SecurityAuditLog: React.FC = () => {
 
   const loadSecurityEvents = async () => {
     try {
-      // This would fetch from a security_events table if it existed
-      // For now, we'll show a placeholder
-      setEvents([]);
-      setLoading(false);
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('security_events')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      setEvents(data || []);
     } catch (error) {
       console.error('Error loading security events:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -46,6 +55,17 @@ const SecurityAuditLog: React.FC = () => {
     }
   };
 
+  const getEventTypeLabel = (eventType: string) => {
+    switch (eventType) {
+      case 'user_created': return 'Benutzer erstellt';
+      case 'user_updated': return 'Benutzer aktualisiert';
+      case 'user_deleted': return 'Benutzer gelöscht';
+      case 'login_attempt': return 'Anmeldeversuch';
+      case 'permission_denied': return 'Zugriff verweigert';
+      default: return eventType;
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -56,7 +76,10 @@ const SecurityAuditLog: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8">Lade Sicherheitsereignisse...</div>
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="animate-spin mr-2" />
+            Lade Sicherheitsereignisse...
+          </div>
         </CardContent>
       </Card>
     );
@@ -86,7 +109,7 @@ const SecurityAuditLog: React.FC = () => {
                     <Badge className={getSeverityColor(event.severity)}>
                       {event.severity}
                     </Badge>
-                    <span className="font-medium">{event.event_type}</span>
+                    <span className="font-medium">{getEventTypeLabel(event.event_type)}</span>
                   </div>
                   <span className="text-sm text-gray-500">
                     {new Date(event.created_at).toLocaleString('de-DE')}
@@ -95,10 +118,13 @@ const SecurityAuditLog: React.FC = () => {
                 <div className="text-sm text-gray-600">
                   {event.ip_address && <span>IP: {event.ip_address}</span>}
                   {event.user_id && <span className="ml-4">User: {event.user_id}</span>}
+                  {event.target_user_id && <span className="ml-4">Target: {event.target_user_id}</span>}
                 </div>
-                {event.details && (
+                {event.details && Object.keys(event.details).length > 0 && (
                   <div className="mt-2 text-xs bg-gray-50 p-2 rounded">
-                    <pre>{JSON.stringify(event.details, null, 2)}</pre>
+                    <pre className="whitespace-pre-wrap">
+                      {JSON.stringify(event.details, null, 2)}
+                    </pre>
                   </div>
                 )}
               </div>
@@ -110,8 +136,9 @@ const SecurityAuditLog: React.FC = () => {
           <h3 className="font-semibold text-green-800 mb-2">✅ Implementierte Sicherheitsmaßnahmen:</h3>
           <ul className="text-sm text-green-700 space-y-1">
             <li>• RLS-Richtlinien für alle Datenbanktabellen aktiviert</li>
-            <li>• Admin-only Zugriff auf Blog-Topic-Historie</li>
-            <li>• Öffentlicher Zugriff nur auf veröffentlichte Blog-Posts</li>
+            <li>• Admin-only Zugriff auf Benutzerverwaltung</li>
+            <li>• Sicherheits-Audit-Logging für kritische Aktionen</li>
+            <li>• Öffentlicher Zugriff nur auf veröffentlichte Inhalte</li>
             <li>• Rate-Limiting für Edge Functions implementiert</li>
             <li>• Input-Validierung und Sanitization in Edge Functions</li>
             <li>• Benutzer können nur ihre eigenen Daten verwalten</li>

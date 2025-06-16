@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { AdminUser, AdminRecipe, AdminBlogPost } from "@/types/admin";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +28,41 @@ export const useAdminActions = () => {
       toast({
         title: "Status aktualisiert",
         description: `Premium-Status wurde ${!isPremium ? 'aktiviert' : 'deaktiviert'}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Fehler",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteUser = async (
+    userId: string,
+    users: AdminUser[],
+    setUsers: (users: AdminUser[]) => void
+  ) => {
+    try {
+      // Log security event first
+      await supabase.rpc('log_security_event', {
+        _event_type: 'user_deleted',
+        _target_user_id: userId,
+        _details: { deleted_by_admin: true },
+        _severity: 'high'
+      });
+
+      // Delete user using admin API
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+
+      if (error) throw error;
+
+      // Update local state
+      setUsers(users.filter(user => user.id !== userId));
+
+      toast({
+        title: "Benutzer gelöscht",
+        description: "Der Benutzer wurde erfolgreich gelöscht",
       });
     } catch (error: any) {
       toast({
@@ -242,6 +276,7 @@ export const useAdminActions = () => {
 
   return {
     handleTogglePremium,
+    handleDeleteUser,
     handleToggleStatus,
     handleDelete
   };

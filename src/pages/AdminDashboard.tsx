@@ -24,7 +24,7 @@ const AdminDashboard: React.FC = () => {
     loadData
   } = useAdminData(activeView);
 
-  const { handleTogglePremium, handleToggleStatus, handleDelete } = useAdminActions();
+  const { handleTogglePremium, handleDeleteUser, handleToggleStatus, handleDelete } = useAdminActions();
 
   useEffect(() => {
     const getUserEmail = async () => {
@@ -46,6 +46,10 @@ const AdminDashboard: React.FC = () => {
 
   const onTogglePremium = (userId: string, isPremium: boolean) => {
     handleTogglePremium(userId, isPremium, users, setUsers);
+  };
+
+  const onDeleteUser = (userId: string) => {
+    handleDeleteUser(userId, users, setUsers);
   };
 
   return (
@@ -82,6 +86,7 @@ const AdminDashboard: React.FC = () => {
               onToggleStatus={onToggleStatus}
               onDelete={onDelete}
               onTogglePremium={onTogglePremium}
+              onDeleteUser={onDeleteUser}
               onDataRefresh={loadData}
             />
           </div>
