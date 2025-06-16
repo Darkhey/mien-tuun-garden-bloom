@@ -36,10 +36,11 @@ const SecurityAuditLog: React.FC = () => {
 
       if (error) throw error;
 
-      // Transform data to handle IP address type
+      // Transform data to handle IP address type and narrow severity
       const transformedEvents: SecurityEvent[] = (data || []).map(event => ({
         ...event,
         ip_address: event.ip_address ? String(event.ip_address) : null,
+        severity: event.severity as SecurityEvent['severity']
       }));
 
       setEvents(transformedEvents);

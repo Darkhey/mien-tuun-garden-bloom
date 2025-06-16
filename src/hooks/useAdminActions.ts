@@ -93,7 +93,7 @@ export const useAdminActions = () => {
         .from(table)
         .select('*')
         .eq('id', id)
-        .single();
+        .single<any>();
       if (fetchError) throw fetchError;
 
       if (current) {
@@ -201,7 +201,7 @@ export const useAdminActions = () => {
         .from(table)
         .select('*')
         .eq('id', id)
-        .single();
+        .single<any>();
       if (fetchError) throw fetchError;
 
       if (current) {
