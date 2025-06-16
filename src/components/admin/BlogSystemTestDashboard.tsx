@@ -8,7 +8,11 @@ import { Play, CheckCircle, XCircle, Clock, Database, Zap, FileText, Settings } 
 import { blogTestingService, BlogTestResult } from "@/services/BlogTestingService";
 import { useToast } from "@/hooks/use-toast";
 
-const BlogSystemTestDashboard: React.FC = () => {
+interface BlogSystemTestDashboardProps {
+  testSlug?: string;
+}
+
+const BlogSystemTestDashboard: React.FC<BlogSystemTestDashboardProps> = ({ testSlug }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [testResults, setTestResults] = useState<BlogTestResult[]>([]);
   const [testSummary, setTestSummary] = useState<{ total: number; passed: number; failed: number } | null>(null);
@@ -18,11 +22,13 @@ const BlogSystemTestDashboard: React.FC = () => {
     setIsRunning(true);
     setTestResults([]);
     setTestSummary(null);
-    
+
     try {
       console.log("[TestDashboard] Starte Blog-System-Tests...");
-      
-      const results = await blogTestingService.runFullBlogSystemTest();
+
+      const results = testSlug
+        ? [await blogTestingService.runTestBySlug(testSlug)]
+        : await blogTestingService.runFullBlogSystemTest();
       setTestResults(results);
       
       const summary = blogTestingService.getTestSummary();

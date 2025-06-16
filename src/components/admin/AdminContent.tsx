@@ -10,6 +10,7 @@ import SowingCalendarView from "./views/SowingCalendarView";
 import AutomatisierungView from "./views/AutomatisierungView";
 import ContentStrategyView from "./views/ContentStrategyView";
 import SecurityLogView from "./views/SecurityLogView";
+import BlogTestingView from "./views/BlogTestingView";
 
 interface AdminContentProps {
   activeView: AdminView;
@@ -25,6 +26,7 @@ interface AdminContentProps {
   onEditRecipe: (recipe: AdminRecipe) => void;
   onEditBlogPost: (post: AdminBlogPost) => void;
   onDataRefresh: () => void;
+  testSlug?: string;
 }
 
 const AdminContent: React.FC<AdminContentProps> = ({
@@ -41,6 +43,7 @@ const AdminContent: React.FC<AdminContentProps> = ({
   onEditRecipe,
   onEditBlogPost,
   onDataRefresh,
+  testSlug,
 }) => {
   const renderContent = () => {
     switch (activeView) {
@@ -89,6 +92,8 @@ const AdminContent: React.FC<AdminContentProps> = ({
         return <SowingCalendarView />;
       case "security-log":
         return <SecurityLogView />;
+      case "blog-testing":
+        return <BlogTestingView testSlug={testSlug} />;
       default:
         return <div>View nicht gefunden</div>;
     }

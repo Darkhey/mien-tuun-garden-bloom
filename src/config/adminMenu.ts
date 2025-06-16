@@ -8,7 +8,8 @@ import {
   TrendingUp,
   ChefHat,
   PenTool,
-  Zap
+  Zap,
+  TestTube
 } from "lucide-react";
 import { AdminView } from "@/types/admin";
 
@@ -45,7 +46,8 @@ export const menuItems: MenuGroup[] = [
       { key: "content-strategy", label: "Content-Strategie", icon: TrendingUp },
       { key: "automatisierung", label: "Automatisierung", icon: Zap },
       { key: "sowing-calendar", label: "Aussaat-Kalender", icon: Calendar },
-      { key: "security-log", label: "Sicherheits-Log", icon: Shield }
+      { key: "security-log", label: "Sicherheits-Log", icon: Shield },
+      { key: "blog-testing", label: "System-Tests", icon: TestTube }
     ]
   }
 ];
