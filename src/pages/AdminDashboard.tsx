@@ -2,15 +2,19 @@
 import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { AdminView } from "@/types/admin";
+import { AdminView, AdminRecipe, AdminBlogPost } from "@/types/admin";
 import { useAdminData } from "@/hooks/useAdminData";
 import { useAdminActions } from "@/hooks/useAdminActions";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminContent from "@/components/admin/AdminContent";
+import EditRecipeModal from "@/components/admin/EditRecipeModal";
+import EditBlogPostModal from "@/components/admin/EditBlogPostModal";
 
 const AdminDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState<AdminView>("recipes");
   const [userEmail, setUserEmail] = useState<string>("");
+  const [editingRecipe, setEditingRecipe] = useState<AdminRecipe | null>(null);
+  const [editingPost, setEditingPost] = useState<AdminBlogPost | null>(null);
 
   const {
     recipes,
@@ -52,6 +56,14 @@ const AdminDashboard: React.FC = () => {
     handleDeleteUser(userId, users, setUsers);
   };
 
+  const onEditRecipe = (recipe: AdminRecipe) => {
+    setEditingRecipe(recipe);
+  };
+
+  const onEditBlogPost = (post: AdminBlogPost) => {
+    setEditingPost(post);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -76,23 +88,45 @@ const AdminDashboard: React.FC = () => {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <AdminContent
-              activeView={activeView}
-              recipes={recipes}
-              blogPosts={blogPosts}
-              users={users}
-              loading={loading}
-              error={dataError}
-              onToggleStatus={onToggleStatus}
-              onDelete={onDelete}
-              onTogglePremium={onTogglePremium}
-              onDeleteUser={onDeleteUser}
-              onDataRefresh={loadData}
+          <AdminContent
+            activeView={activeView}
+            recipes={recipes}
+            blogPosts={blogPosts}
+            users={users}
+            loading={loading}
+            error={dataError}
+            onToggleStatus={onToggleStatus}
+            onDelete={onDelete}
+            onTogglePremium={onTogglePremium}
+            onDeleteUser={onDeleteUser}
+            onEditRecipe={onEditRecipe}
+            onEditBlogPost={onEditBlogPost}
+            onDataRefresh={loadData}
+          />
+          {editingRecipe && (
+            <EditRecipeModal
+              recipe={editingRecipe}
+              onClose={() => setEditingRecipe(null)}
+              onSaved={() => {
+                setEditingRecipe(null);
+                loadData();
+              }}
             />
-          </div>
+          )}
+          {editingPost && (
+            <EditBlogPostModal
+              post={editingPost}
+              onClose={() => setEditingPost(null)}
+              onSaved={() => {
+                setEditingPost(null);
+                loadData();
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
+  </div>
   );
 };
 

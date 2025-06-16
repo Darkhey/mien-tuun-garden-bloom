@@ -22,6 +22,8 @@ interface AdminContentProps {
   onDelete: (id: string, type: 'recipe' | 'blog') => void;
   onTogglePremium: (userId: string, isPremium: boolean) => void;
   onDeleteUser: (userId: string) => void;
+  onEditRecipe: (recipe: AdminRecipe) => void;
+  onEditBlogPost: (post: AdminBlogPost) => void;
   onDataRefresh: () => void;
 }
 
@@ -36,6 +38,8 @@ const AdminContent: React.FC<AdminContentProps> = ({
   onDelete,
   onTogglePremium,
   onDeleteUser,
+  onEditRecipe,
+  onEditBlogPost,
   onDataRefresh,
 }) => {
   const renderContent = () => {
@@ -48,7 +52,7 @@ const AdminContent: React.FC<AdminContentProps> = ({
             error={error}
             onToggleStatus={(id, status) => onToggleStatus(id, status, 'recipe')}
             onDelete={(id) => onDelete(id, 'recipe')}
-            onEdit={() => {}} // Add empty handler for now
+            onEdit={onEditRecipe}
           />
         );
       case "blog-posts":
@@ -59,6 +63,7 @@ const AdminContent: React.FC<AdminContentProps> = ({
             error={error}
             onToggleStatus={(id, status) => onToggleStatus(id, status, 'blog')}
             onDelete={(id) => onDelete(id, 'blog')}
+            onEdit={onEditBlogPost}
           />
         );
       case "users":
