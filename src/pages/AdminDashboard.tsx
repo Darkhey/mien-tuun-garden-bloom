@@ -9,9 +9,15 @@ import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminContent from "@/components/admin/AdminContent";
 import EditRecipeModal from "@/components/admin/EditRecipeModal";
 import EditBlogPostModal from "@/components/admin/EditBlogPostModal";
+import { useParams, useNavigate } from "react-router-dom";
 
 const AdminDashboard: React.FC = () => {
-  const [activeView, setActiveView] = useState<AdminView>("recipes");
+  const params = useParams<{ view?: string; slug?: string }>();
+  const navigate = useNavigate();
+  const [activeView, setActiveView] = useState<AdminView>(
+    (params.view as AdminView) || "recipes"
+  );
+  const testSlug = params.slug;
   const [userEmail, setUserEmail] = useState<string>("");
   const [editingRecipe, setEditingRecipe] = useState<AdminRecipe | null>(null);
   const [editingPost, setEditingPost] = useState<AdminBlogPost | null>(null);
@@ -39,6 +45,12 @@ const AdminDashboard: React.FC = () => {
     };
     getUserEmail();
   }, []);
+
+  useEffect(() => {
+    if (params.view && params.view !== activeView) {
+      setActiveView(params.view as AdminView);
+    }
+  }, [params.view]);
 
   const onToggleStatus = (id: string, status: string, type: 'recipe' | 'blog') => {
     handleToggleStatus(id, status, type, recipes, blogPosts, setRecipes, setBlogPosts);
@@ -83,7 +95,10 @@ const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar Navigation */}
           <div className="lg:col-span-1">
-            <AdminSidebar activeView={activeView} onViewChange={setActiveView} />
+            <AdminSidebar activeView={activeView} onViewChange={(v) => {
+              setActiveView(v);
+              navigate(`/admin/${v}`);
+            }} />
           </div>
 
           {/* Main Content */}
@@ -102,6 +117,7 @@ const AdminDashboard: React.FC = () => {
             onEditRecipe={onEditRecipe}
             onEditBlogPost={onEditBlogPost}
             onDataRefresh={loadData}
+            testSlug={testSlug}
           />
           {editingRecipe && (
             <EditRecipeModal

@@ -85,7 +85,7 @@ function App() {
               <Route path="/datenschutz" element={<Datenschutz />} />
               <Route path="/impressum" element={<Impressum />} />
               <Route path="/profil" element={<ProfilePage />} />
-              <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+              <Route path="/admin/:view?/:slug?" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
               <Route path="/kontakt" element={<ContactPage />} />
               <Route path="/newsletter-confirm" element={<NewsletterConfirmPage />} />
               <Route path="/login" element={<LoginPage />} />

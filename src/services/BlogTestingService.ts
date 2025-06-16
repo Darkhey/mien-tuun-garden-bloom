@@ -258,13 +258,53 @@ class BlogTestingService {
   getTestSummary(): { total: number; passed: number; failed: number; details: BlogTestResult[] } {
     const passed = this.testResults.filter(r => r.success).length;
     const failed = this.testResults.filter(r => !r.success).length;
-    
+
     return {
       total: this.testResults.length,
       passed,
       failed,
       details: this.testResults
     };
+  }
+
+  /**
+   * Liste verfügbarer Tests mit Slugs
+   */
+  getAvailableTests() {
+    return [
+      { slug: 'supabase-connection', name: 'Supabase Connection' },
+      { slug: 'blog-posts-table', name: 'Blog Posts Table' },
+      { slug: 'content-generation', name: 'Content Generation' },
+      { slug: 'blog-post-creation', name: 'Blog Post Creation' },
+      { slug: 'edge-functions', name: 'Edge Functions' },
+    ];
+  }
+
+  /**
+   * Führt einen einzelnen Test anhand seines Slugs aus
+   */
+  async runTestBySlug(slug: string): Promise<BlogTestResult> {
+    this.testResults = [];
+    switch (slug) {
+      case 'supabase-connection':
+        await this.testSupabaseConnection();
+        break;
+      case 'blog-posts-table':
+        await this.testBlogPostsTable();
+        break;
+      case 'content-generation':
+        await this.testContentGeneration();
+        break;
+      case 'blog-post-creation':
+        await this.testBlogPostCreation();
+        break;
+      case 'edge-functions':
+        await this.testEdgeFunctions();
+        break;
+      default:
+        throw new Error('Unbekannter Test-Slug');
+    }
+    return this.testResults[0];
   }
 }
 
