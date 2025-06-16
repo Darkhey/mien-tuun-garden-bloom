@@ -4,12 +4,12 @@ import { AdminView, AdminRecipe, AdminBlogPost, AdminUser } from "@/types/admin"
 import RecipesView from "./views/RecipesView";
 import BlogPostsView from "./views/BlogPostsView";
 import UsersView from "./views/UsersView";
-import AutomationDashboard from "./AutomationDashboard";
-import ContentStrategyDashboard from "./ContentStrategyDashboard";
-import Phase2Dashboard from "./Phase2Dashboard";
-import Phase3Dashboard from "./Phase3Dashboard";
-import SecurityAuditLog from "./SecurityAuditLog";
-import BlogSystemTestDashboard from "./BlogSystemTestDashboard";
+import KIRecipeCreatorView from "./views/KIRecipeCreatorView";
+import KIBlogCreatorView from "./views/KIBlogCreatorView";
+import SowingCalendarView from "./views/SowingCalendarView";
+import AutomatisierungView from "./views/AutomatisierungView";
+import ContentStrategyView from "./views/ContentStrategyView";
+import SecurityLogView from "./views/SecurityLogView";
 
 interface AdminContentProps {
   activeView: AdminView;
@@ -72,18 +72,18 @@ const AdminContent: React.FC<AdminContentProps> = ({
             onRefresh={onDataRefresh}
           />
         );
-      case "automation":
-        return <AutomationDashboard />;
+      case "ki-recipe":
+        return <KIRecipeCreatorView />;
+      case "ki-blog":
+        return <KIBlogCreatorView />;
       case "content-strategy":
-        return <ContentStrategyDashboard />;
-      case "phase2":
-        return <Phase2Dashboard />;
-      case "phase3":
-        return <Phase3Dashboard />;
-      case "security":
-        return <SecurityAuditLog />;
-      case "blog-testing":
-        return <BlogSystemTestDashboard />;
+        return <ContentStrategyView />;
+      case "automatisierung":
+        return <AutomatisierungView />;
+      case "sowing-calendar":
+        return <SowingCalendarView />;
+      case "security-log":
+        return <SecurityLogView />;
       default:
         return <div>View nicht gefunden</div>;
     }
