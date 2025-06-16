@@ -27,6 +27,8 @@ export const usePipelineManager = () => {
         id: 'blog_auto',
         name: 'Automatische Blog-Erstellung',
         type: 'blog_creation',
+        status: 'inactive',
+        config: {},
         isActive: false,
         throughput: 12,
         efficiency: 87,
@@ -43,6 +45,8 @@ export const usePipelineManager = () => {
         id: 'recipe_auto',
         name: 'Automatische Rezept-Generierung',
         type: 'recipe_generation',
+        status: 'inactive',
+        config: {},
         isActive: false,
         throughput: 8,
         efficiency: 92,
@@ -58,6 +62,8 @@ export const usePipelineManager = () => {
         id: 'seo_optimizer',
         name: 'SEO-Optimierungs-Pipeline',
         type: 'seo_optimization',
+        status: 'inactive',
+        config: {},
         isActive: false,
         throughput: 20,
         efficiency: 94,
@@ -72,6 +78,8 @@ export const usePipelineManager = () => {
         id: 'content_analyzer',
         name: 'Content-Performance-Analyse',
         type: 'content_analysis',
+        status: 'active',
+        config: {},
         isActive: true,
         throughput: 50,
         efficiency: 98,
@@ -92,6 +100,7 @@ export const usePipelineManager = () => {
     if (!pipeline) return;
 
     pipeline.isActive = true;
+    pipeline.status = 'active';
     pipeline.lastRun = new Date();
     
     pipeline.stages.forEach(stage => {
@@ -107,6 +116,7 @@ export const usePipelineManager = () => {
     const pipeline = pipelines.find(p => p.id === pipelineId);
     if (pipeline) {
       pipeline.isActive = false;
+      pipeline.status = 'inactive';
       pipeline.stages.forEach(stage => {
         if (stage.status === 'running') stage.status = 'idle';
       });
@@ -118,6 +128,7 @@ export const usePipelineManager = () => {
     const pipeline = pipelines.find(p => p.id === pipelineId);
     if (pipeline) {
       pipeline.isActive = false;
+      pipeline.status = 'inactive';
       pipeline.stages.forEach(stage => {
         stage.status = 'idle';
         stage.progress = 0;
@@ -130,6 +141,7 @@ export const usePipelineManager = () => {
     const pipeline = pipelines.find(p => p.id === pipelineId);
     if (!pipeline) return;
 
+    pipeline.status = 'active';
     for (let i = 0; i < pipeline.stages.length; i++) {
       const stage = pipeline.stages[i];
       stage.status = 'running';
@@ -143,11 +155,15 @@ export const usePipelineManager = () => {
       stage.status = Math.random() > 0.1 ? 'completed' : 'failed';
       if (stage.status === 'failed') {
         pipeline.isActive = false;
+        pipeline.status = 'error';
         break;
       }
     }
-    
+
     pipeline.isActive = false;
+    if (pipeline.status !== 'error') {
+      pipeline.status = 'inactive';
+    }
     setPipelines([...pipelines]);
   };
 

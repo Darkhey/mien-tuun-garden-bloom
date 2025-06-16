@@ -61,8 +61,11 @@ class PipelineService {
 
     return (data || []).map(pipeline => ({
       ...pipeline,
-      stages: JSON.parse(pipeline.stages || '[]')
-    }));
+      stages: JSON.parse((pipeline.stages as string) || '[]'),
+      config: typeof pipeline.config === 'string'
+        ? JSON.parse(pipeline.config as string)
+        : (pipeline.config || {})
+    })) as AutomationPipeline[];
   }
 
   async getConfig(): Promise<PipelineConfig | null> {
@@ -126,7 +129,7 @@ class PipelineService {
 
     if (pipelineError) throw pipelineError;
 
-    const stages = JSON.parse(pipeline.stages || '[]');
+    const stages = JSON.parse((pipeline.stages as string) || '[]');
     const resetStages = stages.map((stage: PipelineStage) => ({
       ...stage,
       status: 'idle',
@@ -158,7 +161,7 @@ class PipelineService {
     const { data, error } = await query;
     if (error) throw error;
 
-    return data || [];
+    return (data || []) as PipelineExecution[];
   }
 
   async getStats(): Promise<PipelineStats> {
