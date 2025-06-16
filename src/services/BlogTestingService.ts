@@ -71,7 +71,7 @@ class BlogTestingService {
       // Test SELECT
       const { data: posts, error: selectError } = await supabase
         .from('blog_posts')
-        .select('id, title, slug, published, created_at')
+        .select('id, title, slug, published, published_at')
         .limit(5);
 
       if (selectError) throw selectError;
