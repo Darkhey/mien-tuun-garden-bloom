@@ -11,7 +11,7 @@ interface BlogPostsViewProps {
   error: string | null;
   onToggleStatus: (id: string, currentStatus: string) => void;
   onDelete: (id: string) => void;
-  onEdit: (post: AdminBlogPost) => void;
+  onEdit?: (post: AdminBlogPost) => void;
 }
 
 const BlogPostsView: React.FC<BlogPostsViewProps> = ({ posts, loading, error, onToggleStatus, onDelete, onEdit }) => {
@@ -63,7 +63,7 @@ const BlogPostsView: React.FC<BlogPostsViewProps> = ({ posts, loading, error, on
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => onEdit(post)}
+                  onClick={() => onEdit?.(post)}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>

@@ -1,12 +1,17 @@
 
 import { useState, useEffect } from "react";
-import { ContentPipeline } from "./PipelineCard";
-import { PipelineConfig } from "./PipelineConfiguration";
+import type { AutomationPipeline, PipelineConfig } from "@/services/PipelineService";
+
+interface ContentPipeline extends AutomationPipeline {
+  isActive: boolean;
+  lastRun?: Date;
+}
 
 export const usePipelineManager = () => {
   const [pipelines, setPipelines] = useState<ContentPipeline[]>([]);
   const [pipelineConfig, setPipelineConfig] = useState<PipelineConfig>({
-    batchSize: 5,
+    id: '',
+    batch_size: 5,
     quality_threshold: 80,
     auto_publish: false,
     target_category: 'kochen'
