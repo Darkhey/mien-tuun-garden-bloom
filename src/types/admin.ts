@@ -1,3 +1,4 @@
+
 export type AdminView = 
   | "recipes" 
   | "blog-posts" 
@@ -7,7 +8,12 @@ export type AdminView =
   | "sowing-calendar" 
   | "security-log"
   | "content-strategy"
-  | "automatisierung";
+  | "automatisierung"
+  | "automation"
+  | "phase2"
+  | "phase3"
+  | "security"
+  | "blog-testing";
 
 export interface AdminMenuItem {
   key: AdminView;
@@ -26,6 +32,7 @@ export interface AdminUser {
   email?: string;
   is_premium: boolean;
   custom_role?: string | null;
+  description?: string | null;
   created_at: string;
 }
 

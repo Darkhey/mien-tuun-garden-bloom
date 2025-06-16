@@ -118,7 +118,7 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
           category: current.category,
           tags: current.tags,
           content_types: current.content_types,
-          season: current.season,
+          season: current.season || null,
           audiences: current.audiences,
           featured_image: current.featured_image,
           og_image: current.og_image,

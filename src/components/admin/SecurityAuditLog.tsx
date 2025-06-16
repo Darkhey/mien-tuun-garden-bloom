@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,7 +36,13 @@ const SecurityAuditLog: React.FC = () => {
 
       if (error) throw error;
 
-      setEvents(data || []);
+      // Transform data to handle IP address type
+      const transformedEvents: SecurityEvent[] = (data || []).map(event => ({
+        ...event,
+        ip_address: event.ip_address ? String(event.ip_address) : null,
+      }));
+
+      setEvents(transformedEvents);
     } catch (error) {
       console.error('Error loading security events:', error);
     } finally {

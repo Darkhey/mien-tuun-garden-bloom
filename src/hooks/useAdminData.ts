@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminView, AdminUser, AdminRecipe, AdminBlogPost } from "@/types/admin";
@@ -61,7 +62,6 @@ export const useAdminData = (activeView: AdminView) => {
       published_at: post.published_at,
       category: post.category,
       featured: post.featured || false,
-      description: post.description,
     }));
 
     setBlogPosts(transformedPosts);

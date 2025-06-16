@@ -49,23 +49,23 @@ serve(async (req) => {
       })
     }
 
-    const { userId, profile, roles, email, password } = await req.json()
+    const { userId, email, password, profile, roles } = await req.json()
 
     console.log('[admin-update-user] Updating user:', userId)
 
-    // Update user email/password if provided
+    // Update user auth data if email or password provided
     if (email || password) {
       const updateData: any = {}
       if (email) updateData.email = email
       if (password) updateData.password = password
 
       const { error: updateAuthError } = await supabaseClient.auth.admin.updateUserById(
-        userId,
+        userId, 
         updateData
       )
 
       if (updateAuthError) {
-        console.error('[admin-update-user] Error updating auth:', updateAuthError)
+        console.error('[admin-update-user] Error updating auth data:', updateAuthError)
         return new Response(JSON.stringify({ error: updateAuthError.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -73,35 +73,31 @@ serve(async (req) => {
       }
     }
 
-    // Update profile
-    const { error: profileError } = await supabaseClient
-      .from('profiles')
-      .update({
-        display_name: profile.display_name,
-        avatar_url: profile.avatar_url,
-        custom_role: profile.custom_role,
-        is_premium: profile.is_premium,
-        description: profile.description
-      })
-      .eq('id', userId)
+    // Update profile if provided
+    if (profile) {
+      const { error: profileError } = await supabaseClient
+        .from('profiles')
+        .update(profile)
+        .eq('id', userId)
 
-    if (profileError) {
-      console.error('[admin-update-user] Error updating profile:', profileError)
-      return new Response(JSON.stringify({ error: 'Failed to update user profile' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      if (profileError) {
+        console.error('[admin-update-user] Error updating profile:', profileError)
+        return new Response(JSON.stringify({ error: 'Failed to update user profile' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
     }
 
     // Update roles if provided
-    if (roles !== undefined) {
-      // First, delete existing roles
+    if (roles) {
+      // Delete existing roles
       await supabaseClient
         .from('user_roles')
         .delete()
         .eq('user_id', userId)
 
-      // Then insert new roles
+      // Insert new roles
       if (roles.length > 0) {
         const roleInserts = roles.map((role: string) => ({
           user_id: userId,
@@ -124,7 +120,8 @@ serve(async (req) => {
       _target_user_id: userId,
       _details: { 
         updated_by_admin: user.id,
-        changes: { profile, roles, email_changed: !!email, password_changed: !!password }
+        updated_fields: Object.keys(profile || {}),
+        roles_updated: !!roles
       },
       _severity: 'medium'
     })

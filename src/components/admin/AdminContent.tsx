@@ -48,12 +48,13 @@ const AdminContent: React.FC<AdminContentProps> = ({
             error={error}
             onToggleStatus={(id, status) => onToggleStatus(id, status, 'recipe')}
             onDelete={(id) => onDelete(id, 'recipe')}
+            onEdit={() => {}} // Add empty handler for now
           />
         );
       case "blog-posts":
         return (
           <BlogPostsView
-            blogPosts={blogPosts}
+            posts={blogPosts}
             loading={loading}
             error={error}
             onToggleStatus={(id, status) => onToggleStatus(id, status, 'blog')}
