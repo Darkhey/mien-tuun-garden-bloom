@@ -1,82 +1,58 @@
-# Welcome to your Lovable project
+# Mien Tuun Garden
 
-## Project info
+Mien Tuun ist eine React/Tailwind Anwendung rund um Garten, Küche und nachhaltiges Leben. Dieses Repository enthält den Quellcode der Webanwendung sowie alle notwendigen Konfigurationsdateien.
 
-**URL**: https://lovable.dev/projects/b2361a81-7fac-454c-a2bd-9ce8a515ca60
+## Inhalt
+- [Voraussetzungen](#voraussetzungen)
+- [Lokale Entwicklung](#lokale-entwicklung)
+- [Skripte](#skripte)
+- [Umgebungsvariablen](#umgebungsvariablen)
+- [Tests](#tests)
+- [Beitrag leisten](#beitrag-leisten)
+- [Roadmap](#roadmap)
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/b2361a81-7fac-454c-a2bd-9ce8a515ca60) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Voraussetzungen
+- Node.js >= 18
+- npm
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Abhängigkeiten installieren
+npm ci
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Lokale Entwicklung
+Starte einen Entwicklungsserver mit automatischem Reloading.
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Skripte
+- `npm run dev` – lokaler Entwicklungsserver
+- `npm run build` – Produktionsbuild in `dist`
+- `npm run lint` – Codequalität prüfen
+- `npm test` – Test-Suite ausführen
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Umgebungsvariablen
+Alle benötigten Variablen werden über eine `.env`-Datei bereitgestellt. Eine Vorlage findest du in [`.env.example`](./.env.example).
 
-**Use GitHub Codespaces**
+```
+VITE_SUPABASE_URL=<Deine Supabase URL>
+VITE_SUPABASE_ANON_KEY=<Dein Supabase Anon Key>
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Tests
+Die Tests werden mit [Vitest](https://vitest.dev/) ausgeführt.
 
-## What technologies are used for this project?
+```sh
+npx vitest run
+```
 
-This project is built with:
+## Beitrag leisten
+1. Forke das Repository und erstelle einen Branch.
+2. Stelle sicher, dass `npm run lint` und `npx vitest run` ohne Fehler durchlaufen.
+3. Sende einen Pull Request.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Roadmap
+Siehe [docs/ROADMAP.md](docs/ROADMAP.md) für geplante Features und Meilensteine.
 
-## Environment variables
-
-This project requires two Supabase variables to be available at runtime:
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-
-These are read from `import.meta.env` and the application will throw an error if they are missing.
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/b2361a81-7fac-454c-a2bd-9ce8a515ca60) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
