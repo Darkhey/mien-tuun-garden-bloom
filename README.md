@@ -10,6 +10,7 @@ Mien Tuun ist eine React/Tailwind Anwendung rund um Garten, Küche und nachhalti
 - [Tests](#tests)
 - [Beitrag leisten](#beitrag-leisten)
 - [Roadmap](#roadmap)
+- [Iterative Optimierung & Wartung](#iterative-optimierung--wartung)
 
 ## Voraussetzungen
 - Node.js >= 18
@@ -55,4 +56,7 @@ npx vitest run
 
 ## Roadmap
 Siehe [docs/ROADMAP.md](docs/ROADMAP.md) für geplante Features und Meilensteine.
+
+## Iterative Optimierung & Wartung
+Details zur kontinuierlichen Verbesserung des Systems findest du in [docs/ITERATIVE_OPTIMIZATION_GUIDE.md](docs/ITERATIVE_OPTIMIZATION_GUIDE.md).
 
