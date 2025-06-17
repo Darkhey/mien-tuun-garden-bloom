@@ -1,148 +1,88 @@
-
-import React, { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
-import { AdminView, AdminRecipe, AdminBlogPost } from "@/types/admin";
-import { useAdminData } from "@/hooks/useAdminData";
-import { useAdminActions } from "@/hooks/useAdminActions";
+import React, { useState } from "react";
+import { Navigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminContent from "@/components/admin/AdminContent";
-import EditRecipeModal from "@/components/admin/EditRecipeModal";
-import EditBlogPostModal from "@/components/admin/EditBlogPostModal";
-import { useParams, useNavigate } from "react-router-dom";
+import BlogPostsView from "@/components/admin/views/BlogPostsView";
+import KIBlogCreatorView from "@/components/admin/views/KIBlogCreatorView";
+import RecipesView from "@/components/admin/views/RecipesView";
+import KIRecipeCreatorView from "@/components/admin/views/KIRecipeCreatorView";
+import UsersView from "@/components/admin/views/UsersView";
+import SowingCalendarView from "@/components/admin/views/SowingCalendarView";
+import AutomatisierungView from "@/components/admin/views/AutomatisierungView";
+import SecurityLogView from "@/components/admin/views/SecurityLogView";
+import ContentStrategyView from "@/components/admin/views/ContentStrategyView";
+import BlogTestingView from "@/components/admin/views/BlogTestingView";
+import SystemDiagnosticsView from "@/components/admin/views/SystemDiagnosticsView";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminDashboard: React.FC = () => {
-  const params = useParams<{ view?: string; slug?: string }>();
-  const navigate = useNavigate();
-  const [activeView, setActiveView] = useState<AdminView>(
-    (params.view as AdminView) || "recipes"
-  );
-  const testSlug = params.slug;
-  const [userEmail, setUserEmail] = useState<string>("");
-  const [editingRecipe, setEditingRecipe] = useState<AdminRecipe | null>(null);
-  const [editingPost, setEditingPost] = useState<AdminBlogPost | null>(null);
+  const [activeView, setActiveView] = useState("content");
 
-  const {
-    recipes,
-    blogPosts,
-    users,
-    loading,
-    dataError,
-    setRecipes,
-    setBlogPosts,
-    setUsers,
-    loadData
-  } = useAdminData(activeView);
+  // Check if user is admin
+  const { data: userRoles, isLoading } = useQuery({
+    queryKey: ["user-roles"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  const { handleTogglePremium, handleDeleteUser, handleToggleStatus, handleDelete } = useAdminActions();
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  }
 
-  useEffect(() => {
-    const getUserEmail = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.email) {
-        setUserEmail(session.user.email);
-      }
-    };
-    getUserEmail();
-  }, []);
+  const isAdmin = userRoles?.some(role => role.role === "admin");
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
 
-  useEffect(() => {
-    if (params.view && params.view !== activeView) {
-      setActiveView(params.view as AdminView);
+  const renderView = () => {
+    switch (activeView) {
+      case "blog-posts":
+        return <BlogPostsView />;
+      case "ki-blog-creator":
+        return <KIBlogCreatorView />;
+      case "recipes":
+        return <RecipesView />;
+      case "ki-recipe-creator":
+        return <KIRecipeCreatorView />;
+      case "users":
+        return <UsersView />;
+      case "sowing-calendar":
+        return <SowingCalendarView />;
+      case "automatisierung":
+        return <AutomatisierungView />;
+      case "security-log":
+        return <SecurityLogView />;
+      case "content-strategy":
+        return <ContentStrategyView />;
+      case "blog-testing":
+        return <BlogTestingView />;
+      case "system-diagnostics":
+        return <SystemDiagnosticsView />;
+      default:
+        return <AdminContent />;
     }
-  }, [params.view]);
-
-  const onToggleStatus = (id: string, status: string, type: 'recipe' | 'blog') => {
-    handleToggleStatus(id, status, type, recipes, blogPosts, setRecipes, setBlogPosts);
-  };
-
-  const onDelete = (id: string, type: 'recipe' | 'blog') => {
-    handleDelete(id, type, recipes, blogPosts, setRecipes, setBlogPosts);
-  };
-
-  const onTogglePremium = (userId: string, isPremium: boolean) => {
-    handleTogglePremium(userId, isPremium, users, setUsers);
-  };
-
-  const onDeleteUser = (userId: string) => {
-    handleDeleteUser(userId, users, setUsers);
-  };
-
-  const onEditRecipe = (recipe: AdminRecipe) => {
-    setEditingRecipe(recipe);
-  };
-
-  const onEditBlogPost = (post: AdminBlogPost) => {
-    setEditingPost(post);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-gray-600 mt-1">Verwalte deine Website und Inhalte</p>
-            </div>
-            <Badge variant="outline" className="bg-green-50 text-green-800 border-green-200">
-              Admin: {userEmail}
-            </Badge>
-          </div>
+    <div className="flex h-screen bg-gray-50">
+      <AdminSidebar activeView={activeView} setActiveView={setActiveView} />
+      <main className="flex-1 overflow-auto">
+        <div className="p-6">
+          {renderView()}
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <AdminSidebar activeView={activeView} onViewChange={(v) => {
-              setActiveView(v);
-              navigate(`/admin/${v}`);
-            }} />
-          </div>
-
-          {/* Main Content */}
-          <div className="lg:col-span-3">
-          <AdminContent
-            activeView={activeView}
-            recipes={recipes}
-            blogPosts={blogPosts}
-            users={users}
-            loading={loading}
-            error={dataError}
-            onToggleStatus={onToggleStatus}
-            onDelete={onDelete}
-            onTogglePremium={onTogglePremium}
-            onDeleteUser={onDeleteUser}
-            onEditRecipe={onEditRecipe}
-            onEditBlogPost={onEditBlogPost}
-            onDataRefresh={loadData}
-            testSlug={testSlug}
-          />
-          {editingRecipe && (
-            <EditRecipeModal
-              recipe={editingRecipe}
-              onClose={() => setEditingRecipe(null)}
-              onSaved={() => {
-                setEditingRecipe(null);
-                loadData();
-              }}
-            />
-          )}
-          {editingPost && (
-            <EditBlogPostModal
-              post={editingPost}
-              onClose={() => setEditingPost(null)}
-              onSaved={() => {
-                setEditingPost(null);
-                loadData();
-              }}
-            />
-          )}
-        </div>
-      </div>
+      </main>
     </div>
-  </div>
   );
 };
 

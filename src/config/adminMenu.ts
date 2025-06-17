@@ -1,53 +1,120 @@
 
 import { 
+  Settings, 
   FileText, 
-  Users,
-  Calendar,
-  Shield,
-  Bot,
-  TrendingUp,
-  ChefHat,
-  PenTool,
-  Zap,
-  TestTube
+  ChefHat, 
+  Users, 
+  Calendar, 
+  Zap, 
+  Shield, 
+  BarChart3, 
+  Brain,
+  TestTube,
+  Activity
 } from "lucide-react";
-import { AdminView } from "@/types/admin";
 
-export interface MenuGroup {
-  group: string;
-  items: MenuItem[];
-}
-
-export interface MenuItem {
-  key: AdminView;
+export interface AdminMenuItem {
+  id: string;
   label: string;
   icon: any;
+  path: string;
+  description?: string;
+  badge?: string;
+  children?: AdminMenuItem[];
 }
 
-export const menuItems: MenuGroup[] = [
+export const adminMenuItems: AdminMenuItem[] = [
   {
-    group: "Verwaltung",
-    items: [
-      { key: "recipes", label: "Rezepte", icon: ChefHat },
-      { key: "blog-posts", label: "Blog-Artikel", icon: FileText },
-      { key: "users", label: "Nutzer", icon: Users }
+    id: "content",
+    label: "Content Management",
+    icon: FileText,
+    path: "/admin",
+    children: [
+      {
+        id: "blog-posts",
+        label: "Blog Posts",
+        icon: FileText,
+        path: "/admin/blog-posts",
+        description: "Verwalte Blog-Artikel"
+      },
+      {
+        id: "ki-blog-creator",
+        label: "KI Blog Creator",
+        icon: Brain,
+        path: "/admin/ki-blog-creator",
+        description: "Erstelle Artikel mit KI"
+      },
+      {
+        id: "recipes", 
+        label: "Rezepte",
+        icon: ChefHat,
+        path: "/admin/recipes",
+        description: "Verwalte Rezepte"
+      },
+      {
+        id: "ki-recipe-creator",
+        label: "KI Rezept Creator",
+        icon: Brain,
+        path: "/admin/ki-recipe-creator", 
+        description: "Erstelle Rezepte mit KI"
+      }
     ]
   },
   {
-    group: "KI-Assistenten",
-    items: [
-      { key: "ki-recipe", label: "KI-Rezept-Creator", icon: Bot },
-      { key: "ki-blog", label: "KI-Blog-Creator", icon: PenTool }
-    ]
+    id: "content-strategy",
+    label: "Content Strategy",
+    icon: BarChart3,
+    path: "/admin/content-strategy",
+    description: "Content-Strategien und Analytics"
   },
   {
-    group: "Tools & Analyse",
-    items: [
-      { key: "content-strategy", label: "Content-Strategie", icon: TrendingUp },
-      { key: "automatisierung", label: "Automatisierung", icon: Zap },
-      { key: "sowing-calendar", label: "Aussaat-Kalender", icon: Calendar },
-      { key: "security-log", label: "Sicherheits-Log", icon: Shield },
-      { key: "blog-testing", label: "System-Tests", icon: TestTube }
+    id: "automatisierung",
+    label: "Automatisierung",
+    icon: Zap,
+    path: "/admin/automatisierung",
+    description: "Automatisierte Workflows"
+  },
+  {
+    id: "system",
+    label: "System & Monitoring",
+    icon: Settings,
+    path: "/admin",
+    children: [
+      {
+        id: "users",
+        label: "Benutzerverwaltung",
+        icon: Users,
+        path: "/admin/users",
+        description: "Verwalte Benutzer und Rollen"
+      },
+      {
+        id: "sowing-calendar",
+        label: "Aussaatkalender",
+        icon: Calendar,
+        path: "/admin/sowing-calendar",
+        description: "Verwalte Aussaatzeiten"
+      },
+      {
+        id: "blog-testing",
+        label: "Blog System Tests",
+        icon: TestTube,
+        path: "/admin/blog-testing",
+        description: "Teste Blog-Funktionalitäten"
+      },
+      {
+        id: "system-diagnostics",
+        label: "System Diagnostics",
+        icon: Activity,
+        path: "/admin/system-diagnostics",
+        description: "KI-System Performance Analyse"
+      },
+      {
+        id: "security-log",
+        label: "Security Log",
+        icon: Shield,
+        path: "/admin/security-log",
+        description: "Sicherheitsereignisse"
+      }
     ]
   }
 ];
