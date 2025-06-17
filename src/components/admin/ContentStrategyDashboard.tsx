@@ -4,15 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle } from "lucide-react";
+import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search } from "lucide-react";
 import { contentStrategyService, ContentStrategy, ContentCalendarEntry } from "@/services/ContentStrategyService";
 import { contextAnalyzer, TrendData, ContentGap } from "@/services/ContextAnalyzer";
+import { blogAnalyticsService, TrendKeyword } from "@/services/BlogAnalyticsService";
 
 const ContentStrategyDashboard: React.FC = () => {
   const [strategies, setStrategies] = useState<ContentStrategy[]>([]);
   const [calendar, setCalendar] = useState<ContentCalendarEntry[]>([]);
   const [trends, setTrends] = useState<TrendData[]>([]);
   const [gaps, setGaps] = useState<ContentGap[]>([]);
+  const [keywordGaps, setKeywordGaps] = useState<TrendKeyword[]>([]);
   const [loading, setLoading] = useState(false);
 
   const loadStrategicData = async () => {
@@ -21,15 +23,20 @@ const ContentStrategyDashboard: React.FC = () => {
       console.log("[StrategyDashboard] Loading strategic data");
       
       // Parallel laden für bessere Performance
-      const [strategiesData, trendsData, gapsData] = await Promise.all([
+      const [strategiesData, posts, trendsData, gapsData] = await Promise.all([
         contentStrategyService.generateContentStrategy({ timeframe: 4 }),
-        Promise.resolve(contextAnalyzer.getCurrentTrends()),
+        blogAnalyticsService.fetchBlogPosts(),
+        blogAnalyticsService.fetchCurrentTrends(),
         Promise.resolve(contextAnalyzer.analyzeContentGaps())
       ]);
+
+      const existing = blogAnalyticsService.extractKeywords(posts);
+      const kwGaps = blogAnalyticsService.findKeywordGaps(trendsData, existing);
 
       setStrategies(strategiesData);
       setTrends(trendsData.slice(0, 6));
       setGaps(gapsData);
+      setKeywordGaps(kwGaps);
 
       // Content-Kalender generieren
       const calendarData = await contentStrategyService.generateContentCalendar(strategiesData, 2);
@@ -124,6 +131,29 @@ const ContentStrategyDashboard: React.FC = () => {
                   <div className={`w-3 h-3 rounded-full ${getUrgencyColor(gap.urgency > 0.8 ? 'high' : 'medium')}`} />
                   <span className="text-sm">{Math.round(gap.urgency * 100)}% Priorität</span>
                 </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Keyword Gaps */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Keyword-Gaps
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {keywordGaps.map((gap, idx) => (
+              <div key={idx} className="p-3 border rounded-lg flex items-center justify-between">
+                <div>
+                  <div className="font-medium">{gap.keyword}</div>
+                  <div className="text-sm text-gray-600">{gap.category}</div>
+                </div>
+                <Badge variant="destructive">Fehlt</Badge>
               </div>
             ))}
           </div>
