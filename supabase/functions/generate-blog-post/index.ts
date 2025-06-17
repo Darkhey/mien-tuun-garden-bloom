@@ -2,6 +2,36 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+async function fetchWithBackoff(url: string, options: RequestInit, maxRetries = 3, delayMs = 1000): Promise<Response> {
+  let attempt = 0
+  let currentDelay = delayMs
+  while (true) {
+    try {
+      const res = await fetch(url, options)
+      if (res.ok || attempt >= maxRetries) {
+        return res
+      }
+
+      // Retry only on server errors or rate limits
+      if (res.status >= 500 || res.status === 429) {
+        console.warn(`[generate-blog-post] OpenAI Error ${res.status}. Retry ${attempt + 1} in ${currentDelay}ms`)
+        await new Promise((r) => setTimeout(r, currentDelay))
+        attempt++
+        currentDelay *= 2
+        continue
+      }
+
+      return res
+    } catch (err) {
+      if (attempt >= maxRetries) throw err
+      console.warn(`[generate-blog-post] Request failed (attempt ${attempt + 1}). Retrying in ${currentDelay}ms`, err)
+      await new Promise((r) => setTimeout(r, currentDelay))
+      attempt++
+      currentDelay *= 2
+    }
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -58,7 +88,7 @@ serve(async (req) => {
     console.log("[generate-blog-post] Sende Request an OpenAI API...");
     console.log("[generate-blog-post] Messages:", JSON.stringify(messages));
 
-    const openAIResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+    const openAIResponse = await fetchWithBackoff("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${openAIApiKey}`,
@@ -77,11 +107,12 @@ serve(async (req) => {
     if (!openAIResponse.ok) {
       const errorText = await openAIResponse.text();
       console.error(`[generate-blog-post] OpenAI API Fehler (${openAIResponse.status}):`, errorText);
-      
+
       return new Response(
-        JSON.stringify({ 
-          error: `OpenAI API Fehler: ${openAIResponse.status}`,
-          details: errorText 
+        JSON.stringify({
+          error: `OpenAI API Fehler nach mehreren Versuchen`,
+          status: openAIResponse.status,
+          details: errorText
         }),
         {
           status: openAIResponse.status,
