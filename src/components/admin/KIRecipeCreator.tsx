@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { Loader } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import MetaDebugTerminal from "./MetaDebugTerminal";
 
 // Auswahloptionen (erweitert)
 const DIETS = [
@@ -76,61 +77,71 @@ const KIRecipeCreator: React.FC = () => {
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [manualRecipe, setManualRecipe] = useState<any>(null);
+  const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Rezeptvorschläge generieren (immer genau 3)
-  const handleGenerate = async () => {
-    setLoading(true);
-    setResults([]);
-    setIsEditing(false);
-    setManualRecipe(null);
-    setSelectedRecipe(null);
-    try {
+const handleGenerate = async () => {
+  setLoading(true);
+  setResults([]);
+  setIsEditing(false);
+  setManualRecipe(null);
+  setSelectedRecipe(null);
+  setDebugLogs(prev => [...prev, '--- Starte Rezeptgenerierung ---']);
+  try {
       // Baue Prompt
-      const combinedPrompt = [
-        input,
-        diet ? `Ernährungsform: ${diet}.` : "",
-        meal ? `Mahlzeit: ${meal}.` : "",
-        difficulty ? `Schwierigkeitsgrad: ${difficulty}.` : "",
-        season ? `Saison: ${season}.` : "",
-        servings ? `Portionen: ${servings}.` : "",
-        tags.length > 0 ? `Tags: ${tags.join(", ")}.` : "",
-        "Bitte schlage mir 3 verschiedene, passende Rezepte mit Zutatenliste und Zubereitungsschritten als JSON-Liste vor."
-      ]
-        .filter(Boolean)
-        .join(" ");
+    const combinedPrompt = [
+      input,
+      diet ? `Ernährungsform: ${diet}.` : "",
+      meal ? `Mahlzeit: ${meal}.` : "",
+      difficulty ? `Schwierigkeitsgrad: ${difficulty}.` : "",
+      season ? `Saison: ${season}.` : "",
+      servings ? `Portionen: ${servings}.` : "",
+      tags.length > 0 ? `Tags: ${tags.join(", ")}.` : "",
+      "Bitte schlage mir 3 verschiedene, passende Rezepte mit Zutatenliste und Zubereitungsschritten als JSON-Liste vor."
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    setDebugLogs(prev => [...prev, '[Prompt] ' + combinedPrompt]);
 
       // Edge Function mit Prompt aufrufen (3 Vorschläge!)
-      const resp = await fetch("https://ublbxvpmoccmegtwaslh.functions.supabase.co/blog-to-recipe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: combinedPrompt,
-          content: combinedPrompt,
-          image: "",
-        }),
-      });
+    const resp = await fetch("https://ublbxvpmoccmegtwaslh.functions.supabase.co/blog-to-recipe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: combinedPrompt,
+        content: combinedPrompt,
+        image: "",
+      }),
+    });
 
-      if (!resp.ok) throw new Error("Fehler bei der KI");
-      const { recipe } = await resp.json();
+    setDebugLogs(prev => [...prev, `[Request] Status ${resp.status}`]);
+    if (!resp.ok) throw new Error("Fehler bei der KI");
+    const { recipe } = await resp.json();
+    setDebugLogs(prev => [...prev, '[Response] ' + JSON.stringify(recipe, null, 2)]);
 
-      let proposed: any[] = [];
-      // Antwort kann Array oder Einzelobjekt sein
-      if (Array.isArray(recipe)) proposed = recipe;
-      else if (recipe && recipe.title) proposed = [recipe];
-      else throw new Error("Konnte keine Rezepte extrahieren");
+    let proposed: any[] = [];
+    // Antwort kann Array oder Einzelobjekt sein
+    if (Array.isArray(recipe)) proposed = recipe;
+    else if (recipe && recipe.title) proposed = [recipe];
+    else throw new Error("Konnte keine Rezepte extrahieren");
 
-      // Immer max. 3 anzeigen
-      setResults(proposed.slice(0, 3));
-    } catch (err: any) {
-      toast({
-        title: "Fehler",
-        description: String(err.message || err),
-        variant: "destructive",
-      });
-    }
-    setLoading(false);
-  };
+    // Immer max. 3 anzeigen
+    setResults(proposed.slice(0, 3));
+    setDebugLogs(prev => [...prev, `Erhalte ${proposed.slice(0, 3).length} Vorschläge`]);
+  } catch (err: any) {
+    const msg = String(err.message || err);
+    setDebugLogs(prev => [...prev, `[Error] ${msg}`]);
+    toast({
+      title: "Fehler",
+      description: msg,
+      variant: "destructive",
+    });
+  }
+  setLoading(false);
+  setDebugLogs(prev => [...prev, '--- Rezeptgenerierung beendet ---']);
+};
 
   // Vorschlag auswählen & bearbeiten
   const handleChooseForEdit = (recipe: any) => {
@@ -151,12 +162,14 @@ const KIRecipeCreator: React.FC = () => {
   const handleSave = async () => {
     if (!manualRecipe?.title) return;
     setLoading(true);
+    setDebugLogs(prev => [...prev, `--- Speichere Rezept: ${manualRecipe.title}`]);
     try {
       const user = await supabase.auth.getUser();
       if (!user.data.user) throw new Error("Nicht eingeloggt!");
       const slug = manualRecipe.title
         ? manualRecipe.title.toLowerCase().replace(/[^a-z0-9]+/gi, "-")
         : String(Date.now());
+      setDebugLogs(prev => [...prev, `[Slug] ${slug}`]);
       const insertObj = {
         user_id: user.data.user.id,
         title: manualRecipe.title,
@@ -176,8 +189,10 @@ const KIRecipeCreator: React.FC = () => {
       if (manualRecipe.diet) {
         insertObj.tags = [...(insertObj.tags || []), manualRecipe.diet];
       }
+      setDebugLogs(prev => [...prev, "[Insert] Sende an Supabase"]);
       const { error } = await supabase.from("recipes").insert([insertObj]);
       if (error) throw error;
+      setDebugLogs(prev => [...prev, "[Insert] Erfolgreich"]);
       toast({ title: "Rezept gespeichert!", description: "Das KI-Rezept ist jetzt unter Rezepte sichtbar." });
       setResults([]);
       setIsEditing(false);
@@ -190,9 +205,12 @@ const KIRecipeCreator: React.FC = () => {
       setSeason("");
       setInput("");
     } catch (err: any) {
-      toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
+      const msg = String(err.message || err);
+      setDebugLogs(prev => [...prev, `[Error] ${msg}`]);
+      toast({ title: "Fehler", description: msg, variant: "destructive" });
     }
     setLoading(false);
+    setDebugLogs(prev => [...prev, '--- Speichervorgang beendet ---']);
   };
 
   return (
@@ -446,6 +464,7 @@ const KIRecipeCreator: React.FC = () => {
           </button>
         </form>
       )}
+      <MetaDebugTerminal logs={debugLogs} />
     </div>
   );
 };
