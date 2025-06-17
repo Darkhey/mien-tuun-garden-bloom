@@ -97,11 +97,17 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       console.log('[BlogWorkflow] Artikel-Daten vorbereitet:', article);
       setDebugLogs(prev => [...prev, `[SAVE] Daten vorbereitet für Slug: ${slug}`]);
 
-      // Speichere in Supabase
-      console.log('[BlogWorkflow] Sende Insert-Request an Supabase...');
+      // Speichere Entwurf als Version
+      console.log('[BlogWorkflow] Sende Insert-Request an Supabase (Version)...');
+      const user = await supabase.auth.getUser();
+      const version = {
+        blog_post_id: crypto.randomUUID(),
+        user_id: user.data.user?.id || '',
+        ...article
+      };
       const { data, error } = await supabase
-        .from("blog_posts")
-        .insert([article])
+        .from('blog_post_versions')
+        .insert([version])
         .select()
         .single();
 
@@ -111,8 +117,8 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
         throw new Error(`Supabase Fehler: ${error.message}`);
       }
 
-      console.log('[BlogWorkflow] Artikel erfolgreich gespeichert:', data);
-      setDebugLogs(prev => [...prev, `[SUCCESS] Artikel gespeichert mit ID: ${data.id}`]);
+      console.log('[BlogWorkflow] Artikel-Version erfolgreich gespeichert:', data);
+      setDebugLogs(prev => [...prev, `[SUCCESS] Version gespeichert mit ID: ${data.id}`]);
       
       // Update Status in Enhanced Articles
       setEnhancedArticles(prev => 
@@ -124,8 +130,8 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       );
       
       toast({
-        title: "✅ Enhanced Artikel erfolgreich gespeichert!",
-        description: `"${title}" wurde in der Datenbank gespeichert (ID: ${data.id})`,
+        title: "✅ Enhanced Artikel gespeichert!",
+        description: `"${title}" wurde als Entwurf gespeichert (Version ID: ${data.id})`,
         variant: "default",
       });
       

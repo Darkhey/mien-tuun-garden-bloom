@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import BlogTopicSuggestions from "./BlogTopicSuggestions";
 import { buildContextFromMeta } from "./blogHelpers";
+import { generateSlug } from "@/utils/blogSeo";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -66,7 +67,20 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
         // Entferne führende und abschließende Anführungszeichen
         return topic.replace(/^"(.*)"$/, '$1');
       });
-      
+
+      try {
+        const rows = cleanedTopics.map((title: string) => ({
+          slug: generateSlug(title),
+          title,
+          reason: 'suggested',
+          context: { keyword, category, season, audiences, contentType, tags }
+        }));
+        await supabase.from('blog_topic_history').insert(rows);
+      } catch (dbErr: any) {
+        console.error('Fehler beim Speichern der Themen:', dbErr);
+        setDebugLogs(prev => [...prev, `Fehler beim Speichern: ${dbErr.message}`]);
+      }
+
       setSuggestions(cleanedTopics);
       setDebugLogs(prev => [...prev, "Vorschläge extrahiert: " + JSON.stringify(cleanedTopics, null, 2)]);
     } catch (err: any) {
