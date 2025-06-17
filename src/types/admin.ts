@@ -1,4 +1,3 @@
-
 export type AdminView = 
   | "recipes" 
   | "blog-posts" 
@@ -13,7 +12,8 @@ export type AdminView =
   | "phase2"
   | "phase3"
   | "security"
-  | "blog-testing";
+  | "blog-testing"
+  | "system-diagnostics";
 
 export interface AdminMenuItem {
   key: AdminView;
