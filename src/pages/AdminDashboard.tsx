@@ -1,23 +1,39 @@
+
 import React, { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import AdminContent from "@/components/admin/AdminContent";
-import BlogPostsView from "@/components/admin/views/BlogPostsView";
-import KIBlogCreatorView from "@/components/admin/views/KIBlogCreatorView";
-import RecipesView from "@/components/admin/views/RecipesView";
-import KIRecipeCreatorView from "@/components/admin/views/KIRecipeCreatorView";
-import UsersView from "@/components/admin/views/UsersView";
-import SowingCalendarView from "@/components/admin/views/SowingCalendarView";
-import AutomatisierungView from "@/components/admin/views/AutomatisierungView";
-import SecurityLogView from "@/components/admin/views/SecurityLogView";
-import ContentStrategyView from "@/components/admin/views/ContentStrategyView";
-import BlogTestingView from "@/components/admin/views/BlogTestingView";
-import SystemDiagnosticsView from "@/components/admin/views/SystemDiagnosticsView";
+import { useAdminData } from "@/hooks/useAdminData";
+import { useAdminActions } from "@/hooks/useAdminActions";
+import EditBlogPostModal from "@/components/admin/EditBlogPostModal";
+import { AdminBlogPost } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
 
 const AdminDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState("content");
+  const [editingBlogPost, setEditingBlogPost] = useState<AdminBlogPost | null>(null);
+  
+  // Load admin data
+  const {
+    recipes,
+    blogPosts, 
+    users,
+    loading,
+    dataError,
+    setRecipes,
+    setBlogPosts,
+    setUsers,
+    loadData
+  } = useAdminData(activeView as any);
+
+  // Admin actions
+  const {
+    handleTogglePremium,
+    handleDeleteUser,
+    handleToggleStatus,
+    handleDelete
+  } = useAdminActions();
 
   // Check if user is admin
   const { data: userRoles, isLoading } = useQuery({
@@ -46,32 +62,35 @@ const AdminDashboard: React.FC = () => {
   }
 
   const renderView = () => {
-    switch (activeView) {
-      case "blog-posts":
-        return <BlogPostsView />;
-      case "ki-blog-creator":
-        return <KIBlogCreatorView />;
-      case "recipes":
-        return <RecipesView />;
-      case "ki-recipe-creator":
-        return <KIRecipeCreatorView />;
-      case "users":
-        return <UsersView />;
-      case "sowing-calendar":
-        return <SowingCalendarView />;
-      case "automatisierung":
-        return <AutomatisierungView />;
-      case "security-log":
-        return <SecurityLogView />;
-      case "content-strategy":
-        return <ContentStrategyView />;
-      case "blog-testing":
-        return <BlogTestingView />;
-      case "system-diagnostics":
-        return <SystemDiagnosticsView />;
-      default:
-        return <AdminContent />;
-    }
+    return (
+      <AdminContent
+        activeView={activeView as any}
+        recipes={recipes}
+        blogPosts={blogPosts}
+        users={users}
+        loading={loading}
+        error={dataError}
+        onToggleStatus={(id, status, type) => 
+          handleToggleStatus(id, status, type, recipes, blogPosts, setRecipes, setBlogPosts)
+        }
+        onDelete={(id, type) => 
+          handleDelete(id, type, recipes, blogPosts, setRecipes, setBlogPosts)
+        }
+        onTogglePremium={(userId, isPremium) => 
+          handleTogglePremium(userId, isPremium, users, setUsers)
+        }
+        onDeleteUser={(userId) => 
+          handleDeleteUser(userId, users, setUsers)
+        }
+        onEditRecipe={(recipe) => {
+          // Handle recipe editing
+        }}
+        onEditBlogPost={(post) => {
+          setEditingBlogPost(post);
+        }}
+        onDataRefresh={loadData}
+      />
+    );
   };
 
   return (
@@ -82,6 +101,17 @@ const AdminDashboard: React.FC = () => {
           {renderView()}
         </div>
       </main>
+      
+      {editingBlogPost && (
+        <EditBlogPostModal
+          post={editingBlogPost}
+          onClose={() => setEditingBlogPost(null)}
+          onSaved={() => {
+            setEditingBlogPost(null);
+            loadData();
+          }}
+        />
+      )}
     </div>
   );
 };
