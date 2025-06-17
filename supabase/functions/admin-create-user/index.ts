@@ -68,26 +68,35 @@ serve(async (req) => {
       })
     }
 
-    // Create profile
-    const { error: profileError } = await supabaseClient
+    // Check if profile already exists (in case of duplicate creation attempts)
+    const { data: existingProfile } = await supabaseClient
       .from('profiles')
-      .insert([{
-        id: newUser.user.id,
-        display_name: profile.display_name || email.split('@')[0],
-        avatar_url: profile.avatar_url || null,
-        custom_role: profile.custom_role || null,
-        is_premium: profile.is_premium || false,
-        description: profile.description || null
-      }])
+      .select('id')
+      .eq('id', newUser.user.id)
+      .single()
 
-    if (profileError) {
-      console.error('[admin-create-user] Error creating profile:', profileError)
-      // Try to clean up the user if profile creation failed
-      await supabaseClient.auth.admin.deleteUser(newUser.user.id)
-      return new Response(JSON.stringify({ error: 'Failed to create user profile' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+    // Only create profile if it doesn't exist
+    if (!existingProfile) {
+      const { error: profileError } = await supabaseClient
+        .from('profiles')
+        .insert([{
+          id: newUser.user.id,
+          display_name: profile.display_name || email.split('@')[0],
+          avatar_url: profile.avatar_url || null,
+          custom_role: profile.custom_role || null,
+          is_premium: profile.is_premium || false,
+          description: profile.description || null
+        }])
+
+      if (profileError) {
+        console.error('[admin-create-user] Error creating profile:', profileError)
+        // Try to clean up the user if profile creation failed
+        await supabaseClient.auth.admin.deleteUser(newUser.user.id)
+        return new Response(JSON.stringify({ error: 'Failed to create user profile' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
     }
 
     // Assign roles if provided

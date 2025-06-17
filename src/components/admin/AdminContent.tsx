@@ -73,8 +73,10 @@ const AdminContent: React.FC<AdminContentProps> = ({
           />
         );
       case "ki-recipe":
+      case "ki-recipe-creator":
         return <KIRecipeCreatorView />;
       case "ki-blog":
+      case "ki-blog-creator":
         return <KIBlogCreatorView />;
       case "content-strategy":
         return <ContentStrategyView />;

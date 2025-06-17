@@ -94,13 +94,17 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <AdminSidebar activeView={activeView} setActiveView={setActiveView} />
-      <main className="flex-1 overflow-auto">
-        <div className="p-6">
-          {renderView()}
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex gap-6 py-6">
+          <div className="w-64 flex-shrink-0">
+            <AdminSidebar activeView={activeView} setActiveView={setActiveView} />
+          </div>
+          <div className="flex-1">
+            {renderView()}
+          </div>
         </div>
-      </main>
+      </div>
       
       {editingBlogPost && (
         <EditBlogPostModal
