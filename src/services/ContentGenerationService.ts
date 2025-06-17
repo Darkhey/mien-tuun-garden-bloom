@@ -33,6 +33,32 @@ export interface GeneratedContent {
   };
 }
 
+// Erweiterte Kategorie-zu-Kontext Mappings für bessere KI-Prompts
+const CATEGORY_CONTEXT_MAP = {
+  "gartenplanung": "Gartenplanung und -design, Beetaufteilung, Jahresplanung",
+  "aussaat-pflanzung": "Aussaat, Pflanzung, Vermehrung, Saatgut, Jungpflanzen",
+  "pflanzenpflege": "Pflege von Gartenpflanzen, Düngen, Gießen, Schneiden",
+  "schaedlingsbekaempfung": "Natürliche Schädlingsbekämpfung, Nützlinge, biologische Mittel",
+  "kompostierung": "Kompostierung, Humusaufbau, organische Düngung",
+  "saisonale-kueche": "Saisonales Kochen, Ernteküche, regionale Rezepte",
+  "konservieren-haltbarmachen": "Haltbarmachen, Konservierung, Vorratshaltung",
+  "kraeuter-heilpflanzen": "Kräutergarten, Heilpflanzen, natürliche Heilmittel",
+  "nachhaltigkeit": "Nachhaltiges Gärtnern, Umweltschutz, Ressourcenschonung",
+  "wassersparen-bewaesserung": "Wassersparen, effiziente Bewässerung, Regenwassernutzung",
+  "diY-projekte": "DIY-Projekte für Garten, Selbstbau, Upcycling",
+  "gartengeraete-werkzeuge": "Gartengeräte, Werkzeuge, Pflege und Anwendung",
+  "ernte": "Erntezeit, Erntetechniken, optimaler Erntezeitpunkt",
+  "lagerung-vorratshaltung": "Lagerung von Gartenerzeugnissen, Vorratshaltung",
+  "selbstversorgung": "Selbstversorgung, Autarkie, Eigenanbau",
+  "permakultur": "Permakultur-Prinzipien, nachhaltige Anbausysteme",
+  "urban-gardening": "Gärtnern in der Stadt, Gemeinschaftsgärten",
+  "balkon-terrasse": "Gärtnern auf Balkon und Terrasse, Topfgarten",
+  "indoor-gardening": "Indoor-Gärtnern, Zimmerpflanzen, Hydroponik",
+  "tipps-tricks": "Praktische Gartentipps, Tricks und Lifehacks",
+  "jahreszeitliche-arbeiten": "Saisonale Gartenarbeiten, Gartenkalender",
+  "bodenpflege": "Bodenpflege, Bodenverbesserung, Humusaufbau"
+};
+
 class ContentGenerationService {
   private maxRetries = 3;
   private retryDelay = 1000;
@@ -43,13 +69,12 @@ class ContentGenerationService {
     try {
       console.log("[ContentGeneration] Starting blog post generation:", options);
       
-      const fullPrompt = this.buildContextPrompt(options);
+      const fullPrompt = this.buildEnhancedContextPrompt(options);
       const content = await this.callGenerationAPI(fullPrompt, options.retries || this.maxRetries);
       
       const quality = this.analyzeContentQuality(content);
       const generationTime = Date.now() - startTime;
       
-      // Log performance metrics (simplified - no database call for now)
       console.log("[ContentGeneration] Metrics:", {
         type: 'blog_post',
         prompt: fullPrompt,
@@ -86,16 +111,22 @@ class ContentGenerationService {
     }
   }
 
-  private buildContextPrompt(options: ContentGenerationOptions): string {
+  private buildEnhancedContextPrompt(options: ContentGenerationOptions): string {
+    const categoryContext = options.category ? 
+      CATEGORY_CONTEXT_MAP[options.category as keyof typeof CATEGORY_CONTEXT_MAP] || options.category : "";
+    
     const contextParts = [
       options.prompt,
+      categoryContext ? `Themenbereich: ${categoryContext}` : "",
       options.category ? `Kategorie: ${options.category}` : "",
       options.season ? `Saison: ${options.season}` : "",
       options.audiences?.length ? `Zielgruppe: ${options.audiences.join(", ")}` : "",
       options.contentType?.length ? `Content-Typ: ${options.contentType.join(", ")}` : "",
-      options.tags?.length ? `Tags: ${options.tags.join(", ")}` : "",
+      options.tags?.length ? `Relevante Tags: ${options.tags.join(", ")}` : "",
       options.excerpt ? `Kurzbeschreibung: ${options.excerpt}` : "",
       options.imageUrl ? `Referenz-Bild: ${options.imageUrl}` : "",
+      "Schreibstil: Informativ, praxisnah und inspirierend für Hobbygärtner und Selbstversorger.",
+      "Zielgruppe: Deutsche Hobbygärtner, Selbstversorger und nachhaltigkeit-interessierte Menschen."
     ];
     
     return contextParts.filter(Boolean).join(" ");

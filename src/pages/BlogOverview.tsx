@@ -7,8 +7,15 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from '@/integrations/supabase/types';
 import type { BlogPost } from '@/types/content';
 
-// Die Kategorien
-const categories = ['Gartenpflege', 'Rezepte', 'Nachhaltigkeit', 'DIY'];
+// Erweiterte Kategorien für die Blog-Übersicht
+const categories = [
+  'Gartenplanung', 'Aussaat & Pflanzung', 'Pflanzenpflege', 'Schädlingsbekämpfung', 
+  'Kompostierung', 'Saisonale Küche', 'Konservieren & Haltbarmachen', 'Kräuter & Heilpflanzen',
+  'Nachhaltigkeit', 'Wassersparen & Bewässerung', 'DIY Projekte', 'Gartengeräte & Werkzeuge',
+  'Ernte', 'Lagerung & Vorratshaltung', 'Selbstversorgung', 'Permakultur', 'Urban Gardening',
+  'Balkon & Terrasse', 'Indoor Gardening', 'Tipps & Tricks', 'Jahreszeitliche Arbeiten',
+  'Bodenpflege', 'Sonstiges'
+];
 
 // Blog-Posts aus Supabase laden
 const fetchBlogPosts = async () => {

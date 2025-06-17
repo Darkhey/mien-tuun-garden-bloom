@@ -5,12 +5,27 @@
 
 export const BLOG_CATEGORIES = [
   { value: "gartenplanung", label: "Gartenplanung" },
+  { value: "aussaat-pflanzung", label: "Aussaat & Pflanzung" },
+  { value: "pflanzenpflege", label: "Pflanzenpflege" },
+  { value: "schaedlingsbekaempfung", label: "Schädlingsbekämpfung" },
+  { value: "kompostierung", label: "Kompostierung" },
   { value: "saisonale-kueche", label: "Saisonale Küche" },
+  { value: "konservieren-haltbarmachen", label: "Konservieren & Haltbarmachen" },
+  { value: "kraeuter-heilpflanzen", label: "Kräuter & Heilpflanzen" },
   { value: "nachhaltigkeit", label: "Nachhaltigkeit" },
+  { value: "wassersparen-bewaesserung", label: "Wassersparen & Bewässerung" },
   { value: "diY-projekte", label: "DIY Projekte" },
+  { value: "gartengeraete-werkzeuge", label: "Gartengeräte & Werkzeuge" },
   { value: "ernte", label: "Ernte" },
+  { value: "lagerung-vorratshaltung", label: "Lagerung & Vorratshaltung" },
   { value: "selbstversorgung", label: "Selbstversorgung" },
+  { value: "permakultur", label: "Permakultur" },
+  { value: "urban-gardening", label: "Urban Gardening" },
+  { value: "balkon-terrasse", label: "Balkon & Terrasse" },
+  { value: "indoor-gardening", label: "Indoor Gardening" },
   { value: "tipps-tricks", label: "Tipps & Tricks" },
+  { value: "jahreszeitliche-arbeiten", label: "Jahreszeitliche Arbeiten" },
+  { value: "bodenpflege", label: "Bodenpflege" },
   { value: "sonstiges", label: "Sonstiges" },
 ];
 
@@ -22,17 +37,32 @@ export const SEASONS = [
   { value: "ganzjährig", label: "Ganzjährig" },
 ];
 
-// Trend-Tags
+// Erweiterte Trend-Tags passend zu den neuen Kategorien
 const TREND_TAGS = {
-  gartenplanung: ["Permakultur", "No-Dig", "Biogarten", "Hochbeet"],
-  "saisonale-kueche": ["Meal Prep", "Zero Waste", "Fermentieren", "One Pot"],
-  nachhaltigkeit: ["Plastikfrei", "Regenerativ", "Naturgarten"],
-  "diY-projekte": ["Upcycling", "Balkonideen"],
-  ernte: ["Haltbarmachen", "Kräutergarten", "Vorrat"],
-  selbstversorgung: ["Unabhängigkeit", "Microgreens", "Wildkräuter"],
-  "tipps-tricks": ["Tool Hacks", "Schädlingskontrolle"],
-  sonstiges: ["Inspiration"],
-  default: ["Nachhaltig", "DIY", "Tipps"]
+  gartenplanung: ["Permakultur", "No-Dig", "Biogarten", "Hochbeet", "Mischkultur"],
+  "aussaat-pflanzung": ["Direktsaat", "Vorkultur", "Jungpflanzen", "Saatgut", "Mondkalender"],
+  pflanzenpflege: ["Biologisch", "Naturdünger", "Mulchen", "Schnitt", "Pflanzenstärkung"],
+  schaedlingsbekaempfung: ["Nützlinge", "Hausmittel", "Biologisch", "Präventiv", "Natürlich"],
+  kompostierung: ["Wurmkompost", "Bokashi", "Thermokomposter", "Gründüngung"],
+  "saisonale-kueche": ["Meal Prep", "Zero Waste", "Fermentieren", "One Pot", "Regional"],
+  "konservieren-haltbarmachen": ["Einkochen", "Fermentieren", "Trocknen", "Einfrieren", "Einlegen"],
+  "kraeuter-heilpflanzen": ["Heilkräuter", "Tee", "Naturmedizin", "Aromatherapie", "Kräutergarten"],
+  nachhaltigkeit: ["Plastikfrei", "Regenerativ", "Naturgarten", "Kreislaufwirtschaft", "Upcycling"],
+  "wassersparen-bewaesserung": ["Regenwasser", "Tröpfchenbewässerung", "Mulchen", "Wasserspeicher"],
+  "diY-projekte": ["Upcycling", "Balkonideen", "Selbstgebaut", "Recycling", "Kreativ"],
+  "gartengeraete-werkzeuge": ["Pflege", "Auswahl", "Selbstbau", "Reparatur", "Ergonomisch"],
+  ernte: ["Haltbarmachen", "Kräutergarten", "Vorrat", "Timing", "Lagerung"],
+  "lagerung-vorratshaltung": ["Kellerlagerung", "Mieten", "Konservierung", "Haltbarkeit"],
+  selbstversorgung: ["Unabhängigkeit", "Microgreens", "Wildkräuter", "Autarkie", "Planung"],
+  permakultur: ["Nachhaltigkeit", "Kreisläufe", "Zonierung", "Mischkultur", "Wassermanagement"],
+  "urban-gardening": ["Stadtgarten", "Gemeinschaftsgarten", "Guerilla Gardening", "Kleinfläche"],
+  "balkon-terrasse": ["Topfgarten", "Platzsparend", "Mobilität", "Windschutz", "Bewässerung"],
+  "indoor-gardening": ["Hydroponik", "LED-Beleuchtung", "Microgreens", "Zimmerpflanzen"],
+  "tipps-tricks": ["Tool Hacks", "Schädlingskontrolle", "Lifehacks", "Profi-Tipps"],
+  "jahreszeitliche-arbeiten": ["Saisonkalender", "Gartenarbeiten", "Timing", "Planung"],
+  bodenpflege: ["Bodenanalyse", "Humusaufbau", "Gründüngung", "Lebendigkeit", "pH-Wert"],
+  sonstiges: ["Inspiration", "Allgemein", "Verschiedenes"],
+  default: ["Nachhaltig", "DIY", "Tipps", "Garten", "Natürlich"]
 };
 
 export function getTrendTags(category: string, season: string) {

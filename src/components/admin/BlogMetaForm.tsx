@@ -3,18 +3,37 @@ import React from "react";
 import TagSelector from "./TagSelector";
 
 const CATEGORY_OPTIONS = [
-  { value: "garten", label: "Garten" },
-  { value: "küche", label: "Küche" },
+  { value: "gartenplanung", label: "Gartenplanung" },
+  { value: "aussaat-pflanzung", label: "Aussaat & Pflanzung" },
+  { value: "pflanzenpflege", label: "Pflanzenpflege" },
+  { value: "schaedlingsbekaempfung", label: "Schädlingsbekämpfung" },
+  { value: "kompostierung", label: "Kompostierung" },
+  { value: "saisonale-kueche", label: "Saisonale Küche" },
+  { value: "konservieren-haltbarmachen", label: "Konservieren & Haltbarmachen" },
+  { value: "kraeuter-heilpflanzen", label: "Kräuter & Heilpflanzen" },
+  { value: "nachhaltigkeit", label: "Nachhaltigkeit" },
+  { value: "wassersparen-bewaesserung", label: "Wassersparen & Bewässerung" },
+  { value: "diY-projekte", label: "DIY Projekte" },
+  { value: "gartengeraete-werkzeuge", label: "Gartengeräte & Werkzeuge" },
   { value: "ernte", label: "Ernte" },
+  { value: "lagerung-vorratshaltung", label: "Lagerung & Vorratshaltung" },
   { value: "selbstversorgung", label: "Selbstversorgung" },
-  { value: "alltag", label: "Alltag" },
+  { value: "permakultur", label: "Permakultur" },
+  { value: "urban-gardening", label: "Urban Gardening" },
+  { value: "balkon-terrasse", label: "Balkon & Terrasse" },
+  { value: "indoor-gardening", label: "Indoor Gardening" },
+  { value: "tipps-tricks", label: "Tipps & Tricks" },
+  { value: "jahreszeitliche-arbeiten", label: "Jahreszeitliche Arbeiten" },
+  { value: "bodenpflege", label: "Bodenpflege" },
   { value: "sonstiges", label: "Sonstiges" },
 ];
+
 const DIFFICULTY = [
   { value: "leicht", label: "Leicht" },
   { value: "mittel", label: "Mittel" },
   { value: "schwer", label: "Schwer" },
 ];
+
 const SEASONS = [
   { value: "frühling", label: "Frühling" },
   { value: "sommer", label: "Sommer" },
@@ -22,8 +41,11 @@ const SEASONS = [
   { value: "winter", label: "Winter" },
   { value: "ganzjährig", label: "Ganzjährig" },
 ];
+
 const TAG_OPTIONS = [
-  "Schnell", "Kinder", "Tipps", "DIY", "Low Budget", "Bio", "Natur", "Regional", "Saisonal", "Nachhaltig", "Praktisch", "Dekor", "Haushalt"
+  "Schnell", "Kinder", "Tipps", "DIY", "Low Budget", "Bio", "Natur", "Regional", "Saisonal", 
+  "Nachhaltig", "Praktisch", "Dekor", "Haushalt", "Anfänger", "Fortgeschritten", "Profi",
+  "Urban", "Balkon", "Indoor", "Outdoor", "Wassersparend", "Biologisch", "Permakultur"
 ];
 
 interface BlogMetaFormProps {
