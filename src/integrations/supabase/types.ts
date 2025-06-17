@@ -9,314 +9,923 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      blog_authors: {
+      automation_pipelines: {
         Row: {
-          avatar_url: string | null
-          created_at: string | null
+          config: Json | null
+          created_at: string
+          efficiency: number
           id: string
+          last_run_at: string | null
           name: string
-          short_bio: string | null
-          updated_at: string | null
+          stages: Json | null
+          status: string
+          throughput: number
+          type: string
+          updated_at: string
         }
         Insert: {
-          avatar_url?: string | null
-          created_at?: string | null
+          config?: Json | null
+          created_at?: string
+          efficiency?: number
           id?: string
+          last_run_at?: string | null
           name: string
-          short_bio?: string | null
-          updated_at?: string | null
+          stages?: Json | null
+          status?: string
+          throughput?: number
+          type: string
+          updated_at?: string
         }
         Update: {
-          avatar_url?: string | null
-          created_at?: string | null
+          config?: Json | null
+          created_at?: string
+          efficiency?: number
           id?: string
+          last_run_at?: string | null
           name?: string
-          short_bio?: string | null
-          updated_at?: string | null
+          stages?: Json | null
+          status?: string
+          throughput?: number
+          type?: string
+          updated_at?: string
         }
         Relationships: []
       }
-      blog_categories: {
+      blog_comments: {
         Row: {
-          color: string | null
-          created_at: string | null
-          description: string | null
+          blog_slug: string
+          content: string
+          created_at: string
           id: string
-          name: string
-          slug: string
-          updated_at: string | null
+          user_id: string
         }
         Insert: {
-          color?: string | null
-          created_at?: string | null
-          description?: string | null
+          blog_slug: string
+          content: string
+          created_at?: string
           id?: string
-          name: string
-          slug: string
-          updated_at?: string | null
+          user_id: string
         }
         Update: {
-          color?: string | null
-          created_at?: string | null
-          description?: string | null
+          blog_slug?: string
+          content?: string
+          created_at?: string
           id?: string
-          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      blog_post_versions: {
+        Row: {
+          audiences: string[] | null
+          author: string | null
+          blog_post_id: string
+          category: string | null
+          content: string | null
+          content_types: string[] | null
+          created_at: string
+          excerpt: string | null
+          featured: boolean | null
+          featured_image: string | null
+          id: string
+          og_image: string | null
+          published: boolean | null
+          reading_time: number | null
+          season: string | null
+          seo_description: string | null
+          seo_keywords: string[] | null
+          seo_title: string | null
+          slug: string
+          status: string | null
+          tags: string[] | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          audiences?: string[] | null
+          author?: string | null
+          blog_post_id: string
+          category?: string | null
+          content?: string | null
+          content_types?: string[] | null
+          created_at?: string
+          excerpt?: string | null
+          featured?: boolean | null
+          featured_image?: string | null
+          id?: string
+          og_image?: string | null
+          published?: boolean | null
+          reading_time?: number | null
+          season?: string | null
+          seo_description?: string | null
+          seo_keywords?: string[] | null
+          seo_title?: string | null
+          slug: string
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          audiences?: string[] | null
+          author?: string | null
+          blog_post_id?: string
+          category?: string | null
+          content?: string | null
+          content_types?: string[] | null
+          created_at?: string
+          excerpt?: string | null
+          featured?: boolean | null
+          featured_image?: string | null
+          id?: string
+          og_image?: string | null
+          published?: boolean | null
+          reading_time?: number | null
+          season?: string | null
+          seo_description?: string | null
+          seo_keywords?: string[] | null
+          seo_title?: string | null
           slug?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      blog_post_ratings: {
-        Row: {
-          created_at: string | null
-          id: string
-          post_id: string
-          rating: number
-          user_fingerprint: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          post_id: string
-          rating: number
-          user_fingerprint?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          post_id?: string
-          rating?: number
-          user_fingerprint?: string | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "blog_post_ratings_post_id_fkey"
-            columns: ["post_id"]
+            foreignKeyName: "blog_post_versions_blog_post_id_fkey"
+            columns: ["blog_post_id"]
             isOneToOne: false
             referencedRelation: "blog_posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      blog_post_tags: {
-        Row: {
-          post_id: string
-          tag_id: string
-        }
-        Insert: {
-          post_id: string
-          tag_id: string
-        }
-        Update: {
-          post_id?: string
-          tag_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "blog_post_tags_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "blog_posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "blog_post_tags_tag_id_fkey"
-            columns: ["tag_id"]
-            isOneToOne: false
-            referencedRelation: "blog_tags"
             referencedColumns: ["id"]
           },
         ]
       }
       blog_posts: {
         Row: {
-          author_id: string | null
-          category_id: string | null
-          comment_count: number | null
+          audiences: string[]
+          author: string
+          category: string
           content: string
-          costs: Json | null
-          cover_url: string | null
-          created_at: string | null
-          difficulty: number | null
-          effort_level: string | null
+          content_types: string[]
+          description: string | null
           excerpt: string
-          funding_available: string | null
-          gallery_urls: string[] | null
-          hero_image_url: string | null
+          featured: boolean
+          featured_image: string
           id: string
-          important_notice: string | null
-          is_featured: boolean | null
-          key_benefits: string[] | null
-          keywords: string[] | null
-          like_count: number | null
-          payback_time: string | null
-          published_at: string | null
-          read_time: number
-          savings_potential: string | null
-          scheduled_for: string | null
-          seo_description: string | null
-          seo_title: string | null
+          og_image: string | null
+          original_title: string | null
+          published: boolean
+          published_at: string
+          reading_time: number
+          seo_description: string
+          seo_keywords: string[]
+          seo_title: string
           slug: string
           status: string
-          table_of_contents: Json | null
+          structured_data: string | null
+          tags: string[]
           title: string
-          topic: string
-          topic_color: string
           updated_at: string | null
-          video_url: string | null
-          view_count: number | null
         }
         Insert: {
-          author_id?: string | null
-          category_id?: string | null
-          comment_count?: number | null
+          audiences?: string[]
+          author: string
+          category: string
           content: string
-          costs?: Json | null
-          cover_url?: string | null
-          created_at?: string | null
-          difficulty?: number | null
-          effort_level?: string | null
+          content_types?: string[]
+          description?: string | null
           excerpt: string
-          funding_available?: string | null
-          gallery_urls?: string[] | null
-          hero_image_url?: string | null
+          featured?: boolean
+          featured_image: string
           id?: string
-          important_notice?: string | null
-          is_featured?: boolean | null
-          key_benefits?: string[] | null
-          keywords?: string[] | null
-          like_count?: number | null
-          payback_time?: string | null
-          published_at?: string | null
-          read_time: number
-          savings_potential?: string | null
-          scheduled_for?: string | null
-          seo_description?: string | null
-          seo_title?: string | null
+          og_image?: string | null
+          original_title?: string | null
+          published?: boolean
+          published_at?: string
+          reading_time: number
+          seo_description: string
+          seo_keywords?: string[]
+          seo_title: string
           slug: string
           status?: string
-          table_of_contents?: Json | null
+          structured_data?: string | null
+          tags?: string[]
           title: string
-          topic: string
-          topic_color: string
           updated_at?: string | null
-          video_url?: string | null
-          view_count?: number | null
         }
         Update: {
-          author_id?: string | null
-          category_id?: string | null
-          comment_count?: number | null
+          audiences?: string[]
+          author?: string
+          category?: string
           content?: string
-          costs?: Json | null
-          cover_url?: string | null
-          created_at?: string | null
-          difficulty?: number | null
-          effort_level?: string | null
+          content_types?: string[]
+          description?: string | null
           excerpt?: string
-          funding_available?: string | null
-          gallery_urls?: string[] | null
-          hero_image_url?: string | null
+          featured?: boolean
+          featured_image?: string
           id?: string
-          important_notice?: string | null
-          is_featured?: boolean | null
-          key_benefits?: string[] | null
-          keywords?: string[] | null
-          like_count?: number | null
-          payback_time?: string | null
-          published_at?: string | null
-          read_time?: number
-          savings_potential?: string | null
-          scheduled_for?: string | null
-          seo_description?: string | null
-          seo_title?: string | null
+          og_image?: string | null
+          original_title?: string | null
+          published?: boolean
+          published_at?: string
+          reading_time?: number
+          seo_description?: string
+          seo_keywords?: string[]
+          seo_title?: string
           slug?: string
           status?: string
-          table_of_contents?: Json | null
+          structured_data?: string | null
+          tags?: string[]
           title?: string
-          topic?: string
-          topic_color?: string
           updated_at?: string | null
-          video_url?: string | null
-          view_count?: number | null
+        }
+        Relationships: []
+      }
+      blog_ratings: {
+        Row: {
+          blog_slug: string
+          created_at: string
+          id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          blog_slug: string
+          created_at?: string
+          id?: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          blog_slug?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      blog_topic_blacklist: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          topic: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          topic?: string
+        }
+        Relationships: []
+      }
+      blog_topic_history: {
+        Row: {
+          context: Json | null
+          generated_at: string
+          id: string
+          reason: string | null
+          slug: string
+          title: string
+          try_count: number | null
+          used_in_post: string | null
+        }
+        Insert: {
+          context?: Json | null
+          generated_at?: string
+          id?: string
+          reason?: string | null
+          slug: string
+          title: string
+          try_count?: number | null
+          used_in_post?: string | null
+        }
+        Update: {
+          context?: Json | null
+          generated_at?: string
+          id?: string
+          reason?: string | null
+          slug?: string
+          title?: string
+          try_count?: number | null
+          used_in_post?: string | null
+        }
+        Relationships: []
+      }
+      cron_jobs: {
+        Row: {
+          conditions: Json | null
+          created_at: string
+          created_by: string
+          cron_expression: string
+          dependencies: string[] | null
+          description: string | null
+          enabled: boolean
+          function_name: string
+          function_payload: Json | null
+          id: string
+          job_type: Database["public"]["Enums"]["job_type"]
+          last_run_at: string | null
+          name: string
+          next_run_at: string | null
+          retry_count: number
+          status: Database["public"]["Enums"]["cron_job_status"]
+          tags: string[] | null
+          timeout_seconds: number
+          updated_at: string
+        }
+        Insert: {
+          conditions?: Json | null
+          created_at?: string
+          created_by: string
+          cron_expression: string
+          dependencies?: string[] | null
+          description?: string | null
+          enabled?: boolean
+          function_name: string
+          function_payload?: Json | null
+          id?: string
+          job_type?: Database["public"]["Enums"]["job_type"]
+          last_run_at?: string | null
+          name: string
+          next_run_at?: string | null
+          retry_count?: number
+          status?: Database["public"]["Enums"]["cron_job_status"]
+          tags?: string[] | null
+          timeout_seconds?: number
+          updated_at?: string
+        }
+        Update: {
+          conditions?: Json | null
+          created_at?: string
+          created_by?: string
+          cron_expression?: string
+          dependencies?: string[] | null
+          description?: string | null
+          enabled?: boolean
+          function_name?: string
+          function_payload?: Json | null
+          id?: string
+          job_type?: Database["public"]["Enums"]["job_type"]
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          retry_count?: number
+          status?: Database["public"]["Enums"]["cron_job_status"]
+          tags?: string[] | null
+          timeout_seconds?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      job_execution_logs: {
+        Row: {
+          completed_at: string | null
+          cron_job_id: string
+          duration_ms: number | null
+          error_message: string | null
+          execution_id: string
+          id: string
+          output: Json | null
+          resource_usage: Json | null
+          retry_attempt: number
+          started_at: string
+          status: Database["public"]["Enums"]["job_execution_status"]
+          triggered_by: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          cron_job_id: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_id: string
+          id?: string
+          output?: Json | null
+          resource_usage?: Json | null
+          retry_attempt?: number
+          started_at?: string
+          status?: Database["public"]["Enums"]["job_execution_status"]
+          triggered_by?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          cron_job_id?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_id?: string
+          id?: string
+          output?: Json | null
+          resource_usage?: Json | null
+          retry_attempt?: number
+          started_at?: string
+          status?: Database["public"]["Enums"]["job_execution_status"]
+          triggered_by?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "blog_posts_author_id_fkey"
-            columns: ["author_id"]
+            foreignKeyName: "job_execution_logs_cron_job_id_fkey"
+            columns: ["cron_job_id"]
             isOneToOne: false
-            referencedRelation: "blog_authors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "blog_posts_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "blog_categories"
+            referencedRelation: "cron_jobs"
             referencedColumns: ["id"]
           },
         ]
       }
-      blog_tags: {
+      job_templates: {
         Row: {
-          created_at: string | null
+          category: string
+          created_at: string
+          created_by: string | null
+          default_cron_expression: string
+          default_payload: Json | null
+          description: string | null
+          function_name: string
           id: string
+          is_system_template: boolean
+          job_type: Database["public"]["Enums"]["job_type"]
           name: string
-          slug: string
+          tags: string[] | null
+          usage_count: number
         }
         Insert: {
-          created_at?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_cron_expression: string
+          default_payload?: Json | null
+          description?: string | null
+          function_name: string
           id?: string
+          is_system_template?: boolean
+          job_type: Database["public"]["Enums"]["job_type"]
           name: string
-          slug: string
+          tags?: string[] | null
+          usage_count?: number
         }
         Update: {
-          created_at?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          default_cron_expression?: string
+          default_payload?: Json | null
+          description?: string | null
+          function_name?: string
           id?: string
+          is_system_template?: boolean
+          job_type?: Database["public"]["Enums"]["job_type"]
           name?: string
-          slug?: string
+          tags?: string[] | null
+          usage_count?: number
         }
         Relationships: []
       }
-      newsletter_subscriptions: {
+      newsletter_subscribers: {
         Row: {
+          confirmation_token: string | null
+          confirmed: boolean
+          confirmed_at: string | null
           created_at: string
           email: string
           id: string
         }
         Insert: {
+          confirmation_token?: string | null
+          confirmed?: boolean
+          confirmed_at?: string | null
           created_at?: string
           email: string
           id?: string
         }
         Update: {
+          confirmation_token?: string | null
+          confirmed?: boolean
+          confirmed_at?: string | null
           created_at?: string
           email?: string
           id?: string
         }
         Relationships: []
       }
+      pipeline_config: {
+        Row: {
+          auto_publish: boolean
+          batch_size: number
+          created_at: string
+          id: string
+          quality_threshold: number
+          target_category: string
+          updated_at: string
+        }
+        Insert: {
+          auto_publish?: boolean
+          batch_size?: number
+          created_at?: string
+          id?: string
+          quality_threshold?: number
+          target_category?: string
+          updated_at?: string
+        }
+        Update: {
+          auto_publish?: boolean
+          batch_size?: number
+          created_at?: string
+          id?: string
+          quality_threshold?: number
+          target_category?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pipeline_executions: {
+        Row: {
+          completed_at: string | null
+          created_by: string | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          pipeline_id: string
+          results: Json | null
+          stages_progress: Json | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          pipeline_id: string
+          results?: Json | null
+          stages_progress?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_by?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          pipeline_id?: string
+          results?: Json | null
+          stages_progress?: Json | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_executions_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "automation_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
-          created_at: string | null
+          created_at: string
+          custom_role: string | null
+          description: string | null
+          display_name: string
           id: string
-          role: string | null
-          username: string | null
+          is_premium: boolean
         }
         Insert: {
           avatar_url?: string | null
-          created_at?: string | null
+          created_at?: string
+          custom_role?: string | null
+          description?: string | null
+          display_name: string
           id: string
-          role?: string | null
-          username?: string | null
+          is_premium?: boolean
         }
         Update: {
           avatar_url?: string | null
-          created_at?: string | null
+          created_at?: string
+          custom_role?: string | null
+          description?: string | null
+          display_name?: string
           id?: string
-          role?: string | null
-          username?: string | null
+          is_premium?: boolean
+        }
+        Relationships: []
+      }
+      recipe_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          recipe_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          recipe_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          recipe_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recipe_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          rating: number
+          recipe_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          rating: number
+          recipe_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          rating?: number
+          recipe_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recipe_versions: {
+        Row: {
+          author: string | null
+          category: string | null
+          cook_time_minutes: number | null
+          created_at: string
+          description: string | null
+          difficulty: string | null
+          id: string
+          image_url: string | null
+          ingredients: Json | null
+          instructions: Json | null
+          prep_time_minutes: number | null
+          recipe_id: string
+          season: string | null
+          servings: number | null
+          status: string | null
+          tags: string[] | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          cook_time_minutes?: number | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          image_url?: string | null
+          ingredients?: Json | null
+          instructions?: Json | null
+          prep_time_minutes?: number | null
+          recipe_id: string
+          season?: string | null
+          servings?: number | null
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          cook_time_minutes?: number | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          image_url?: string | null
+          ingredients?: Json | null
+          instructions?: Json | null
+          prep_time_minutes?: number | null
+          recipe_id?: string
+          season?: string | null
+          servings?: number | null
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_versions_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipes: {
+        Row: {
+          author: string | null
+          category: string | null
+          cook_time_minutes: number | null
+          created_at: string
+          description: string | null
+          difficulty: string | null
+          id: string
+          image_url: string | null
+          ingredients: Json | null
+          instructions: Json | null
+          prep_time_minutes: number | null
+          season: string | null
+          servings: number | null
+          slug: string
+          source_blog_slug: string | null
+          status: string
+          tags: string[] | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          author?: string | null
+          category?: string | null
+          cook_time_minutes?: number | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          image_url?: string | null
+          ingredients?: Json | null
+          instructions?: Json | null
+          prep_time_minutes?: number | null
+          season?: string | null
+          servings?: number | null
+          slug: string
+          source_blog_slug?: string | null
+          status?: string
+          tags?: string[] | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          author?: string | null
+          category?: string | null
+          cook_time_minutes?: number | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          id?: string
+          image_url?: string | null
+          ingredients?: Json | null
+          instructions?: Json | null
+          prep_time_minutes?: number | null
+          season?: string | null
+          servings?: number | null
+          slug?: string
+          source_blog_slug?: string | null
+          status?: string
+          tags?: string[] | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      saved_recipes: {
+        Row: {
+          created_at: string
+          id: string
+          recipe_slug: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          recipe_slug: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          recipe_slug?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scheduled_tasks: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          error_message: string | null
+          executed_at: string | null
+          function_name: string
+          function_payload: Json | null
+          id: string
+          name: string
+          priority: number
+          result: Json | null
+          scheduled_for: string
+          status: Database["public"]["Enums"]["job_execution_status"]
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          function_name: string
+          function_payload?: Json | null
+          id?: string
+          name: string
+          priority?: number
+          result?: Json | null
+          scheduled_for: string
+          status?: Database["public"]["Enums"]["job_execution_status"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          function_name?: string
+          function_payload?: Json | null
+          id?: string
+          name?: string
+          priority?: number
+          result?: Json | null
+          scheduled_for?: string
+          status?: Database["public"]["Enums"]["job_execution_status"]
+        }
+        Relationships: []
+      }
+      security_events: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown | null
+          severity: string
+          target_user_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown | null
+          severity?: string
+          target_user_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown | null
+          severity?: string
+          target_user_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -325,13 +934,39 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
+      log_security_event: {
+        Args: {
+          _event_type: string
+          _target_user_id?: string
+          _details?: Json
+          _severity?: string
+        }
         Returns: string
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      cron_job_status: "active" | "inactive" | "paused" | "error"
+      job_execution_status:
+        | "pending"
+        | "running"
+        | "completed"
+        | "failed"
+        | "cancelled"
+      job_type:
+        | "content_generation"
+        | "seo_optimization"
+        | "performance_analysis"
+        | "cleanup"
+        | "backup"
+        | "custom"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -446,6 +1081,24 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      cron_job_status: ["active", "inactive", "paused", "error"],
+      job_execution_status: [
+        "pending",
+        "running",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
+      job_type: [
+        "content_generation",
+        "seo_optimization",
+        "performance_analysis",
+        "cleanup",
+        "backup",
+        "custom",
+      ],
+    },
   },
 } as const
