@@ -11,6 +11,7 @@ import AutomatisierungView from "./views/AutomatisierungView";
 import ContentStrategyView from "./views/ContentStrategyView";
 import SecurityLogView from "./views/SecurityLogView";
 import BlogTestingView from "./views/BlogTestingView";
+import SystemDiagnosticsView from "./views/SystemDiagnosticsView";
 
 interface AdminContentProps {
   activeView: AdminView;
@@ -59,16 +60,7 @@ const AdminContent: React.FC<AdminContentProps> = ({
           />
         );
       case "blog-posts":
-        return (
-          <BlogPostsView
-            posts={blogPosts}
-            loading={loading}
-            error={error}
-            onToggleStatus={(id, status) => onToggleStatus(id, status, 'blog')}
-            onDelete={(id) => onDelete(id, 'blog')}
-            onEdit={onEditBlogPost}
-          />
-        );
+        return <BlogPostsView />;
       case "users":
         return (
           <UsersView
@@ -94,6 +86,8 @@ const AdminContent: React.FC<AdminContentProps> = ({
         return <SecurityLogView />;
       case "blog-testing":
         return <BlogTestingView testSlug={testSlug} />;
+      case "system-diagnostics":
+        return <SystemDiagnosticsView />;
       default:
         return <div>View nicht gefunden</div>;
     }

@@ -7,11 +7,11 @@ import AdminContent from "@/components/admin/AdminContent";
 import { useAdminData } from "@/hooks/useAdminData";
 import { useAdminActions } from "@/hooks/useAdminActions";
 import EditBlogPostModal from "@/components/admin/EditBlogPostModal";
-import { AdminBlogPost } from "@/types/admin";
+import { AdminBlogPost, AdminView } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
 
 const AdminDashboard: React.FC = () => {
-  const [activeView, setActiveView] = useState("content");
+  const [activeView, setActiveView] = useState<AdminView>("blog-posts");
   const [editingBlogPost, setEditingBlogPost] = useState<AdminBlogPost | null>(null);
   
   // Load admin data
@@ -25,7 +25,7 @@ const AdminDashboard: React.FC = () => {
     setBlogPosts,
     setUsers,
     loadData
-  } = useAdminData(activeView as any);
+  } = useAdminData(activeView);
 
   // Admin actions
   const {
@@ -64,7 +64,7 @@ const AdminDashboard: React.FC = () => {
   const renderView = () => {
     return (
       <AdminContent
-        activeView={activeView as any}
+        activeView={activeView}
         recipes={recipes}
         blogPosts={blogPosts}
         users={users}
