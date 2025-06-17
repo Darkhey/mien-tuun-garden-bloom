@@ -1,6 +1,7 @@
 
 import { contextAnalyzer, TrendData, ContentGap } from "./ContextAnalyzer";
 import { contentGenerationService } from "./ContentGenerationService";
+import { blogAnalyticsService, TrendKeyword } from "./BlogAnalyticsService";
 
 interface ContentStrategy {
   priority: number;
@@ -42,10 +43,17 @@ class ContentStrategyService {
     targetAudience?: string[];
   }): Promise<ContentStrategy[]> {
     console.log("[ContentStrategy] Generating strategy for", context);
-    
+
     const trends = contextAnalyzer.getCurrentTrends();
     const gaps = contextAnalyzer.analyzeContentGaps();
-    
+
+    const [posts, externalTrends] = await Promise.all([
+      blogAnalyticsService.fetchBlogPosts(),
+      blogAnalyticsService.fetchCurrentTrends()
+    ]);
+    const existingKeywords = blogAnalyticsService.extractKeywords(posts);
+    const keywordGaps = blogAnalyticsService.findKeywordGaps(externalTrends, existingKeywords);
+
     const strategies: ContentStrategy[] = [];
     
     // Saisonale Strategien
@@ -55,11 +63,15 @@ class ContentStrategyService {
     // Trend-basierte Strategien
     const trendStrategy = this.generateTrendBasedStrategy(trends);
     strategies.push(...trendStrategy);
-    
+
     // Gap-Analysis Strategien
     const gapStrategy = this.generateGapFillingStrategy(gaps);
     strategies.push(...gapStrategy);
-    
+
+    // Keyword-Gap Strategien basierend auf externen Trends
+    const kwGapStrategy = this.generateKeywordGapStrategy(keywordGaps);
+    strategies.push(...kwGapStrategy);
+
     return strategies.sort((a, b) => b.priority - a.priority);
   }
 
@@ -128,6 +140,21 @@ class ContentStrategyService {
       ],
       reasoning: gap.reason,
       urgency: gap.urgency > 0.8 ? 'high' : 'low'
+    }));
+  }
+
+  private generateKeywordGapStrategy(gaps: TrendKeyword[]): ContentStrategy[] {
+    return gaps.map(gap => ({
+      priority: gap.relevance * 120,
+      category: gap.category,
+      season: 'aktuell',
+      suggestedTopics: [
+        `${gap.keyword} Trends 2024`,
+        `${gap.keyword} Ideen`,
+        `${gap.keyword} richtig nutzen`
+      ],
+      reasoning: `Trend '${gap.keyword}' ist kaum abgedeckt`,
+      urgency: 'high'
     }));
   }
 

@@ -6,6 +6,7 @@ Diese Roadmap beschreibt geplante Erweiterungen und Meilensteine des Projekts.
 - Grundlegende Seitenstruktur aufbauen
 - Nutzer-Authentifizierung über Supabase integrieren
 - CI-Workflow für Linting und Tests einrichten
+- Trenddaten über OpenAI (Edge Function `fetch-current-trends`) abrufen
 
 ## Mittelfristig
 - Admin-Bereich für Inhalte
