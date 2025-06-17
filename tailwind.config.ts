@@ -1,5 +1,6 @@
 
 import type { Config } from "tailwindcss";
+import colors from "./src/theme/colors";
 
 export default {
 	darkMode: ["class"],
@@ -19,45 +20,12 @@ export default {
 			}
 		},
 		extend: {
-			colors: {
-				// Custom Theme Colors basierend auf site.config
-				earth: {
-					50: '#FEFCF8',
-					100: '#FDF9F1',
-					200: '#F9F1E6',
-					300: '#F2E6D0',
-					400: '#E6D1B0',
-					500: '#D4AF8C',
-					600: '#B8956F',
-					700: '#8B7355',
-					800: '#6B5642',
-					900: '#4A3C2F',
-				},
-				sage: {
-					50: '#F6F8F6',
-					100: '#EDF2ED',
-					200: '#D8E3D8',
-					300: '#B8C9B8',
-					400: '#A8B5A0',
-					500: '#8B9A8B',
-					600: '#6F7F6F',
-					700: '#556655',
-					800: '#3D4F3D',
-					900: '#2D3319',
-				},
-				accent: {
-					50: '#FDF9F3',
-					100: '#FAF0E4',
-					200: '#F4E0C6',
-					300: '#EBCB9F',
-					400: '#D4AF8C',
-					500: '#C19660',
-					600: '#A67B4A',
-					700: '#8B6439',
-					800: '#6F4F2B',
-					900: '#573E20',
-				},
-				cream: '#FEFCF8',
+                        colors: {
+                                // Custom Theme Colors basierend auf site.config
+                                earth: colors.earth,
+                                sage: colors.sage,
+                                accent: colors.accent,
+                                cream: colors.cream,
 				// Original shadcn colors
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

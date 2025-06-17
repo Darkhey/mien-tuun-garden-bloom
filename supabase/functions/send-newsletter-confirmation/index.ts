@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.6";
+import colors from "../../../src/theme/colors.ts";
 
 // Supabase Setup
 const supabase = createClient(
@@ -74,7 +75,7 @@ const handler = async (req: Request): Promise<Response> => {
       html: `
         <h2>Newsletter-Anmeldung bei ${SITE_NAME}</h2>
         <p>Bitte bestätige deine Anmeldung, indem du auf den folgenden Link klickst:</p>
-        <p><a href="${confirmUrl}" style="color:#19793a;font-weight:bold">Hier Anmeldung bestätigen</a></p>
+        <p><a href="${confirmUrl}" style="color:${colors.misc.emailLink};font-weight:bold">Hier Anmeldung bestätigen</a></p>
         <p>Falls du dich nicht angemeldet hast, ignoriere diese Nachricht einfach.</p>
       `,
     });

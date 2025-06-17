@@ -2,7 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
+/* Definition of the design system. All colors, gradients, fonts, etc should be
+   defined here. The values mirror src/theme/colors.ts so that the palette is
+   centrally managed. */
 
 @layer base {
   :root {
@@ -51,6 +53,10 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --vite-logo-shadow: #646cffaa;
+    --react-logo-shadow: #61dafbaa;
+    --card-text: #888;
+    --email-link: #19793a;
   }
 
   .dark {
