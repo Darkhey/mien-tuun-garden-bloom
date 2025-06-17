@@ -52,6 +52,8 @@ export interface SiteConfig {
   };
 }
 
+import colors from "@/theme/colors";
+
 export const siteConfig: SiteConfig = {
   name: "mien-tuun",
   title: "Mien Tuun - Garten, Küche & nachhaltiges Leben",
@@ -76,12 +78,12 @@ export const siteConfig: SiteConfig = {
   favicon: "/favicon.ico",
   
   theme: {
-    primaryColor: "#8B7355", // warmes braun
-    secondaryColor: "#A8B5A0", // salbeigrün  
-    accentColor: "#D4AF8C", // sanftes gold
-    backgroundColor: "#FEFCF8", // cremeweiß
-    textColor: "#2D3319", // dunkelgrün
-    mutedColor: "#8B9A8B", // gedämpftes grün
+    primaryColor: colors.earth[700], // warmes braun
+    secondaryColor: colors.sage[400], // salbeigrün
+    accentColor: colors.accent[400], // sanftes gold
+    backgroundColor: colors.cream, // cremeweiß
+    textColor: colors.sage[900], // dunkelgrün
+    mutedColor: colors.sage[500], // gedämpftes grün
   },
   
   social: {
