@@ -9,6 +9,7 @@ import { useAdminActions } from "@/hooks/useAdminActions";
 import EditBlogPostModal from "@/components/admin/EditBlogPostModal";
 import { AdminBlogPost, AdminView } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
+import { hasRole } from "@/utils/roles";
 
 const AdminDashboard: React.FC = () => {
   const [activeView, setActiveView] = useState<AdminView>("blog-posts");
@@ -36,19 +37,12 @@ const AdminDashboard: React.FC = () => {
   } = useAdminActions();
 
   // Check if user is admin
-  const { data: userRoles, isLoading } = useQuery({
-    queryKey: ["user-roles"],
+  const { data: isAdmin, isLoading } = useQuery({
+    queryKey: ["user-is-admin"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-      
-      if (error) throw error;
-      return data;
+      return hasRole(user.id, "admin");
     },
   });
 
@@ -56,7 +50,6 @@ const AdminDashboard: React.FC = () => {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
-  const isAdmin = userRoles?.some(role => role.role === "admin");
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }

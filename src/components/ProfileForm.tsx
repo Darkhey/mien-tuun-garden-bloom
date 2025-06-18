@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { hasRole } from "@/utils/roles";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,16 +20,6 @@ interface ProfileFormProps {
   onUpdate: (profile: any) => void;
 }
 
-// Hilfsfunktion: Prüfe Admin-Status (für Badge)
-async function isAdmin(userId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .eq("role", "admin")
-    .single();
-  return !!data;
-}
 
 const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
   const [form, setForm] = useState({
@@ -44,7 +35,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ profile, onUpdate }) => {
   const [avatarValid, setAvatarValid] = useState(true);
 
   useEffect(() => {
-    isAdmin(profile.id).then(setAdmin);
+    hasRole(profile.id, "admin").then(setAdmin);
   }, [profile.id]);
 
   // Sofortige Vorschau/Bildprüfung für Avatar-URL

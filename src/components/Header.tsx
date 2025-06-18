@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { siteConfig } from '@/config/site.config';
 import { Menu, X, Flower, Search, LogOut, Shield } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
+import { hasRole } from "@/utils/roles";
 import AuthDialog from "@/components/AuthDialog";
 
 const Header: React.FC = () => {
@@ -24,13 +25,8 @@ const Header: React.FC = () => {
   useEffect(() => {
     const checkAdmin = async () => {
       if (session?.user) {
-        const { data } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "admin")
-          .single();
-        setIsAdmin(!!data);
+        const isAdmin = await hasRole(session.user.id, "admin");
+        setIsAdmin(isAdmin);
       } else {
         setIsAdmin(false);
       }

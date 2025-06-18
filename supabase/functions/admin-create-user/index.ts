@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isAdmin } from '../_shared/roles.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,14 +35,9 @@ serve(async (req) => {
     }
 
     // Check if user has admin role
-    const { data: userRoles, error: roleError } = await supabaseClient
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('role', 'admin')
-      .single()
+    const isAdminUser = await isAdmin(supabaseClient, user.id)
 
-    if (roleError || !userRoles) {
+    if (!isAdminUser) {
       console.log('[admin-create-user] User is not admin:', user.id)
       return new Response(JSON.stringify({ error: 'Access denied - Admin role required' }), {
         status: 403,

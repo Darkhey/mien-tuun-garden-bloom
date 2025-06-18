@@ -23,6 +23,7 @@ import LoginPage from "./pages/LoginPage";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { hasRole } from "@/utils/roles";
 
 const queryClient = new QueryClient();
 
@@ -40,14 +41,9 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       const userId = sessionData.session.user.id;
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("role", "admin")
-        .single();
-      if (isMounted) setIsAllowed(!!data);
-      if (!data) navigate("/profil");
+      const isAdmin = await hasRole(userId, "admin");
+      if (isMounted) setIsAllowed(isAdmin);
+      if (!isAdmin) navigate("/profil");
     };
     check();
     return () => { isMounted = false };
