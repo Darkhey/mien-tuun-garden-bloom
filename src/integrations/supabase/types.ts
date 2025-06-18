@@ -168,7 +168,6 @@ export type Database = {
           category: string
           content: string
           content_types: string[]
-          season: string | null
           description: string | null
           excerpt: string
           featured: boolean
@@ -179,6 +178,7 @@ export type Database = {
           published: boolean
           published_at: string
           reading_time: number
+          season: string | null
           seo_description: string
           seo_keywords: string[]
           seo_title: string
@@ -188,6 +188,7 @@ export type Database = {
           tags: string[]
           title: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           audiences?: string[]
@@ -195,7 +196,6 @@ export type Database = {
           category: string
           content: string
           content_types?: string[]
-          season?: string | null
           description?: string | null
           excerpt: string
           featured?: boolean
@@ -206,6 +206,7 @@ export type Database = {
           published?: boolean
           published_at?: string
           reading_time: number
+          season?: string | null
           seo_description: string
           seo_keywords?: string[]
           seo_title: string
@@ -215,6 +216,7 @@ export type Database = {
           tags?: string[]
           title: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           audiences?: string[]
@@ -222,7 +224,6 @@ export type Database = {
           category?: string
           content?: string
           content_types?: string[]
-          season?: string | null
           description?: string | null
           excerpt?: string
           featured?: boolean
@@ -233,6 +234,7 @@ export type Database = {
           published?: boolean
           published_at?: string
           reading_time?: number
+          season?: string | null
           seo_description?: string
           seo_keywords?: string[]
           seo_title?: string
@@ -242,6 +244,7 @@ export type Database = {
           tags?: string[]
           title?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

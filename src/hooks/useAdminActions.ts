@@ -45,7 +45,7 @@ export const useAdminActions = () => {
     setUsers: (users: AdminUser[]) => void
   ) => {
     try {
-      // Log security event first
+      // Log security event first mit der vorhandenen Funktion
       await supabase.rpc('log_security_event', {
         _event_type: 'user_deleted',
         _target_user_id: userId,
@@ -71,6 +71,24 @@ export const useAdminActions = () => {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const logVersionChange = async (itemId: string, itemType: 'recipe' | 'blog', oldStatus: string, newStatus: string) => {
+    try {
+      await supabase.rpc('log_security_event', {
+        _event_type: `${itemType}_status_changed`,
+        _target_user_id: null,
+        _details: { 
+          item_id: itemId, 
+          old_status: oldStatus, 
+          new_status: newStatus,
+          changed_by: 'admin'
+        },
+        _severity: 'medium'
+      });
+    } catch (error) {
+      console.warn('Sicherheitsereignis konnte nicht protokolliert werden:', error);
     }
   };
 
@@ -102,7 +120,7 @@ export const useAdminActions = () => {
         if (type === 'recipe') {
           const versionData = {
             recipe_id: current.id,
-            user_id: user.data.user?.id || current.user_id || '',
+            user_id: user.data.user?.id || current.user_id || null,
             title: current.title,
             image_url: current.image_url,
             description: current.description,
@@ -122,7 +140,7 @@ export const useAdminActions = () => {
         } else {
           const versionData = {
             blog_post_id: current.id,
-            user_id: user.data.user?.id || '',
+            user_id: user.data.user?.id || null,
             title: current.title,
             slug: current.slug,
             content: current.content,
@@ -153,6 +171,9 @@ export const useAdminActions = () => {
         .eq('id', id);
 
       if (error) throw error;
+
+      // Log das Sicherheitsereignis
+      await logVersionChange(id, type, currentStatus, newStatus);
 
       if (type === 'recipe') {
         setRecipes(recipes.map(recipe => 
@@ -210,7 +231,7 @@ export const useAdminActions = () => {
         if (type === 'recipe') {
           const versionData = {
             recipe_id: current.id,
-            user_id: user.data.user?.id || current.user_id || '',
+            user_id: user.data.user?.id || current.user_id || null,
             title: current.title,
             image_url: current.image_url,
             description: current.description,
@@ -230,7 +251,7 @@ export const useAdminActions = () => {
         } else {
           const versionData = {
             blog_post_id: current.id,
-            user_id: user.data.user?.id || '',
+            user_id: user.data.user?.id || null,
             title: current.title,
             slug: current.slug,
             content: current.content,
@@ -254,6 +275,18 @@ export const useAdminActions = () => {
           await supabase.from(versionTable).insert([versionData]);
         }
       }
+
+      // Log das Löschereignis
+      await supabase.rpc('log_security_event', {
+        _event_type: `${type}_deleted`,
+        _target_user_id: null,
+        _details: { 
+          item_id: id, 
+          title: current?.title || 'Unbekannt',
+          deleted_by: 'admin'
+        },
+        _severity: 'high'
+      });
 
       const { error } = await supabase
         .from(table)

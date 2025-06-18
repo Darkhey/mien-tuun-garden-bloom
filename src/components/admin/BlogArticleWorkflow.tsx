@@ -1,10 +1,11 @@
+
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import BlogPromptEditor from "./BlogPromptEditor";
 import EnhancedBlogArticleEditor from "./EnhancedBlogArticleEditor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { generateUniqueSlug, sanitizeContent } from "@/utils/slugHelpers";
+import { generateUniqueSlug, sanitizeContent, validateBlogPostData } from "@/utils/slugHelpers";
 
 interface BlogArticleWorkflowProps {
   suggestionSelections: string[];
@@ -22,7 +23,6 @@ interface BlogArticleWorkflowProps {
   setEditing: (e: string) => void;
   generated: string | null;
   setGenerated: (g: string | null) => void;
-
   category: string;
   season: string;
   audiences: string[];
@@ -53,8 +53,17 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
     
     try {
       // Validierung der Eingabedaten
-      if (!title || !content) {
-        throw new Error('Titel und Inhalt sind erforderlich');
+      const articleData = {
+        title: title || suggestion,
+        content,
+        excerpt,
+        category: category || "Allgemein",
+        season: season || "ganzjährig"
+      };
+
+      const validation = validateBlogPostData(articleData);
+      if (!validation.isValid) {
+        throw new Error(`Validierungsfehler: ${validation.errors.join(', ')}`);
       }
 
       // Sichere Content-Sanitization
@@ -81,7 +90,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
         excerpt: excerpt || sanitizedContent.slice(0, 200).replace(/<[^>]*>/g, ''),
         description: excerpt || sanitizedContent.slice(0, 300).replace(/<[^>]*>/g, ''),
         category: category || "Allgemein",
-        season: season || "ganzjährig", // Jetzt in blog_posts gespeichert
+        season: season || "ganzjährig",
         tags: tags.length ? tags : [],
         content_types: contentType.length ? contentType : ["blog"],
         audiences: audiences.length ? audiences : ["anfaenger"],
@@ -116,7 +125,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
         throw new Error(`Blog-Post Speicher-Fehler: ${blogPostError.message}`);
       }
 
-      // Version für Tracking speichern
+      // Version für Tracking speichern - mit updated_at Trigger
       console.log('[BlogWorkflow] Sende Insert-Request an Supabase (Version)...');
       const version = {
         blog_post_id: blogPost.id,
@@ -138,6 +147,24 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       } else {
         console.log('[BlogWorkflow] Version erfolgreich gespeichert:', data);
         setDebugLogs(prev => [...prev, `[SUCCESS] Version gespeichert mit ID: ${data.id}`]);
+      }
+
+      // Sicherheitsereignis protokollieren
+      try {
+        await supabase.rpc('log_security_event', {
+          _event_type: 'blog_post_created',
+          _target_user_id: null,
+          _details: { 
+            blog_post_id: blogPost.id, 
+            title: sanitizedTitle,
+            slug: slug,
+            created_via: 'ki_workflow'
+          },
+          _severity: 'low'
+        });
+        console.log('[BlogWorkflow] Sicherheitsereignis protokolliert');
+      } catch (securityError) {
+        console.warn('[BlogWorkflow] Sicherheitsereignis konnte nicht protokolliert werden:', securityError);
       }
       
       // Update Status in Enhanced Articles
