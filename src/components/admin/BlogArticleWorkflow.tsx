@@ -124,12 +124,30 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
         throw new Error(`Blog-Post Speicher-Fehler: ${blogPostError.message}`);
       }
 
-      // Version für Tracking speichern - mit updated_at Trigger
+      // Version für Tracking speichern - nur mit Feldern die in blog_post_versions existieren
       console.log('[BlogWorkflow] Sende Insert-Request an Supabase (Version)...');
       const version = {
         blog_post_id: blogPost.id,
         user_id: currentUserId,
-        ...article
+        slug: article.slug,
+        title: article.title,
+        content: article.content,
+        excerpt: article.excerpt,
+        category: article.category,
+        season: article.season,
+        tags: article.tags,
+        content_types: article.content_types,
+        audiences: article.audiences,
+        featured_image: article.featured_image,
+        og_image: article.og_image,
+        seo_description: article.seo_description,
+        seo_title: article.seo_title,
+        seo_keywords: article.seo_keywords,
+        published: article.published,
+        featured: article.featured,
+        reading_time: article.reading_time,
+        author: article.author,
+        status: article.status
       };
       
       const { data, error } = await supabase
