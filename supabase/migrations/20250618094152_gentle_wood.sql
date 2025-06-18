@@ -41,9 +41,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_content_automation_configs_updated_at
-BEFORE UPDATE ON content_automation_configs
-FOR EACH ROW
-EXECUTE FUNCTION update_content_automation_configs_updated_at();
+  BEFORE UPDATE ON content_automation_configs
+  FOR EACH ROW EXECUTE FUNCTION update_content_automation_configs_updated_at();
 
 -- Add RLS policies
 ALTER TABLE content_automation_configs ENABLE ROW LEVEL SECURITY;
