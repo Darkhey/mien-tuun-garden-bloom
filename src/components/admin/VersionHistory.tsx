@@ -25,7 +25,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ type, itemId }) => {
       } else {
         const result = await supabase
           .from("blog_post_versions")
-          .select("id, created_at, title, status, slug")
+          .select("id, created_at, title, status, slug, author, category, excerpt, featured, published, reading_time, season")
           .eq("blog_post_id", itemId)
           .order("created_at", { ascending: false });
         data = result.data;
