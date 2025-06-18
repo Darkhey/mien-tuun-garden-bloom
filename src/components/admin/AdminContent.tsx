@@ -1,4 +1,3 @@
-
 import React from "react";
 import { AdminView, AdminRecipe, AdminBlogPost, AdminUser } from "@/types/admin";
 import RecipesView from "./views/RecipesView";
@@ -12,6 +11,7 @@ import ContentStrategyView from "./views/ContentStrategyView";
 import SecurityLogView from "./views/SecurityLogView";
 import BlogTestingView from "./views/BlogTestingView";
 import SystemDiagnosticsView from "./views/SystemDiagnosticsView";
+import ScheduledJobsView from "./views/ScheduledJobsView";
 
 interface AdminContentProps {
   activeView: AdminView;
@@ -84,6 +84,8 @@ const AdminContent: React.FC<AdminContentProps> = ({
         return <AutomatisierungView />;
       case "sowing-calendar":
         return <SowingCalendarView />;
+      case "scheduled-jobs":
+        return <ScheduledJobsView />;
       case "security-log":
         return <SecurityLogView />;
       case "blog-testing":

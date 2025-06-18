@@ -1,4 +1,3 @@
-
 import { 
   Settings, 
   FileText, 
@@ -10,7 +9,8 @@ import {
   BarChart3, 
   Brain,
   TestTube,
-  Activity
+  Activity,
+  Clock
 } from "lucide-react";
 
 export interface AdminMenuItem {
@@ -93,6 +93,13 @@ export const adminMenuItems: AdminMenuItem[] = [
         icon: Calendar,
         path: "/admin/sowing-calendar",
         description: "Verwalte Aussaatzeiten"
+      },
+      {
+        id: "scheduled-jobs",
+        label: "Geplante Jobs",
+        icon: Clock,
+        path: "/admin/scheduled-jobs",
+        description: "Automatisierte Eintragsgeneration"
       },
       {
         id: "blog-testing",

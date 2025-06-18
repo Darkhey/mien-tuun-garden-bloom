@@ -15,7 +15,8 @@ export type AdminView =
   | "blog-testing"
   | "system-diagnostics"
   | "ki-recipe-creator"
-  | "ki-blog-creator";
+  | "ki-blog-creator"
+  | "scheduled-jobs";
 
 export interface AdminMenuItem {
   key: AdminView;
