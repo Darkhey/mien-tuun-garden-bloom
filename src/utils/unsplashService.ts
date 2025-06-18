@@ -47,7 +47,16 @@ export async function searchUnsplashImages(
     });
 
     if (result.errors) {
-      console.error('Unsplash API error:', result.errors);
+      // Check if it's just "No photos found" - this is not a critical error
+      const isNoPhotosFound = result.errors.some(error => 
+        typeof error === 'string' && error.includes('No photos found')
+      );
+      
+      if (isNoPhotosFound) {
+        console.warn('Unsplash API: No photos found for query:', query);
+      } else {
+        console.error('Unsplash API error:', result.errors);
+      }
       return getFallbackImages(query);
     }
 
@@ -77,7 +86,16 @@ export async function getRandomUnsplashImage(query: string): Promise<UnsplashIma
     });
 
     if (result.errors) {
-      console.error('Unsplash API error:', result.errors);
+      // Check if it's just "No photos found" - this is not a critical error
+      const isNoPhotosFound = result.errors.some(error => 
+        typeof error === 'string' && error.includes('No photos found')
+      );
+      
+      if (isNoPhotosFound) {
+        console.warn('Unsplash API: No photos found for query:', query);
+      } else {
+        console.error('Unsplash API error:', result.errors);
+      }
       const fallbacks = getFallbackImages(query);
       return fallbacks.length > 0 ? fallbacks[0] : null;
     }
