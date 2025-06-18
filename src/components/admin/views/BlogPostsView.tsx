@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Edit, Trash2, Eye, EyeOff, Loader2, RefreshCw } from "lucide-react";
 import { AdminBlogPost } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -140,6 +139,7 @@ const BlogPostsView: React.FC = () => {
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold">Blog-Artikel ({posts.length})</h2>
           <Button onClick={loadBlogPosts} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
             Aktualisieren
           </Button>
         </div>
@@ -166,7 +166,7 @@ const BlogPostsView: React.FC = () => {
                     variant={post.status === "veröffentlicht" ? "default" : "outline"}
                     onClick={() => handleToggleStatus(post.id, post.status)}
                   >
-                    {post.status === "veröffentlicht" ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    {post.status === "veröffentlicht" ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
                     {post.status}
                   </Button>
                 </TableCell>

@@ -1,9 +1,15 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export const generateUniqueSlug = async (title: string): Promise<string> => {
   const baseSlug = title
     .toLowerCase()
+    .replace(/[äöüÄÖÜ]/g, match => {
+      return {
+        'ä': 'ae', 'ö': 'oe', 'ü': 'ue',
+        'Ä': 'Ae', 'Ö': 'Oe', 'Ü': 'Ue'
+      }[match] || match;
+    })
+    .replace(/ß/g, 'ss')
     .replace(/[^a-z0-9\s-]/g, '') // Entferne Sonderzeichen
     .replace(/\s+/g, '-') // Ersetze Leerzeichen durch Bindestriche
     .replace(/-+/g, '-') // Entferne mehrfache Bindestriche

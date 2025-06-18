@@ -72,6 +72,81 @@ const KIBlogCreator: React.FC = () => {
   ) => {
     try {
       console.log("Speichere Enhanced Artikel:", { title, quality: quality.score });
+      
+      // Generiere einen eindeutigen Slug
+      const baseSlug = title
+        .toLowerCase()
+        .replace(/ä/g, 'ae')
+        .replace(/ö/g, 'oe')
+        .replace(/ü/g, 'ue')
+        .replace(/ß/g, 'ss')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      
+      const slug = `${baseSlug}-${Date.now()}`;
+      
+      // User Authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.warn('Auth-Fehler:', authError);
+      }
+      
+      const currentUserId = user?.id || null;
+      
+      // Bereite Artikel-Daten vor
+      const article = {
+        slug,
+        title,
+        content,
+        excerpt: excerpt || content.slice(0, 200).replace(/<[^>]*>/g, ''),
+        description: excerpt || content.slice(0, 300).replace(/<[^>]*>/g, ''),
+        category: category || "Allgemein",
+        season: season || "ganzjährig",
+        tags: tags.length ? tags : [],
+        content_types: contentType.length ? contentType : ["blog"],
+        audiences: audiences.length ? audiences : ["anfaenger"],
+        featured_image: imageUrl || "",
+        og_image: imageUrl || "",
+        original_title: title,
+        seo_description: excerpt || content.slice(0, 156).replace(/<[^>]*>/g, ''),
+        seo_title: title,
+        seo_keywords: tags.length ? tags : [],
+        published: false,
+        featured: quality?.score > 90,
+        reading_time: Math.ceil(content.split(/\s+/).length / 160),
+        author: "KI-Enhanced Pipeline",
+        status: "entwurf",
+        user_id: currentUserId
+      };
+      
+      // Blog-Post in Haupttabelle anlegen
+      const { data: blogPost, error: blogPostError } = await supabase
+        .from('blog_posts')
+        .insert([article])
+        .select()
+        .single();
+      
+      if (blogPostError) {
+        throw new Error(`Blog-Post Speicher-Fehler: ${blogPostError.message}`);
+      }
+      
+      // Version für Tracking speichern
+      const version = {
+        blog_post_id: blogPost.id,
+        user_id: currentUserId,
+        ...article
+      };
+      
+      const { error } = await supabase
+        .from('blog_post_versions')
+        .insert([version]);
+      
+      if (error) {
+        console.warn('Version konnte nicht gespeichert werden:', error);
+      }
+      
       toast({
         title: "Enhanced Artikel gespeichert!",
         description: `"${title}" wurde mit Quality Score ${quality.score} gespeichert.`,
