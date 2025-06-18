@@ -43,11 +43,20 @@ interface RecommendedAction {
   dependencies: string[];
 }
 
+interface BestPractice {
+  id: string;
+  relatedIssue?: string;
+  title: string;
+  description: string;
+  fix: string;
+}
+
 class SystemPerformanceAnalyzer {
   private metrics: SystemMetrics[] = [];
   private aiMetrics: AIInteractionMetrics[] = [];
   private issues: DiagnosticIssue[] = [];
   private actions: RecommendedAction[] = [];
+  private bestPractices: BestPractice[] = [];
 
   async collectSystemLogs(): Promise<any[]> {
     console.log("[SystemAnalyzer] Collecting system logs...");
@@ -401,11 +410,59 @@ class SystemPerformanceAnalyzer {
     return actions;
   }
 
+  private generateBestPractices(systemHealth: any, issues: DiagnosticIssue[]): BestPractice[] {
+    const practices: BestPractice[] = [];
+
+    if (issues.find(i => i.id === 'high_error_rate')) {
+      practices.push({
+        id: 'bp_high_error_rate',
+        relatedIssue: 'high_error_rate',
+        title: 'Fehlerquote reduzieren',
+        description: 'Die Fehlerrate liegt über dem definierten Schwellenwert.',
+        fix: 'API-Schlüssel prüfen, Retry-Logik implementieren und Logs analysieren.'
+      });
+    }
+
+    if (issues.find(i => i.id === 'slow_ai_responses')) {
+      practices.push({
+        id: 'bp_slow_ai',
+        relatedIssue: 'slow_ai_responses',
+        title: 'Lange Antwortzeiten optimieren',
+        description: 'AI-Antworten dauern teilweise über 10 Sekunden.',
+        fix: 'Caching nutzen, Prompts optimieren und ggf. Modell wechseln.'
+      });
+    }
+
+    const dbStatus = systemHealth.components.find((c: any) => c.component === 'Database');
+    if (dbStatus && dbStatus.status !== 'healthy') {
+      practices.push({
+        id: 'bp_database_health',
+        title: 'Datenbank Performance verbessern',
+        description: 'Die Datenbank meldet Warnungen oder Fehler.',
+        fix: 'Queries optimieren und Indizes prüfen.'
+      });
+    }
+
+    const funcStatus = systemHealth.components.find((c: any) => c.component === 'Edge Functions');
+    if (funcStatus && funcStatus.status !== 'healthy') {
+      practices.push({
+        id: 'bp_edge_functions',
+        title: 'Edge Functions stabilisieren',
+        description: 'Fehlerhafte oder langsame Edge Functions erkannt.',
+        fix: 'Logs prüfen, Timeouts verringern und Ressourcen überwachen.'
+      });
+    }
+
+    this.bestPractices = practices;
+    return practices;
+  }
+
   async generateDiagnosticReport(): Promise<{
     summary: any;
     systemHealth: any;
     issues: DiagnosticIssue[];
     recommendations: RecommendedAction[];
+    bestPractices: BestPractice[];
     metrics: any;
   }> {
     console.log("[SystemAnalyzer] Generating comprehensive diagnostic report...");
@@ -416,6 +473,7 @@ class SystemPerformanceAnalyzer {
     const systemHealth = await this.performSystemHealthCheck();
     const issues = this.identifyIssues();
     const recommendations = this.generateRecommendations();
+    const bestPractices = this.generateBestPractices(systemHealth, issues);
     
     // Berechne Metriken
     const metrics = this.calculatePerformanceMetrics();
@@ -437,6 +495,7 @@ class SystemPerformanceAnalyzer {
       systemHealth,
       issues,
       recommendations,
+      bestPractices,
       metrics
     };
   }
@@ -473,7 +532,7 @@ class SystemPerformanceAnalyzer {
   }
 
   private formatMarkdownReport(report: any): string {
-    const { summary, systemHealth, issues, recommendations } = report;
+    const { summary, systemHealth, issues, recommendations, bestPractices } = report;
     
     return `
 # KI-System Performance Analyse Report
@@ -515,6 +574,14 @@ ${recommendations.map(action => `
 - **Aufwand:** ${action.estimatedEffort}
 - **Erwarteter Impact:** ${action.expectedImpact}
 - **Abhängigkeiten:** ${action.dependencies.join(', ') || 'Keine'}
+`).join('\n')}
+
+## ✅ Best Practices
+
+${bestPractices.map(bp => `
+### ${bp.title}
+- **Beschreibung:** ${bp.description}
+- **Empfohlene Lösung:** ${bp.fix}
 `).join('\n')}
 
 ---
