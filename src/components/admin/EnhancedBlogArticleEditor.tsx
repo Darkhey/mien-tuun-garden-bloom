@@ -1,14 +1,14 @@
-
 import React, { useState, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, RefreshCw, Save, Eye, TrendingUp, Target, Zap } from "lucide-react";
+import { Loader2, RefreshCw, Save, Eye, TrendingUp, Target, Zap, Clock } from "lucide-react";
 import ContentQualityIndicator from "./ContentQualityIndicator";
 import { contentGenerationService, GeneratedContent } from "@/services/ContentGenerationService";
 import { contextAnalyzer, TrendData } from "@/services/ContextAnalyzer";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface EnhancedBlogArticleEditorProps {
   initialPrompt: string;
@@ -42,6 +42,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [optimizedPrompt, setOptimizedPrompt] = useState("");
   const [currentTrends, setCurrentTrends] = useState<TrendData[]>([]);
+  const [readingTime, setReadingTime] = useState<string>("5");
 
   // Trend-Analyse und Prompt-Optimierung beim Laden
   useEffect(() => {
@@ -62,8 +63,16 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
     try {
       console.log("[EnhancedEditor] Generating content with enhanced service");
       
+      // Calculate target word count based on reading time
+      const targetWordCount = parseInt(readingTime) * 250; // ~250 words per minute
+      
       const result = await contentGenerationService.generateBlogPost({
-        prompt: optimizedPrompt || initialPrompt,
+        prompt: `${optimizedPrompt || initialPrompt}. Erstelle einen Artikel mit ca. ${targetWordCount} Wörtern (${readingTime} Minuten Lesezeit). Verwende eine klare Struktur mit: 
+        - Prägnanter Hauptüberschrift (H1)
+        - Übersichtlichem Inhaltsverzeichnis in Aufzählungsform direkt nach der Einleitung
+        - Logisch gegliederten Zwischenüberschriften (H2, H3)
+        - Kurzen, scanfähigen Absätzen
+        - Relevanten Aufzählungen und Hervorhebungen`,
         category,
         season,
         audiences,
@@ -95,8 +104,16 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
   const handleRegenerate = async () => {
     setRegenerating(true);
     try {
+      // Calculate target word count based on reading time
+      const targetWordCount = parseInt(readingTime) * 250; // ~250 words per minute
+      
       const result = await contentGenerationService.generateBlogPost({
-        prompt: optimizedPrompt + " (Neue Variante)",
+        prompt: `${optimizedPrompt || initialPrompt} (Neue Variante). Erstelle einen Artikel mit ca. ${targetWordCount} Wörtern (${readingTime} Minuten Lesezeit). Verwende eine klare Struktur mit: 
+        - Prägnanter Hauptüberschrift (H1)
+        - Übersichtlichem Inhaltsverzeichnis in Aufzählungsform direkt nach der Einleitung
+        - Logisch gegliederten Zwischenüberschriften (H2, H3)
+        - Kurzen, scanfähigen Absätzen
+        - Relevanten Aufzählungen und Hervorhebungen`,
         category,
         season,
         audiences,
@@ -127,6 +144,25 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Reading Time Selector */}
+      <div className="flex items-center gap-2 mb-4">
+        <Clock className="h-5 w-5 text-sage-600" />
+        <span className="font-medium">Gewünschte Lesezeit:</span>
+        <Select value={readingTime} onValueChange={setReadingTime}>
+          <SelectTrigger className="w-32">
+            <SelectValue placeholder="Lesezeit" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="3">3 Minuten</SelectItem>
+            <SelectItem value="5">5 Minuten</SelectItem>
+            <SelectItem value="10">10 Minuten</SelectItem>
+          </SelectContent>
+        </Select>
+        <span className="text-sm text-sage-600">
+          (ca. {parseInt(readingTime) * 250} Wörter)
+        </span>
+      </div>
+
       {/* Trend-Insights */}
       {currentTrends.length > 0 && (
         <Card>
@@ -259,4 +295,3 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
 };
 
 export default EnhancedBlogArticleEditor;
-

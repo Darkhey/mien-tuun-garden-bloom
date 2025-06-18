@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ContentGenerationOptions {
@@ -126,7 +125,8 @@ class ContentGenerationService {
       options.excerpt ? `Kurzbeschreibung: ${options.excerpt}` : "",
       options.imageUrl ? `Referenz-Bild: ${options.imageUrl}` : "",
       "Schreibstil: Informativ, praxisnah und inspirierend für Hobbygärtner und Selbstversorger.",
-      "Zielgruppe: Deutsche Hobbygärtner, Selbstversorger und nachhaltigkeit-interessierte Menschen."
+      "Zielgruppe: Deutsche Hobbygärtner, Selbstversorger und nachhaltigkeit-interessierte Menschen.",
+      "Struktur: Verwende eine klare Struktur mit H1-Hauptüberschrift, Inhaltsverzeichnis nach der Einleitung, H2/H3-Zwischenüberschriften, kurzen Absätzen und relevanten Aufzählungen."
     ];
     
     return contextParts.filter(Boolean).join(" ");

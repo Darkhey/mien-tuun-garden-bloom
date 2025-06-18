@@ -11,10 +11,10 @@ import {
   AlertTriangle,
   ThumbsUp
 } from "lucide-react";
-import { ContentAutomationStats as StatsType } from "@/services/ContentAutomationService";
+import { ContentAutomationStatsType } from "@/services/ContentAutomationService";
 
 interface ContentAutomationStatsProps {
-  stats: StatsType;
+  stats: ContentAutomationStatsType;
   className?: string;
 }
 

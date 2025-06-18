@@ -10,7 +10,7 @@ export interface ContentAutomationConfig {
   created_at?: string;
   updated_at?: string;
   created_by?: string;
-  stats?: ContentAutomationStats;
+  stats?: ContentAutomationStatsType;
 }
 
 export interface ContentAutomationLog {
@@ -22,7 +22,7 @@ export interface ContentAutomationLog {
   created_at?: string;
 }
 
-export interface ContentAutomationStats {
+export interface ContentAutomationStatsType {
   total_content_created: number;
   success_rate: number;
   avg_quality_score: number;
@@ -306,7 +306,7 @@ class ContentAutomationService {
   /**
    * Get statistics for a configuration
    */
-  async getConfigurationStats(configId: string): Promise<ContentAutomationStats> {
+  async getConfigurationStats(configId: string): Promise<ContentAutomationStatsType> {
     try {
       // Get content created by this configuration
       const { data: contentData, error: contentError } = await supabase
@@ -473,7 +473,7 @@ class ContentAutomationService {
   /**
    * Get motivational messages based on stats
    */
-  getMotivationalMessage(stats: ContentAutomationStats): string {
+  getMotivationalMessage(stats: ContentAutomationStatsType): string {
     if (stats.total_content_created === 0) {
       return "Starte jetzt mit deiner ersten automatisierten Content-Erstellung! 🚀";
     }
@@ -496,7 +496,7 @@ class ContentAutomationService {
   /**
    * Get improvement suggestions based on stats
    */
-  getImprovementSuggestions(stats: ContentAutomationStats): string[] {
+  getImprovementSuggestions(stats: ContentAutomationStatsType): string[] {
     const suggestions: string[] = [];
     
     if (stats.success_rate < 80) {
