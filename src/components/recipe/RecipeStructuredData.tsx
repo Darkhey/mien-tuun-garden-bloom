@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 const SUPABASE_STORAGE_URL = "https://ublbxvpmoccmegtwaslh.supabase.co/storage/v1/object/public/recipe-images/";
@@ -22,6 +21,15 @@ type Recipe = {
   ingredients: any;
   instructions: any;
   created_at: string;
+  prep_time_minutes?: number | null;
+  cook_time_minutes?: number | null;
+  servings?: number | null;
+  difficulty?: string | null;
+  category?: string | null;
+  season?: string | null;
+  tags?: string[] | null;
+  author?: string | null;
+  story?: string | null;
 };
 
 type RecipeStructuredDataProps = {
@@ -43,14 +51,23 @@ const RecipeStructuredData: React.FC<RecipeStructuredDataProps> = ({
     "@type": "Recipe",
     name: recipe.title,
     datePublished: recipe.created_at,
-    description: recipe.description,
+    description: recipe.description || recipe.story || "",
     image: recipe.image_url ? [SUPABASE_STORAGE_URL + recipe.image_url] : undefined,
     recipeIngredient: ingredients.length > 0 ? ingredients : undefined,
     recipeInstructions: instructions.length > 0 ? instructions : undefined,
     author: {
         "@type": "Person",
-        name: "Mien Tuun" // Fallback author
-    }
+        name: recipe.author || "Mien Tuun" // Fallback author
+    },
+    recipeCategory: recipe.category || undefined,
+    recipeCuisine: "German",
+    keywords: recipe.tags?.join(", ") || undefined,
+    recipeYield: recipe.servings?.toString() || undefined,
+    prepTime: recipe.prep_time_minutes ? `PT${recipe.prep_time_minutes}M` : undefined,
+    cookTime: recipe.cook_time_minutes ? `PT${recipe.cook_time_minutes}M` : undefined,
+    totalTime: (recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0) > 0 
+      ? `PT${(recipe.prep_time_minutes || 0) + (recipe.cook_time_minutes || 0)}M` 
+      : undefined
   };
 
   if (averageRating && ratingCount && ratingCount > 0) {

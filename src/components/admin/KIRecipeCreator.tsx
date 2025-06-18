@@ -71,7 +71,7 @@ const KIRecipeCreator: React.FC = () => {
   const [input, setInput] = useState(""); // Freitext
 
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<any[]>([]); // KI-Vorschläge (max. 3)
+  const [results, setResults] = useState<any[]>([]); // KI-Vorschläge (max. 1)
   const [selectedRecipe, setSelectedRecipe] = useState<any | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [manualRecipe, setManualRecipe] = useState<any>(null);
@@ -97,7 +97,7 @@ const KIRecipeCreator: React.FC = () => {
       const blob = new Blob([byteArray], { type: 'image/png' });
 
       // Create a unique file path with user ID to avoid conflicts
-      const filePath = `generated/${user.id}/${fileName}`;
+      const filePath = `generated/${fileName}`;
 
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
@@ -187,7 +187,7 @@ const KIRecipeCreator: React.FC = () => {
     }
   };
 
-  // Rezeptvorschläge generieren (immer genau 3)
+  // Rezeptvorschlag generieren (nur einen)
   const handleGenerate = async () => {
     setLoading(true);
     setResults([]);
@@ -234,38 +234,8 @@ const KIRecipeCreator: React.FC = () => {
         throw new Error("Konnte kein Rezept generieren");
       }
 
-      // Generate 3 variations by calling the function multiple times
-      const recipes = [recipe];
-      
-      // Generate 2 more variations with slightly different prompts
-      for (let i = 0; i < 2; i++) {
-        try {
-          const variationBody = {
-            ...requestBody,
-            freeText: `${input} (Variation ${i + 2})`
-          };
-          
-          const variationResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-recipe`, {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${session.access_token}`
-            },
-            body: JSON.stringify(variationBody),
-          });
-
-          if (variationResp.ok) {
-            const { recipe: variationRecipe } = await variationResp.json();
-            if (variationRecipe) {
-              recipes.push(variationRecipe);
-            }
-          }
-        } catch (variationError) {
-          console.warn(`Could not generate variation ${i + 2}:`, variationError);
-        }
-      }
-
-      setResults(recipes.slice(0, 3));
+      // Set the single recipe result
+      setResults([recipe]);
     } catch (err: any) {
       toast({
         title: "Fehler",
@@ -323,8 +293,8 @@ const KIRecipeCreator: React.FC = () => {
         ingredients: manualRecipe.ingredients,
         instructions: manualRecipe.instructions,
         servings: manualRecipe.servings,
-        prep_time_minutes: manualRecipe.prepTime || null,
-        cook_time_minutes: manualRecipe.cookTime || null,
+        prep_time_minutes: manualRecipe.prepTime || manualRecipe.prep_time_minutes || null,
+        cook_time_minutes: manualRecipe.cookTime || manualRecipe.cook_time_minutes || null,
         source_blog_slug: null,
         tags: manualRecipe.tags?.length ? manualRecipe.tags : [],
         difficulty: manualRecipe.difficulty || null,
@@ -462,13 +432,13 @@ const KIRecipeCreator: React.FC = () => {
         onClick={handleGenerate}
         disabled={loading || isEditing}
       >
-        {loading && <Loader className="h-4 w-4 animate-spin" />} Rezepte vorschlagen
+        {loading && <Loader className="h-4 w-4 animate-spin" />} Rezept vorschlagen
       </button>
 
       {/* Vorschläge */}
       {results.length > 0 && !isEditing && (
         <div className="mt-2 space-y-4">
-          <div className="mb-2 font-semibold text-sage-700">Vorschläge:</div>
+          <div className="mb-2 font-semibold text-sage-700">Vorschlag:</div>
           {results.map((recipe, idx) => (
             <div key={idx} className="p-3 border rounded-lg bg-sage-50">
               <div className="font-bold">{recipe.title}</div>

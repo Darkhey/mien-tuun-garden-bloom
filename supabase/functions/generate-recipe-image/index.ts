@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -26,11 +25,28 @@ function translateCategory(category: string) {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   try {
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Missing authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { title, description, ingredients, category } = await req.json();
-    if (!openAIApiKey) throw new Error("OPENAI_API_KEY nicht gesetzt");
+    if (!openAIApiKey) {
+      return new Response(
+        JSON.stringify({ error: "OPENAI_API_KEY not set" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Den Prompt zusammenbauen (so konkret wie möglich)
     let prompt = `A beautifully styled, photorealistic food photograph for a recipe titled "${title}".`;
@@ -61,23 +77,24 @@ serve(async (req) => {
 
     if (!res.ok) {
       const err = await res.text();
-      return new Response(JSON.stringify({ error: "OpenAI image generation failed", details: err }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "OpenAI image generation failed", details: err }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const data = await res.json();
     if (!data?.data?.[0]?.b64_json) {
-      return new Response(JSON.stringify({ error: "No image returned from OpenAI", details: data }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "No image returned from OpenAI", details: data }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    return new Response(JSON.stringify({ imageB64: data.data[0].b64_json }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ imageB64: data.data[0].b64_json }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
 
   } catch (err) {
     return new Response(

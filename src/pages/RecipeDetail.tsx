@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
@@ -89,12 +88,26 @@ const RecipeDetail = () => {
   async function handleAskAlternative(ingredient: string) {
     setLoadingAlt(ingredient);
     try {
-      const res = await fetch("/functions/ingredient-alternatives", {
+      // Get current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Nicht eingeloggt!");
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ingredient-alternatives`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({ ingredient }),
       });
-      const data = await res.json();
+
+      if (!response.ok) {
+        throw new Error(`Fehler bei der Anfrage: ${response.status}`);
+      }
+
+      const data = await response.json();
       setAlternativeBubbles((prev) => ({
         ...prev,
         [ingredient]: {
@@ -161,6 +174,13 @@ const RecipeDetail = () => {
         </Link>
 
         <RecipeHeader recipe={recipe} userId={userId} slug={slug!} />
+
+        {/* Description section */}
+        {recipe.description && (
+          <div className="mb-8 text-earth-700 leading-relaxed">
+            <p>{recipe.description}</p>
+          </div>
+        )}
 
         <RecipeIngredients
           ingredients={zutaten}

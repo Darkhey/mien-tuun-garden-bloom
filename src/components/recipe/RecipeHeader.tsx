@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { getRecipeImageUrl } from "@/utils/recipe";
@@ -32,7 +31,6 @@ const RecipeHeader: React.FC<RecipeHeaderProps> = ({ recipe, userId, slug }) => 
         <h1 className="text-3xl font-serif font-bold text-earth-800 mb-3">
           {recipe.title}
         </h1>
-        <p className="text-earth-600 mb-3">{recipe.description}</p>
         <div className="flex items-center gap-4">
           <RecipeRating recipeId={slug} userId={userId} />
           <SaveRecipeButton recipeSlug={slug} userId={userId} />
