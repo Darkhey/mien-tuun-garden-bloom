@@ -31,7 +31,7 @@ import { BLOG_CATEGORIES } from "./blogHelpers";
 import TagSelector from "./TagSelector";
 
 // YAML library
-import { stringify } from "https://esm.sh/yaml@2.3.4";
+import { stringify } from "yaml";
 
 const PRIORITY_LEVELS = [
   { value: "A", label: "Hohe Priorität" },
@@ -71,7 +71,11 @@ const QUALITY_CRITERIA = [
   "Struktur", "SEO-Konformität", "Bildqualität", "Lesbarkeit"
 ];
 
-const ContentAutomationWizard: React.FC = () => {
+interface ContentAutomationWizardProps {
+  onComplete: () => void;
+}
+
+const ContentAutomationWizard: React.FC<ContentAutomationWizardProps> = ({ onComplete }) => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -957,9 +961,11 @@ ${stringify(config, { indent: 2 })}`;
                   YAML-Konfiguration herunterladen
                 </Button>
                 
-                <Button onClick={() => window.location.reload()}>
+                <Button onClick={() => {
+                  onComplete();
+                }}>
                   <Zap className="mr-2 h-4 w-4" />
-                  Neue Konfiguration erstellen
+                  Zum Dashboard
                 </Button>
               </div>
             </CardContent>

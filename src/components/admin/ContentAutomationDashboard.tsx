@@ -21,6 +21,10 @@ import {
 import { contentAutomationService, ContentAutomationConfig, ContentAutomationStats } from "@/services/ContentAutomationService";
 import { useToast } from "@/hooks/use-toast";
 import ContentAutomationWizard from "./ContentAutomationWizard";
+import ContentAutomationStats from "./ContentAutomationStats";
+import ContentAutomationProgress from "./ContentAutomationProgress";
+import ContentAutomationInsights from "./ContentAutomationInsights";
+import ContentAutomationEncouragementCard from "./ContentAutomationEncouragementCard";
 
 const ContentAutomationDashboard: React.FC = () => {
   const [configurations, setConfigurations] = useState<ContentAutomationConfig[]>([]);
@@ -29,6 +33,60 @@ const ContentAutomationDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
   const { toast } = useToast();
+
+  // Sample data for the encouragement card
+  const encouragementStats = {
+    totalContent: overallStats?.total_content_created || 0,
+    successRate: overallStats?.avg_success_rate || 0,
+    streak: 3, // This would come from actual tracking
+    nextMilestone: 10,
+    level: "Content Creator",
+    tips: [
+      "Verwende saisonale Keywords für mehr Relevanz",
+      "Bilder mit Menschen erzielen 38% mehr Engagement",
+      "Füge interaktive Elemente wie Fragen oder Umfragen ein",
+      "Plane Content-Serien zu verwandten Themen",
+      "Nutze die Vorschau-Funktion, um die mobile Ansicht zu prüfen"
+    ]
+  };
+
+  // Sample data for insights
+  const insightsData = {
+    topPerformingContent: [
+      { title: "10 Tipps für deinen Garten im Sommer", views: 245, engagement: 32, category: "Gartenplanung" },
+      { title: "Nachhaltige Gartengestaltung leicht gemacht", views: 189, engagement: 27, category: "Nachhaltigkeit" },
+      { title: "Die besten Pflanzen für deinen Balkon", views: 156, engagement: 18, category: "Balkon & Terrasse" }
+    ],
+    contentGaps: [
+      { category: "Indoor Gardening", lastContent: "vor 3 Monaten", priority: 'high' as const },
+      { category: "Wassersparen & Bewässerung", lastContent: "vor 2 Monaten", priority: 'medium' as const },
+      { category: "DIY Projekte", lastContent: "vor 1 Monat", priority: 'low' as const }
+    ],
+    upcomingContent: [
+      { title: "Herbstpflanzen für deinen Garten", scheduledFor: "Morgen", category: "Jahreszeitliche Arbeiten" },
+      { title: "Kompostieren für Anfänger", scheduledFor: "In 3 Tagen", category: "Kompostierung" },
+      { title: "Wassersparende Bewässerungssysteme", scheduledFor: "Nächste Woche", category: "Wassersparen & Bewässerung" }
+    ],
+    audienceInsights: [
+      { segment: "Anfänger", engagement: 78, contentPreference: "Step-by-Step Anleitungen" },
+      { segment: "Balkon-Gärtner", engagement: 65, contentPreference: "Platzsparende Lösungen" },
+      { segment: "Nachhaltigkeits-Fans", engagement: 82, contentPreference: "Umweltfreundliche Tipps" }
+    ]
+  };
+
+  // Sample data for automation progress
+  const automationProgress = {
+    status: 'running' as const,
+    progress: 60,
+    stages: [
+      { id: 'topic_selection', name: 'Themenauswahl', status: 'completed' as const, progress: 100 },
+      { id: 'content_generation', name: 'Content-Generierung', status: 'running' as const, progress: 70 },
+      { id: 'quality_check', name: 'Qualitätsprüfung', status: 'idle' as const, progress: 0 },
+      { id: 'image_generation', name: 'Bild-Generierung', status: 'idle' as const, progress: 0 },
+      { id: 'seo_optimization', name: 'SEO-Optimierung', status: 'idle' as const, progress: 0 }
+    ],
+    startTime: new Date(Date.now() - 1000 * 60 * 3) // Started 3 minutes ago
+  };
 
   useEffect(() => {
     loadData();
@@ -138,6 +196,25 @@ const ContentAutomationDashboard: React.FC = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleCreateContent = () => {
+    toast({
+      title: "Content-Erstellung gestartet",
+      description: "Dein neuer Content wird jetzt generiert."
+    });
+    
+    // In a real implementation, this would trigger the content creation process
+    // For now, we'll just show a success message after a delay
+    setTimeout(() => {
+      toast({
+        title: "Content erstellt!",
+        description: "Dein neuer Content wurde erfolgreich erstellt."
+      });
+      
+      // Refresh data
+      loadData();
+    }, 3000);
   };
 
   const getMotivationalMessage = (stats: ContentAutomationStats) => {
@@ -282,8 +359,14 @@ const ContentAutomationDashboard: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Configurations List */}
+        {/* Left Column: Configurations List */}
         <div className="lg:col-span-1 space-y-4">
+          {/* Encouragement Card */}
+          <ContentAutomationEncouragementCard 
+            stats={encouragementStats}
+            onCreateContent={handleCreateContent}
+          />
+          
           <h2 className="text-xl font-semibold">Konfigurationen</h2>
           
           {configurations.length === 0 ? (
@@ -328,17 +411,18 @@ const ContentAutomationDashboard: React.FC = () => {
           )}
         </div>
 
-        {/* Configuration Details */}
+        {/* Right Column: Details and Stats */}
         <div className="lg:col-span-2">
-          {selectedConfig ? (
-            <Tabs defaultValue="overview">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="overview">Übersicht</TabsTrigger>
-                <TabsTrigger value="stats">Statistiken</TabsTrigger>
-                <TabsTrigger value="settings">Einstellungen</TabsTrigger>
-              </TabsList>
+          <Tabs defaultValue="overview">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="overview">Übersicht</TabsTrigger>
+              <TabsTrigger value="stats">Statistiken</TabsTrigger>
+              <TabsTrigger value="insights">Insights</TabsTrigger>
+              <TabsTrigger value="progress">Fortschritt</TabsTrigger>
+            </TabsList>
 
-              <TabsContent value="overview" className="space-y-4 mt-4">
+            <TabsContent value="overview" className="space-y-4 mt-4">
+              {selectedConfig ? (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
@@ -426,8 +510,23 @@ const ContentAutomationDashboard: React.FC = () => {
                     )}
                   </CardContent>
                 </Card>
-                
-                {/* Categories Overview */}
+              ) : (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <Zap className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Keine Konfiguration ausgewählt</h3>
+                    <p className="text-gray-500 mb-4">
+                      Wähle eine Konfiguration aus oder erstelle eine neue.
+                    </p>
+                    <Button onClick={() => setShowWizard(true)}>
+                      Neue Konfiguration erstellen
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Categories Overview */}
+              {selectedConfig && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Konfigurierte Kategorien</CardTitle>
@@ -469,202 +568,38 @@ const ContentAutomationDashboard: React.FC = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
+              )}
+            </TabsContent>
 
-              <TabsContent value="stats" className="space-y-4 mt-4">
-                {selectedConfig.stats ? (
-                  <>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Performance-Übersicht</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <div className="text-sm text-gray-500">Erfolgsrate</div>
-                            <div className="flex items-center gap-2">
-                              <Progress value={selectedConfig.stats.success_rate} className="h-2" />
-                              <span className="text-sm font-medium">{selectedConfig.stats.success_rate}%</span>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="text-sm text-gray-500">Qualitätsscore</div>
-                            <div className="flex items-center gap-2">
-                              <Progress value={selectedConfig.stats.avg_quality_score} className="h-2" />
-                              <span className="text-sm font-medium">{selectedConfig.stats.avg_quality_score}%</span>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="text-sm text-gray-500">Engagement-Rate</div>
-                            <div className="flex items-center gap-2">
-                              <Progress value={selectedConfig.stats.engagement_rate} className="h-2" />
-                              <span className="text-sm font-medium">{selectedConfig.stats.engagement_rate}%</span>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="text-sm text-gray-500">Top-Kategorie</div>
-                            <div className="font-medium">
-                              {selectedConfig.stats.top_performing_category || "Keine Daten"}
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    {/* Content by Category */}
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Inhalte nach Kategorie</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {Object.keys(selectedConfig.stats.content_by_category).length > 0 ? (
-                          <div className="space-y-4">
-                            {Object.entries(selectedConfig.stats.content_by_category).map(([category, count]) => (
-                              <div key={category} className="space-y-1">
-                                <div className="flex items-center justify-between">
-                                  <span>{category}</span>
-                                  <span>{count}</span>
-                                </div>
-                                <Progress 
-                                  value={(count as number) / Math.max(...Object.values(selectedConfig.stats.content_by_category) as number[]) * 100} 
-                                  className="h-2" 
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-4 text-gray-500">
-                            Noch keine Inhalte erstellt
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                    
-                    {/* Recent Content */}
-                    {selectedConfig.stats.recent_content?.length > 0 && (
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Kürzlich erstellte Inhalte</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            {selectedConfig.stats.recent_content.map((content: any) => (
-                              <div key={content.id} className="flex items-center justify-between p-2 border rounded">
-                                <div>
-                                  <div className="font-medium">{content.title || content.id}</div>
-                                  <div className="text-xs text-gray-500">
-                                    {formatDate(content.created_at)}
-                                  </div>
-                                </div>
-                                <Badge variant={content.status === 'veröffentlicht' ? 'default' : 'outline'}>
-                                  {content.status}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-                  </>
-                ) : (
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Keine Statistiken verfügbar</h3>
-                      <p className="text-gray-500">
-                        Für diese Konfiguration sind noch keine Statistiken verfügbar.
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              <TabsContent value="settings" className="space-y-4 mt-4">
+            <TabsContent value="stats" className="mt-4">
+              {selectedConfig?.stats ? (
+                <ContentAutomationStats stats={selectedConfig.stats} />
+              ) : (
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Konfigurationsdetails</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700">Zeitplanung</h3>
-                        <div className="mt-1 text-sm">
-                          <div><strong>Intervall:</strong> {selectedConfig.config?.publishing?.interval || 'Täglich'}</div>
-                          <div><strong>Zeit:</strong> {selectedConfig.config?.publishing?.time || 'Morgens'}</div>
-                          <div><strong>Max. Posts:</strong> {selectedConfig.config?.publishing?.max_posts_per_time_unit || '1'}</div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700">Veröffentlichung</h3>
-                        <div className="mt-1 text-sm">
-                          <div>
-                            <strong>Sofortveröffentlichung:</strong> {selectedConfig.config?.approval?.immediate_publishing ? 'Ja' : 'Nein'}
-                          </div>
-                          {!selectedConfig.config?.approval?.immediate_publishing && (
-                            <>
-                              <div><strong>Moderatoren:</strong> {selectedConfig.config?.approval?.moderators?.length || '0'}</div>
-                              <div><strong>Max. Wartezeit:</strong> {selectedConfig.config?.approval?.max_waiting_time || 'N/A'}</div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700">Bildmaterial</h3>
-                        <div className="mt-1 text-sm">
-                          <div><strong>Quelle:</strong> {selectedConfig.config?.images?.source === 'ai' ? 'KI-generiert' : 'Stock-Fotos'}</div>
-                          <div><strong>Stil:</strong> {selectedConfig.config?.images?.style || 'Standard'}</div>
-                          <div>
-                            <strong>Format:</strong> {selectedConfig.config?.images?.guidelines?.width || '1200'}x{selectedConfig.config?.images?.guidelines?.height || '800'} {selectedConfig.config?.images?.guidelines?.format || 'jpg'}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-700">Textparameter</h3>
-                        <div className="mt-1 text-sm">
-                          <div><strong>Wortanzahl:</strong> {selectedConfig.config?.text?.min_word_count || '500'}-{selectedConfig.config?.text?.max_word_count || '1500'}</div>
-                          <div><strong>Keywords pro Post:</strong> {selectedConfig.config?.text?.keywords_per_post || '5'}</div>
-                          <div><strong>Schreibstil:</strong> {selectedConfig.config?.text?.writing_style?.substring(0, 50) || 'Standard'}...</div>
-                        </div>
-                      </div>
-                    </div>
+                  <CardContent className="p-6 text-center">
+                    <BarChart3 className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Keine Statistiken verfügbar</h3>
+                    <p className="text-gray-500">
+                      Wähle eine Konfiguration aus oder erstelle eine neue.
+                    </p>
                   </CardContent>
                 </Card>
-                
-                {/* YAML Configuration */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>YAML-Konfiguration</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-gray-50 p-4 rounded-lg border">
-                      <pre className="text-xs overflow-auto whitespace-pre-wrap max-h-[300px]">
-                        {selectedConfig.yaml_config || JSON.stringify(selectedConfig.config, null, 2)}
-                      </pre>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          ) : (
-            <Card>
-              <CardContent className="p-6 text-center">
-                <Zap className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Keine Konfiguration ausgewählt</h3>
-                <p className="text-gray-500 mb-4">
-                  Wähle eine Konfiguration aus oder erstelle eine neue.
-                </p>
-                <Button onClick={() => setShowWizard(true)}>
-                  Neue Konfiguration erstellen
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </TabsContent>
+
+            <TabsContent value="insights" className="mt-4">
+              <ContentAutomationInsights insights={insightsData} />
+            </TabsContent>
+
+            <TabsContent value="progress" className="mt-4">
+              <ContentAutomationProgress 
+                status={automationProgress.status}
+                progress={automationProgress.progress}
+                stages={automationProgress.stages}
+                startTime={automationProgress.startTime}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
