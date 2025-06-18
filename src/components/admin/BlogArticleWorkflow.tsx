@@ -97,11 +97,26 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       console.log('[BlogWorkflow] Artikel-Daten vorbereitet:', article);
       setDebugLogs(prev => [...prev, `[SAVE] Daten vorbereitet für Slug: ${slug}`]);
 
-      // Speichere Entwurf als Version
-      console.log('[BlogWorkflow] Sende Insert-Request an Supabase (Version)...');
       const user = await supabase.auth.getUser();
+
+      // Zuerst Blog-Post anlegen
+      console.log('[BlogWorkflow] Sende Insert-Request an Supabase (Post)...');
+      const { data: blogPost, error: blogPostError } = await supabase
+        .from('blog_posts')
+        .insert([{ ...article, user_id: user.data.user?.id || '' }])
+        .select()
+        .single();
+
+      if (blogPostError) {
+        console.error('[BlogWorkflow] Supabase Insert Fehler (Post):', blogPostError);
+        setDebugLogs(prev => [...prev, `[ERROR] Supabase Fehler: ${blogPostError.message}`]);
+        throw new Error(`Supabase Fehler: ${blogPostError.message}`);
+      }
+
+      // Anschließend Version speichern
+      console.log('[BlogWorkflow] Sende Insert-Request an Supabase (Version)...');
       const version = {
-        blog_post_id: crypto.randomUUID(),
+        blog_post_id: blogPost.id,
         user_id: user.data.user?.id || '',
         ...article
       };
