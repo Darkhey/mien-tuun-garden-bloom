@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,14 +18,14 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ type, itemId }) => {
       if (type === "recipe") {
         const result = await supabase
           .from("recipe_versions")
-          .select("*")
+          .select("id, created_at, title, status")
           .eq("recipe_id", itemId)
           .order("created_at", { ascending: false });
         data = result.data;
       } else {
         const result = await supabase
           .from("blog_post_versions")
-          .select("*")
+          .select("id, created_at, title, status, slug")
           .eq("blog_post_id", itemId)
           .order("created_at", { ascending: false });
         data = result.data;
