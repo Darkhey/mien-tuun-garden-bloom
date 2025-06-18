@@ -168,6 +168,7 @@ export type Database = {
           category: string
           content: string
           content_types: string[]
+          season: string | null
           description: string | null
           excerpt: string
           featured: boolean
@@ -194,6 +195,7 @@ export type Database = {
           category: string
           content: string
           content_types?: string[]
+          season?: string | null
           description?: string | null
           excerpt: string
           featured?: boolean
@@ -220,6 +222,7 @@ export type Database = {
           category?: string
           content?: string
           content_types?: string[]
+          season?: string | null
           description?: string | null
           excerpt?: string
           featured?: boolean
