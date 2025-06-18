@@ -80,6 +80,13 @@ const KIRecipeCreator: React.FC = () => {
   // Hilfsfunktion zum Upload von Base64-Bildern
   const uploadBase64Image = async (base64Data: string, fileName: string): Promise<string | null> => {
     try {
+      // Get current user to ensure authentication
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('User authentication error:', userError);
+        return null;
+      }
+
       // Convert base64 to blob
       const byteCharacters = atob(base64Data);
       const byteNumbers = new Array(byteCharacters.length);
@@ -89,16 +96,24 @@ const KIRecipeCreator: React.FC = () => {
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'image/png' });
 
+      // Create a unique file path with user ID to avoid conflicts
+      const filePath = `generated/${user.id}/${fileName}`;
+
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
         .from('recipe-images')
-        .upload(`generated/${fileName}`, blob, {
+        .upload(filePath, blob, {
           contentType: 'image/png',
           upsert: true
         });
 
       if (error) {
         console.error('Storage upload error:', error);
+        toast({
+          title: "Bild-Upload Fehler",
+          description: "Das generierte Bild konnte nicht hochgeladen werden. Das Rezept wird ohne Bild gespeichert.",
+          variant: "destructive",
+        });
         return null;
       }
 
@@ -110,6 +125,11 @@ const KIRecipeCreator: React.FC = () => {
       return publicUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
+      toast({
+        title: "Bild-Upload Fehler",
+        description: "Das generierte Bild konnte nicht hochgeladen werden. Das Rezept wird ohne Bild gespeichert.",
+        variant: "destructive",
+      });
       return null;
     }
   };
@@ -118,7 +138,10 @@ const KIRecipeCreator: React.FC = () => {
   const generateRecipeImage = async (recipe: any): Promise<string | null> => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return null;
+      if (!session) {
+        console.warn('No session available for image generation');
+        return null;
+      }
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-recipe-image`, {
         method: 'POST',
@@ -136,17 +159,30 @@ const KIRecipeCreator: React.FC = () => {
 
       if (!response.ok) {
         console.error('Image generation failed:', await response.text());
+        toast({
+          title: "Bild-Generierung fehlgeschlagen",
+          description: "Das Rezeptbild konnte nicht generiert werden. Das Rezept wird ohne Bild gespeichert.",
+          variant: "destructive",
+        });
         return null;
       }
 
       const { imageB64 } = await response.json();
-      if (!imageB64) return null;
+      if (!imageB64) {
+        console.warn('No image data received from generation service');
+        return null;
+      }
 
       // Upload image and get URL
       const fileName = `${recipe.title?.toLowerCase().replace(/[^a-z0-9]+/gi, '-') || 'recipe'}-${Date.now()}.png`;
       return await uploadBase64Image(imageB64, fileName);
     } catch (error) {
       console.error('Error generating recipe image:', error);
+      toast({
+        title: "Bild-Generierung Fehler",
+        description: "Das Rezeptbild konnte nicht generiert werden. Das Rezept wird ohne Bild gespeichert.",
+        variant: "destructive",
+      });
       return null;
     }
   };
@@ -244,7 +280,7 @@ const KIRecipeCreator: React.FC = () => {
   const handleChooseForEdit = async (recipe: any) => {
     setLoading(true);
     
-    // Generate image for the recipe
+    // Generate image for the recipe (with error handling)
     const imageUrl = await generateRecipeImage(recipe);
     
     const recipeWithImage = {
@@ -269,15 +305,17 @@ const KIRecipeCreator: React.FC = () => {
     if (!manualRecipe?.title) return;
     setLoading(true);
     try {
-      const user = await supabase.auth.getUser();
-      if (!user.data.user) throw new Error("Nicht eingeloggt!");
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error("Nicht eingeloggt!");
+      }
       
       const slug = manualRecipe.title
         ? manualRecipe.title.toLowerCase().replace(/[^a-z0-9]+/gi, "-")
         : String(Date.now());
         
       const insertObj = {
-        user_id: user.data.user.id,
+        user_id: user.id,
         title: manualRecipe.title,
         slug,
         image_url: manualRecipe.image || null,
@@ -292,7 +330,7 @@ const KIRecipeCreator: React.FC = () => {
         difficulty: manualRecipe.difficulty || null,
         season: manualRecipe.season || null,
         category: manualRecipe.category || manualRecipe.meal || null,
-        author: user.data.user.email || "",
+        author: user.email || "",
         status: 'veröffentlicht'
       };
       
@@ -301,7 +339,10 @@ const KIRecipeCreator: React.FC = () => {
       }
       
       const { error } = await supabase.from("recipes").insert([insertObj]);
-      if (error) throw error;
+      if (error) {
+        console.error('Recipe insert error:', error);
+        throw error;
+      }
       
       toast({ 
         title: "Rezept gespeichert!", 
