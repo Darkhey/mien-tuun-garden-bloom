@@ -1,8 +1,7 @@
 import { createApi } from 'unsplash-js';
 
-// Initialize the Unsplash API client
-// Note: In a production environment, you should use environment variables
-const unsplashAccessKey = 'your-unsplash-access-key'; // Replace with your actual key or use env variable
+// Initialize the Unsplash API client with your credentials
+const unsplashAccessKey = 'pRdPBWAClQA1MvFuUmY70cOZo_jcB5ufrO17GpnKxqs';
 const unsplash = createApi({ accessKey: unsplashAccessKey });
 
 export interface UnsplashImage {
@@ -36,7 +35,7 @@ export async function searchUnsplashImages(
 ): Promise<UnsplashImage[]> {
   try {
     // If no API key is set, return fallback images
-    if (!unsplashAccessKey || unsplashAccessKey === 'your-unsplash-access-key') {
+    if (!unsplashAccessKey) {
       return getFallbackImages(query);
     }
 
@@ -67,7 +66,7 @@ export async function searchUnsplashImages(
 export async function getRandomUnsplashImage(query: string): Promise<UnsplashImage | null> {
   try {
     // If no API key is set, return a fallback image
-    if (!unsplashAccessKey || unsplashAccessKey === 'your-unsplash-access-key') {
+    if (!unsplashAccessKey) {
       const fallbacks = getFallbackImages(query);
       return fallbacks.length > 0 ? fallbacks[0] : null;
     }

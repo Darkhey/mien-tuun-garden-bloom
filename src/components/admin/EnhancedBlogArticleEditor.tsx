@@ -20,7 +20,7 @@ interface EnhancedBlogArticleEditorProps {
   tags?: string[];
   excerpt?: string;
   imageUrl?: string;
-  toast: ReturnType<typeof useToast>["toast"];
+  toast: ReturnType<typeof import("@/hooks/use-toast").useToast>["toast"];
 }
 
 const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
@@ -260,7 +260,11 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
                 <CardTitle>Vorschau</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: editingContent.replace(/\n/g, "<br />") }} />
+                <div className="prose max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {editingContent}
+                  </ReactMarkdown>
+                </div>
               </CardContent>
             </Card>
           ) : (
