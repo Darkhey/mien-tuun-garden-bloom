@@ -20,7 +20,7 @@ const MEALS = [
   { value: "dessert", label: "Dessert" },
 ];
 const DIFFICULTY = [
-  { value: "leicht", label: "Leicht" },
+  { value: "einfach", label: "Einfach" },
   { value: "mittel", label: "Mittel" },
   { value: "schwer", label: "Schwer" },
 ];
@@ -77,6 +77,80 @@ const KIRecipeCreator: React.FC = () => {
   const [manualRecipe, setManualRecipe] = useState<any>(null);
   const { toast } = useToast();
 
+  // Hilfsfunktion zum Upload von Base64-Bildern
+  const uploadBase64Image = async (base64Data: string, fileName: string): Promise<string | null> => {
+    try {
+      // Convert base64 to blob
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/png' });
+
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('recipe-images')
+        .upload(`generated/${fileName}`, blob, {
+          contentType: 'image/png',
+          upsert: true
+        });
+
+      if (error) {
+        console.error('Storage upload error:', error);
+        return null;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('recipe-images')
+        .getPublicUrl(data.path);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  };
+
+  // Rezeptbild generieren
+  const generateRecipeImage = async (recipe: any): Promise<string | null> => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return null;
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-recipe-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: recipe.title,
+          description: recipe.description,
+          ingredients: recipe.ingredients,
+          category: recipe.category || meal
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Image generation failed:', await response.text());
+        return null;
+      }
+
+      const { imageB64 } = await response.json();
+      if (!imageB64) return null;
+
+      // Upload image and get URL
+      const fileName = `${recipe.title?.toLowerCase().replace(/[^a-z0-9]+/gi, '-') || 'recipe'}-${Date.now()}.png`;
+      return await uploadBase64Image(imageB64, fileName);
+    } catch (error) {
+      console.error('Error generating recipe image:', error);
+      return null;
+    }
+  };
+
   // Rezeptvorschläge generieren (immer genau 3)
   const handleGenerate = async () => {
     setLoading(true);
@@ -91,45 +165,71 @@ const KIRecipeCreator: React.FC = () => {
         throw new Error("Nicht eingeloggt!");
       }
 
-      // Baue Prompt
-      const combinedPrompt = [
-        input,
-        diet ? `Ernährungsform: ${diet}.` : "",
-        meal ? `Mahlzeit: ${meal}.` : "",
-        difficulty ? `Schwierigkeitsgrad: ${difficulty}.` : "",
-        season ? `Saison: ${season}.` : "",
-        servings ? `Portionen: ${servings}.` : "",
-        tags.length > 0 ? `Tags: ${tags.join(", ")}.` : "",
-        "Bitte schlage mir 3 verschiedene, passende Rezepte mit Zutatenliste und Zubereitungsschritten als JSON-Liste vor."
-      ]
-        .filter(Boolean)
-        .join(" ");
+      // Prepare request body for generate-recipe function
+      const requestBody = {
+        title: input || "Neues Rezept",
+        description: input,
+        diet,
+        season,
+        category: meal,
+        servings,
+        tags,
+        freeText: input
+      };
 
-      // Edge Function mit Prompt aufrufen (3 Vorschläge!) - now with auth header
-      const resp = await fetch("https://ublbxvpmoccmegtwaslh.functions.supabase.co/blog-to-recipe", {
+      // Call generate-recipe function
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-recipe`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({
-          title: combinedPrompt,
-          content: combinedPrompt,
-          image: "",
-        }),
+        body: JSON.stringify(requestBody),
       });
 
-      if (!resp.ok) throw new Error("Fehler bei der KI");
+      if (!resp.ok) {
+        const errorText = await resp.text();
+        throw new Error(`Fehler bei der KI-Rezeptgenerierung: ${errorText}`);
+      }
+      
       const { recipe } = await resp.json();
 
-      let proposed: any[] = [];
-      // Antwort kann Array oder Einzelobjekt sein
-      if (Array.isArray(recipe)) proposed = recipe;
-      else if (recipe && recipe.title) proposed = [recipe];
-      else throw new Error("Konnte keine Rezepte extrahieren");
+      if (!recipe) {
+        throw new Error("Konnte kein Rezept generieren");
+      }
 
-      // Immer max. 3 anzeigen
-      setResults(proposed.slice(0, 3));
+      // Generate 3 variations by calling the function multiple times
+      const recipes = [recipe];
+      
+      // Generate 2 more variations with slightly different prompts
+      for (let i = 0; i < 2; i++) {
+        try {
+          const variationBody = {
+            ...requestBody,
+            freeText: `${input} (Variation ${i + 2})`
+          };
+          
+          const variationResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-recipe`, {
+            method: "POST",
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify(variationBody),
+          });
+
+          if (variationResp.ok) {
+            const { recipe: variationRecipe } = await variationResp.json();
+            if (variationRecipe) {
+              recipes.push(variationRecipe);
+            }
+          }
+        } catch (variationError) {
+          console.warn(`Could not generate variation ${i + 2}:`, variationError);
+        }
+      }
+
+      setResults(recipes.slice(0, 3));
     } catch (err: any) {
       toast({
         title: "Fehler",
@@ -141,18 +241,27 @@ const KIRecipeCreator: React.FC = () => {
   };
 
   // Vorschlag auswählen & bearbeiten
-  const handleChooseForEdit = (recipe: any) => {
-    setManualRecipe({
+  const handleChooseForEdit = async (recipe: any) => {
+    setLoading(true);
+    
+    // Generate image for the recipe
+    const imageUrl = await generateRecipeImage(recipe);
+    
+    const recipeWithImage = {
       ...recipe,
       diet,
       meal,
-      difficulty,
-      season,
-      tags,
-      servings,
-    });
+      difficulty: recipe.difficulty || difficulty,
+      season: recipe.season || season,
+      tags: recipe.tags || tags,
+      servings: recipe.servings || servings,
+      image: imageUrl || recipe.image || ""
+    };
+
+    setManualRecipe(recipeWithImage);
     setIsEditing(true);
     setSelectedRecipe(recipe);
+    setLoading(false);
   };
 
   // Rezept speichern
@@ -162,31 +271,44 @@ const KIRecipeCreator: React.FC = () => {
     try {
       const user = await supabase.auth.getUser();
       if (!user.data.user) throw new Error("Nicht eingeloggt!");
+      
       const slug = manualRecipe.title
         ? manualRecipe.title.toLowerCase().replace(/[^a-z0-9]+/gi, "-")
         : String(Date.now());
+        
       const insertObj = {
         user_id: user.data.user.id,
         title: manualRecipe.title,
         slug,
-        image_url: manualRecipe.image,
+        image_url: manualRecipe.image || null,
         description: manualRecipe.description,
         ingredients: manualRecipe.ingredients,
         instructions: manualRecipe.instructions,
         servings: manualRecipe.servings,
+        prep_time_minutes: manualRecipe.prepTime || null,
+        cook_time_minutes: manualRecipe.cookTime || null,
         source_blog_slug: null,
         tags: manualRecipe.tags?.length ? manualRecipe.tags : [],
         difficulty: manualRecipe.difficulty || null,
         season: manualRecipe.season || null,
-        category: manualRecipe.meal || null,
+        category: manualRecipe.category || manualRecipe.meal || null,
         author: user.data.user.email || "",
+        status: 'veröffentlicht'
       };
+      
       if (manualRecipe.diet) {
         insertObj.tags = [...(insertObj.tags || []), manualRecipe.diet];
       }
+      
       const { error } = await supabase.from("recipes").insert([insertObj]);
       if (error) throw error;
-      toast({ title: "Rezept gespeichert!", description: "Das KI-Rezept ist jetzt unter Rezepte sichtbar." });
+      
+      toast({ 
+        title: "Rezept gespeichert!", 
+        description: "Das KI-Rezept ist jetzt unter Rezepte sichtbar." 
+      });
+      
+      // Reset form
       setResults([]);
       setIsEditing(false);
       setManualRecipe(null);
@@ -198,7 +320,11 @@ const KIRecipeCreator: React.FC = () => {
       setSeason("");
       setInput("");
     } catch (err: any) {
-      toast({ title: "Fehler", description: String(err.message || err), variant: "destructive" });
+      toast({ 
+        title: "Fehler", 
+        description: String(err.message || err), 
+        variant: "destructive" 
+      });
     }
     setLoading(false);
   };
@@ -306,9 +432,18 @@ const KIRecipeCreator: React.FC = () => {
             <div key={idx} className="p-3 border rounded-lg bg-sage-50">
               <div className="font-bold">{recipe.title}</div>
               <div className="text-xs mb-2">{recipe.description}</div>
+              {recipe.story && (
+                <div className="text-sm mb-2 italic text-sage-600">{recipe.story}</div>
+              )}
               <ul className="list-disc pl-5 text-sm mb-1">
                 {(recipe.ingredients||[]).map((i: any, iidx: number) =>
-                  <li key={iidx}>{typeof i === "string" ? i : (i.name + (i.amount ? ` (${i.amount}${i.unit ? ` ${i.unit}` : ""})` : ""))}</li>
+                  <li key={iidx}>
+                    {typeof i === "string" ? i : (
+                      i.name + 
+                      (i.amount ? ` (${i.amount}${i.unit ? ` ${i.unit}` : ""})` : "") +
+                      (i.optional ? " (optional)" : "")
+                    )}
+                  </li>
                 )}
               </ul>
               <ol className="list-decimal pl-5 text-sm mb-2">
@@ -316,11 +451,17 @@ const KIRecipeCreator: React.FC = () => {
                   <li key={sidx}>{typeof s === "string" ? s : (s.text || JSON.stringify(s))}</li>
                 )}
               </ol>
+              {recipe.tips && recipe.tips.length > 0 && (
+                <div className="text-sm mb-2">
+                  <strong>Tipps:</strong> {recipe.tips.join(", ")}
+                </div>
+              )}
               <button
-                className="bg-sage-600 hover:bg-sage-700 text-white px-3 py-1 rounded"
+                className="bg-sage-600 hover:bg-sage-700 text-white px-3 py-1 rounded flex items-center gap-2"
                 onClick={() => handleChooseForEdit(recipe)}
                 disabled={loading}
               >
+                {loading && <Loader className="w-4 h-4 animate-spin" />}
                 Vorschlag übernehmen & bearbeiten
               </button>
             </div>
@@ -354,6 +495,28 @@ const KIRecipeCreator: React.FC = () => {
               disabled={loading}
             />
           </div>
+          {manualRecipe.story && (
+            <div className="mb-2">
+              <label className="block font-semibold text-sage-700">Geschichte/Hintergrund</label>
+              <textarea
+                className="w-full border rounded p-2"
+                rows={3}
+                value={manualRecipe.story || ""}
+                onChange={e => setManualRecipe({ ...manualRecipe, story: e.target.value })}
+                disabled={loading}
+              />
+            </div>
+          )}
+          {manualRecipe.image && (
+            <div className="mb-2">
+              <label className="block font-semibold text-sage-700">Generiertes Bild</label>
+              <img 
+                src={manualRecipe.image} 
+                alt={manualRecipe.title} 
+                className="w-full max-w-sm rounded border"
+              />
+            </div>
+          )}
           <div className="mb-2 flex gap-2">
             <div>
               <label className="block text-xs mb-1">Ernährungsform</label>
@@ -433,7 +596,13 @@ const KIRecipeCreator: React.FC = () => {
             <label className="block font-semibold">Zutaten</label>
             <ul className="list-disc pl-5 text-sm">
               {(manualRecipe.ingredients || []).map((i: any, ix: number) =>
-                <li key={ix}>{typeof i === "string" ? i : (i.name + (i.amount ? ` (${i.amount}${i.unit ? ` ${i.unit}` : ""})` : ""))}</li>
+                <li key={ix}>
+                  {typeof i === "string" ? i : (
+                    i.name + 
+                    (i.amount ? ` (${i.amount}${i.unit ? ` ${i.unit}` : ""})` : "") +
+                    (i.optional ? " (optional)" : "")
+                  )}
+                </li>
               )}
             </ul>
           </div>
@@ -445,12 +614,23 @@ const KIRecipeCreator: React.FC = () => {
               )}
             </ol>
           </div>
+          {manualRecipe.tips && manualRecipe.tips.length > 0 && (
+            <div className="mb-2">
+              <label className="block font-semibold">Tipps</label>
+              <ul className="list-disc pl-5 text-sm">
+                {manualRecipe.tips.map((tip: string, tipIdx: number) => (
+                  <li key={tipIdx}>{tip}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <button
             type="submit"
-            className="mt-3 bg-sage-700 hover:bg-sage-800 text-white px-4 py-2 rounded"
+            className="mt-3 bg-sage-700 hover:bg-sage-800 text-white px-4 py-2 rounded flex items-center gap-2"
             disabled={loading}
           >
-            {loading ? <Loader className="w-4 h-4 animate-spin" /> : "Rezept speichern"}
+            {loading && <Loader className="w-4 h-4 animate-spin" />}
+            Rezept speichern
           </button>
         </form>
       )}
