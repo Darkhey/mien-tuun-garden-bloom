@@ -27,6 +27,7 @@ interface DiagnosticReport {
   systemHealth: any;
   issues: any[];
   recommendations: any[];
+  bestPractices: any[];
   metrics: any;
 }
 
@@ -46,7 +47,7 @@ const SystemDiagnosticsDashboard: React.FC = () => {
       
       toast({
         title: "Analyse abgeschlossen",
-        description: `${diagnosticReport.issues.length} Issues identifiziert, ${diagnosticReport.recommendations.length} Empfehlungen erstellt`,
+        description: `${diagnosticReport.issues.length} Issues identifiziert, ${diagnosticReport.recommendations.length} Empfehlungen, ${diagnosticReport.bestPractices.length} Best Practices erstellt`,
         variant: diagnosticReport.summary.criticalIssues > 0 ? "destructive" : "default"
       });
     } catch (error: any) {
@@ -222,12 +223,13 @@ const SystemDiagnosticsDashboard: React.FC = () => {
           </div>
 
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="overview">Übersicht</TabsTrigger>
               <TabsTrigger value="health">System Health</TabsTrigger>
               <TabsTrigger value="issues">Issues</TabsTrigger>
               <TabsTrigger value="recommendations">Empfehlungen</TabsTrigger>
               <TabsTrigger value="metrics">Metriken</TabsTrigger>
+              <TabsTrigger value="best-practices">Best Practices</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
@@ -243,9 +245,16 @@ const SystemDiagnosticsDashboard: React.FC = () => {
                         <span>Keine kritischen Issues gefunden</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-red-600">
-                        <AlertCircle className="h-5 w-5" />
-                        <span>{report.summary.criticalIssues} kritische Issues identifiziert</span>
+                      <div className="space-y-2 text-red-600">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-5 w-5" />
+                          <span>{report.summary.criticalIssues} kritische Issues identifiziert</span>
+                        </div>
+                        <ul className="list-disc list-inside text-sm">
+                          {report.issues.filter((i: any) => i.severity === 'critical').map((i: any, idx: number) => (
+                            <li key={idx}>{i.description}</li>
+                          ))}
+                        </ul>
                       </div>
                     )}
                   </CardContent>
@@ -259,8 +268,13 @@ const SystemDiagnosticsDashboard: React.FC = () => {
                     {report.summary.immediateActions === 0 ? (
                       <div className="text-gray-600">Keine Sofortmaßnahmen erforderlich</div>
                     ) : (
-                      <div className="text-red-600 font-medium">
-                        {report.summary.immediateActions} Sofortmaßnahmen erforderlich
+                      <div className="space-y-2 text-red-600 font-medium">
+                        <div>{report.summary.immediateActions} Sofortmaßnahmen erforderlich</div>
+                        <ul className="list-disc list-inside text-sm">
+                          {report.recommendations.filter((r: any) => r.priority === 'immediate').map((r: any, idx: number) => (
+                            <li key={idx}>{r.title}</li>
+                          ))}
+                        </ul>
                       </div>
                     )}
                   </CardContent>
@@ -419,6 +433,32 @@ const SystemDiagnosticsDashboard: React.FC = () => {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            <TabsContent value="best-practices" className="space-y-4">
+              {report.bestPractices.length === 0 ? (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Keine Best Practices notwendig</h3>
+                    <p className="text-gray-600">Aktuell sind keine speziellen Empfehlungen vorhanden.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                report.bestPractices.map((bp: any, index: number) => (
+                  <Card key={index}>
+                    <CardHeader>
+                      <CardTitle className="text-lg">{bp.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 text-gray-700">
+                        <p>{bp.description}</p>
+                        <p className="text-sm text-gray-600"><strong>Empfehlung:</strong> {bp.fix}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </TabsContent>
           </Tabs>
         </>
