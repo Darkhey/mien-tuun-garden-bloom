@@ -34,7 +34,6 @@ const BlogPostPage = () => {
   });
 
   // Session holen für UserId (nur für Kommentare relevant)
-  // (Wir holen die Session synchron, weil der Blogpost public ist, und nur Kommentare Auth brauchen)
   const [userId, setUserId] = React.useState<string | null>(null);
   // Bewertung state
   const [blogRating, setBlogRating] = React.useState<{
@@ -82,7 +81,7 @@ const BlogPostPage = () => {
     );
   }
 
-  // Mapping auf BlogPost Type
+  // Enhanced Mapping auf BlogPost Type mit neuen Feldern
   const post: BlogPost = {
     id: row.id,
     slug: row.slug,
@@ -95,6 +94,7 @@ const BlogPostPage = () => {
     updatedAt: row.updated_at || undefined,
     featuredImage: row.featured_image || '/placeholder.svg',
     category: row.category || '',
+    season: row.season || undefined, // Jetzt verfügbar in der Haupttabelle
     tags: row.tags || [],
     readingTime: row.reading_time || 5,
     seo: {
@@ -107,6 +107,7 @@ const BlogPostPage = () => {
     structuredData: row.structured_data || undefined,
     originalTitle: row.original_title || undefined,
     ogImage: row.og_image || undefined,
+    description: row.description || undefined, // Neue Beschreibung verfügbar
   };
 
   return (

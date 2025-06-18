@@ -10,6 +10,7 @@ export interface BlogPost {
   updatedAt?: string;
   featuredImage: string;
   category: string;
+  season?: string; // Jetzt auch in der Haupttabelle verfügbar
   tags: string[];
   readingTime: number;
   seo: {
@@ -31,6 +32,10 @@ export interface BlogPost {
    * Optional: alternatives Social Media Bild (OpenGraph override)
    */
   ogImage?: string;
+  /**
+   * Erweiterte Beschreibung für bessere SEO
+   */
+  description?: string;
 }
 
 export interface Recipe {

@@ -1,11 +1,10 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import BlogPromptEditor from "./BlogPromptEditor";
 import EnhancedBlogArticleEditor from "./EnhancedBlogArticleEditor";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BLOG_CATEGORIES, SEASONS } from "./blogHelpers";
 import { supabase } from "@/integrations/supabase/client";
+import { generateUniqueSlug, sanitizeContent } from "@/utils/slugHelpers";
 
 interface BlogArticleWorkflowProps {
   suggestionSelections: string[];
@@ -58,68 +57,73 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
         throw new Error('Titel und Inhalt sind erforderlich');
       }
 
-      // Generiere einen eindeutigen Slug
-      const baseSlug = (title || suggestion)
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/\s+/g, "-")
-        .replace(/-+/g, "-")
-        .replace(/^-|-$/g, "")
-        .substring(0, 80);
-      
-      const slug = `${baseSlug}-${Date.now()}`;
-      console.log('[BlogWorkflow] Generierter Slug:', slug);
+      // Sichere Content-Sanitization
+      const sanitizedContent = sanitizeContent(content);
+      const sanitizedTitle = title.replace(/<[^>]*>/g, ''); // HTML-Tags aus Titel entfernen
 
+      // Generiere einen eindeutigen Slug
+      const slug = await generateUniqueSlug(sanitizedTitle || suggestion);
+      console.log('[BlogWorkflow] Generierter eindeutiger Slug:', slug);
+
+      // User Authentication mit verbesserter Behandlung
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.warn('[BlogWorkflow] Auth-Fehler:', authError);
+      }
+
+      const currentUserId = user?.id || null; // NULL statt leerer String
+      
       // Bereite Artikel-Daten vor
       const article = {
         slug,
-        title: title || suggestion,
-        content,
-        excerpt: excerpt || content.slice(0, 200),
+        title: sanitizedTitle || suggestion,
+        content: sanitizedContent,
+        excerpt: excerpt || sanitizedContent.slice(0, 200).replace(/<[^>]*>/g, ''),
+        description: excerpt || sanitizedContent.slice(0, 300).replace(/<[^>]*>/g, ''),
         category: category || "Allgemein",
+        season: season || "ganzjährig", // Jetzt in blog_posts gespeichert
         tags: tags.length ? tags : [],
         content_types: contentType.length ? contentType : ["blog"],
-        season: season || "",
         audiences: audiences.length ? audiences : ["anfaenger"],
         featured_image: imageUrl || "",
         og_image: imageUrl || "",
-        original_title: title || suggestion,
-        seo_description: excerpt || content.slice(0, 156),
-        seo_title: title || suggestion,
+        original_title: sanitizedTitle || suggestion,
+        seo_description: excerpt || sanitizedContent.slice(0, 156).replace(/<[^>]*>/g, ''),
+        seo_title: sanitizedTitle || suggestion,
         seo_keywords: tags.length ? tags : [],
         published: false,
         featured: quality?.score > 90,
-        reading_time: Math.ceil(content.split(/\s+/).length / 160),
+        reading_time: Math.ceil(sanitizedContent.split(/\s+/).length / 160),
         author: "KI-Enhanced Pipeline",
-        status: "entwurf"
+        status: "entwurf",
+        user_id: currentUserId
       };
 
       console.log('[BlogWorkflow] Artikel-Daten vorbereitet:', article);
       setDebugLogs(prev => [...prev, `[SAVE] Daten vorbereitet für Slug: ${slug}`]);
 
-      const user = await supabase.auth.getUser();
-
-      // Zuerst Blog-Post anlegen
+      // Blog-Post in Haupttabelle anlegen
       console.log('[BlogWorkflow] Sende Insert-Request an Supabase (Post)...');
       const { data: blogPost, error: blogPostError } = await supabase
         .from('blog_posts')
-        .insert([{ ...article, user_id: user.data.user?.id || '' }])
+        .insert([article])
         .select()
         .single();
 
       if (blogPostError) {
         console.error('[BlogWorkflow] Supabase Insert Fehler (Post):', blogPostError);
         setDebugLogs(prev => [...prev, `[ERROR] Supabase Fehler: ${blogPostError.message}`]);
-        throw new Error(`Supabase Fehler: ${blogPostError.message}`);
+        throw new Error(`Blog-Post Speicher-Fehler: ${blogPostError.message}`);
       }
 
-      // Anschließend Version speichern
+      // Version für Tracking speichern
       console.log('[BlogWorkflow] Sende Insert-Request an Supabase (Version)...');
       const version = {
         blog_post_id: blogPost.id,
-        user_id: user.data.user?.id || '',
+        user_id: currentUserId,
         ...article
       };
+      
       const { data, error } = await supabase
         .from('blog_post_versions')
         .insert([version])
@@ -127,13 +131,14 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
         .single();
 
       if (error) {
-        console.error('[BlogWorkflow] Supabase Insert Fehler:', error);
-        setDebugLogs(prev => [...prev, `[ERROR] Supabase Fehler: ${error.message}`]);
-        throw new Error(`Supabase Fehler: ${error.message}`);
+        console.error('[BlogWorkflow] Supabase Insert Fehler (Version):', error);
+        setDebugLogs(prev => [...prev, `[ERROR] Version Speicher-Fehler: ${error.message}`]);
+        // Version-Fehler ist nicht kritisch, Post wurde bereits gespeichert
+        console.warn('[BlogWorkflow] Version konnte nicht gespeichert werden, Post ist aber verfügbar');
+      } else {
+        console.log('[BlogWorkflow] Version erfolgreich gespeichert:', data);
+        setDebugLogs(prev => [...prev, `[SUCCESS] Version gespeichert mit ID: ${data.id}`]);
       }
-
-      console.log('[BlogWorkflow] Artikel-Version erfolgreich gespeichert:', data);
-      setDebugLogs(prev => [...prev, `[SUCCESS] Version gespeichert mit ID: ${data.id}`]);
       
       // Update Status in Enhanced Articles
       setEnhancedArticles(prev => 
@@ -146,11 +151,11 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       
       toast({
         title: "✅ Enhanced Artikel gespeichert!",
-        description: `"${title}" wurde als Entwurf gespeichert (Version ID: ${data.id})`,
+        description: `"${sanitizedTitle}" wurde als Entwurf gespeichert (ID: ${blogPost.id})`,
         variant: "default",
       });
       
-      setDebugLogs(prev => [...prev, `[COMPLETE] Artikel-Speicherung abgeschlossen für "${title}"`]);
+      setDebugLogs(prev => [...prev, `[COMPLETE] Artikel-Speicherung abgeschlossen für "${sanitizedTitle}"`]);
 
     } catch (err: any) {
       console.error('[BlogWorkflow] Fehler beim Speichern:', err);

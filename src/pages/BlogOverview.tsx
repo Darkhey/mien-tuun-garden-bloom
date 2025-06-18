@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Helmet } from "react-helmet";
 import { useQuery } from '@tanstack/react-query';
@@ -22,6 +23,7 @@ const fetchBlogPosts = async () => {
   const { data, error } = await supabase
     .from('blog_posts')
     .select('*')
+    .eq('published', true) // Nur veröffentlichte Artikel zeigen
     .order('published_at', { ascending: false });
   if (error) throw error;
   return data;
@@ -37,21 +39,23 @@ const BlogOverview: React.FC = () => {
     queryFn: fetchBlogPosts,
   });
 
-  // Filter-Logik mit explizitem Typ
+  // Enhanced Filter-Logik mit verbessertem Typ-Handling
   const filteredPosts = useMemo(() => {
     const posts = blogRows as Tables<'blog_posts'>[];
     return posts.filter((post: Tables<'blog_posts'>) => {
       // Kategorie
       if (selectedCategory && post.category !== selectedCategory) return false;
-      // Suchbegriff
-      if (
-        searchTerm &&
-        !(
-          post.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          post.excerpt?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      ) {
-        return false;
+      // Suchbegriff - verbesserte Suche
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const titleMatch = post.title?.toLowerCase().includes(searchLower);
+        const excerptMatch = post.excerpt?.toLowerCase().includes(searchLower);
+        const descriptionMatch = post.description?.toLowerCase().includes(searchLower);
+        const tagMatch = post.tags?.some(tag => tag.toLowerCase().includes(searchLower));
+        
+        if (!titleMatch && !excerptMatch && !descriptionMatch && !tagMatch) {
+          return false;
+        }
       }
       return true;
     });
@@ -107,6 +111,7 @@ const BlogOverview: React.FC = () => {
                   updatedAt: post.updated_at || undefined,
                   featuredImage: post.featured_image || '/placeholder.svg',
                   category: post.category || '',
+                  season: post.season || undefined, // Jetzt verfügbar
                   tags: post.tags || [],
                   readingTime: post.reading_time || 5,
                   seo: {
@@ -119,6 +124,7 @@ const BlogOverview: React.FC = () => {
                   structuredData: post.structured_data || undefined,
                   originalTitle: post.original_title || undefined,
                   ogImage: post.og_image || undefined,
+                  description: post.description || undefined, // Neue Beschreibung
                 };
                 return <BlogPostCard post={mappedPost} key={post.id} />;
               })}

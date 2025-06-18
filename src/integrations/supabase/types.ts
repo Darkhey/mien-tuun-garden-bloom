@@ -173,7 +173,6 @@ export type Database = {
           featured: boolean
           featured_image: string
           id: string
-          user_id: string | null
           og_image: string | null
           original_title: string | null
           published: boolean
@@ -200,7 +199,6 @@ export type Database = {
           featured?: boolean
           featured_image: string
           id?: string
-          user_id?: string | null
           og_image?: string | null
           original_title?: string | null
           published?: boolean
@@ -227,7 +225,6 @@ export type Database = {
           featured?: boolean
           featured_image?: string
           id?: string
-          user_id?: string | null
           og_image?: string | null
           original_title?: string | null
           published?: boolean
@@ -243,15 +240,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "blog_posts_user_id_fkey",
-            columns: ["user_id"],
-            isOneToOne: false,
-            referencedRelation: "users",
-            referencedColumns: ["id"],
-          },
-        ]
+        Relationships: []
       }
       blog_ratings: {
         Row: {
