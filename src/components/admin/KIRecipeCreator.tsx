@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Loader } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -86,6 +85,12 @@ const KIRecipeCreator: React.FC = () => {
     setManualRecipe(null);
     setSelectedRecipe(null);
     try {
+      // Get current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Nicht eingeloggt!");
+      }
+
       // Baue Prompt
       const combinedPrompt = [
         input,
@@ -100,10 +105,13 @@ const KIRecipeCreator: React.FC = () => {
         .filter(Boolean)
         .join(" ");
 
-      // Edge Function mit Prompt aufrufen (3 Vorschläge!)
+      // Edge Function mit Prompt aufrufen (3 Vorschläge!) - now with auth header
       const resp = await fetch("https://ublbxvpmoccmegtwaslh.functions.supabase.co/blog-to-recipe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
         body: JSON.stringify({
           title: combinedPrompt,
           content: combinedPrompt,
