@@ -75,6 +75,13 @@ export const adminMenuItems: AdminMenuItem[] = [
     description: "Automatisierte Workflows"
   },
   {
+    id: "content-automation",
+    label: "Content-Automatisierung",
+    icon: Zap,
+    path: "/admin/content-automation",
+    description: "Automatisierte Content-Erstellung"
+  },
+  {
     id: "system",
     label: "System & Monitoring",
     icon: Settings,

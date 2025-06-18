@@ -12,6 +12,7 @@ import SecurityLogView from "./views/SecurityLogView";
 import BlogTestingView from "./views/BlogTestingView";
 import SystemDiagnosticsView from "./views/SystemDiagnosticsView";
 import ScheduledJobsView from "./views/ScheduledJobsView";
+import ContentAutomationView from "./views/ContentAutomationView";
 
 interface AdminContentProps {
   activeView: AdminView;
@@ -92,6 +93,8 @@ const AdminContent: React.FC<AdminContentProps> = ({
         return <BlogTestingView testSlug={testSlug} />;
       case "system-diagnostics":
         return <SystemDiagnosticsView />;
+      case "content-automation":
+        return <ContentAutomationView />;
       default:
         return <div>View nicht gefunden</div>;
     }
