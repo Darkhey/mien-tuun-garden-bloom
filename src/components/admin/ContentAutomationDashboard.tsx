@@ -18,7 +18,7 @@ import {
   RefreshCw,
   PlusCircle
 } from "lucide-react";
-import { contentAutomationService, ContentAutomationConfig, ContentAutomationStats } from "@/services/ContentAutomationService";
+import { contentAutomationService, ContentAutomationConfig, ContentAutomationStats as ContentAutomationStatsType } from "@/services/ContentAutomationService";
 import { useToast } from "@/hooks/use-toast";
 import ContentAutomationWizard from "./ContentAutomationWizard";
 import ContentAutomationStats from "./ContentAutomationStats";
@@ -217,11 +217,11 @@ const ContentAutomationDashboard: React.FC = () => {
     }, 3000);
   };
 
-  const getMotivationalMessage = (stats: ContentAutomationStats) => {
+  const getMotivationalMessage = (stats: ContentAutomationStatsType) => {
     return contentAutomationService.getMotivationalMessage(stats);
   };
 
-  const getImprovementSuggestions = (stats: ContentAutomationStats) => {
+  const getImprovementSuggestions = (stats: ContentAutomationStatsType) => {
     return contentAutomationService.getImprovementSuggestions(stats);
   };
 
