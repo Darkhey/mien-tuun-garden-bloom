@@ -146,7 +146,7 @@ const ContentAutomationWizard: React.FC<ContentAutomationWizardProps> = ({ onCom
   const handleCategoryChange = (category: string, priority: string) => {
     setSelectedCategories(prev => {
       const newCategories = { ...prev };
-      if (priority) {
+      if (priority && priority !== "none") {
         newCategories[category] = priority;
       } else {
         delete newCategories[category];
@@ -155,7 +155,7 @@ const ContentAutomationWizard: React.FC<ContentAutomationWizardProps> = ({ onCom
     });
     
     // Initialize tags for this category if not already set
-    if (!categoryTags[category] && priority) {
+    if (!categoryTags[category] && priority && priority !== "none") {
       setCategoryTags(prev => ({
         ...prev,
         [category]: []
@@ -350,14 +350,14 @@ ${stringify(config, { indent: 2 })}`;
                     <div key={category.value} className="flex items-center justify-between p-3 border rounded-lg">
                       <span>{category.label}</span>
                       <Select
-                        value={selectedCategories[category.value] || ""}
+                        value={selectedCategories[category.value] || "none"}
                         onValueChange={(value) => handleCategoryChange(category.value, value)}
                       >
                         <SelectTrigger className="w-32">
                           <SelectValue placeholder="Priorität" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Nicht auswählen</SelectItem>
+                          <SelectItem value="none">Nicht auswählen</SelectItem>
                           {PRIORITY_LEVELS.map(priority => (
                             <SelectItem key={priority.value} value={priority.value}>
                               {priority.label}

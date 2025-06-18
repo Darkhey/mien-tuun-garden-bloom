@@ -311,7 +311,7 @@ class ContentAutomationService {
       // Get content created by this configuration
       const { data: contentData, error: contentError } = await supabase
         .from('blog_posts')
-        .select('id, category, created_at, status')
+        .select('id, category, published_at, status')
         .eq('automation_config_id', configId);
         
       if (contentError) throw contentError;
@@ -352,7 +352,7 @@ class ContentAutomationService {
       
       // Get recent content
       const recentContent = contentData?.sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
       ).slice(0, 5) || [];
       
       return {
@@ -404,7 +404,7 @@ class ContentAutomationService {
       // Get all automated content
       const { data: contentData, error: contentError } = await supabase
         .from('blog_posts')
-        .select('id, category, created_at, status')
+        .select('id, category, published_at, status')
         .not('automation_config_id', 'is', null);
         
       if (contentError) throw contentError;
@@ -441,7 +441,7 @@ class ContentAutomationService {
         const dateStr = date.toISOString().split('T')[0];
         
         const count = contentData?.filter(c => 
-          c.created_at.startsWith(dateStr)
+          c.published_at.startsWith(dateStr)
         ).length || 0;
         
         contentTrend.push({ date: dateStr, count });
