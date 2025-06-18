@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { AdminUser, AdminRecipe, AdminBlogPost } from "@/types/admin";
 import { useToast } from "@/hooks/use-toast";

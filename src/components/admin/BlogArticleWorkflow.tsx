@@ -153,7 +153,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       const { data, error } = await supabase
         .from('blog_post_versions')
         .insert([version])
-        .select()
+        .select('id')
         .single();
 
       if (error) {
