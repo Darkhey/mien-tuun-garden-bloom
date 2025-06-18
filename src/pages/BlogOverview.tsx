@@ -102,6 +102,7 @@ const BlogOverview: React.FC = () => {
                   excerpt: post.excerpt,
                   content: post.content,
                   author: post.author,
+                  userId: post.user_id ?? undefined,
                   publishedAt: post.published_at,
                   updatedAt: post.updated_at || undefined,
                   featuredImage: post.featured_image || '/placeholder.svg',

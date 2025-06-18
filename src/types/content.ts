@@ -5,6 +5,7 @@ export interface BlogPost {
   excerpt: string;
   content: string;
   author: string;
+  userId?: string;
   publishedAt: string;
   updatedAt?: string;
   featuredImage: string;

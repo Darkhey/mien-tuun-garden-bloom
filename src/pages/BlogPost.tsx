@@ -90,6 +90,7 @@ const BlogPostPage = () => {
     excerpt: row.excerpt,
     content: row.content,
     author: row.author,
+    userId: row.user_id ?? undefined,
     publishedAt: row.published_at,
     updatedAt: row.updated_at || undefined,
     featuredImage: row.featured_image || '/placeholder.svg',
