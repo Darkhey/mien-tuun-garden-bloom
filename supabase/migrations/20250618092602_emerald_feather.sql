@@ -61,9 +61,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_job_configs_updated_at
-BEFORE UPDATE ON scheduled_jobs.job_configs
-FOR EACH ROW
-EXECUTE FUNCTION scheduled_jobs.update_job_configs_updated_at();
+  BEFORE UPDATE ON scheduled_jobs.job_configs
+  FOR EACH ROW EXECUTE FUNCTION scheduled_jobs.update_job_configs_updated_at();
+
 
 -- Create function to check if a table exists
 CREATE OR REPLACE FUNCTION check_table_exists(table_name TEXT)
