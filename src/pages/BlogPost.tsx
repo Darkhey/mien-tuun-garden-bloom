@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
@@ -13,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { BlogPost } from '@/types/content';
 import BlogComments from "@/components/blog/BlogComments";
 import BlogStructuredData from "@/components/blog/BlogStructuredData";
+import { Helmet } from "react-helmet";
 
 const BlogPostPage = () => {
   const { slug } = useParams();
@@ -112,6 +112,26 @@ const BlogPostPage = () => {
 
   return (
     <>
+      {/* SEO Meta Tags */}
+      <Helmet>
+        <title>{post.seo.title}</title>
+        <meta name="description" content={post.seo.description} />
+        <meta name="keywords" content={post.seo.keywords.join(', ')} />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content={post.seo.title} />
+        <meta property="og:description" content={post.seo.description} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`https://mien-tuun.de/blog/${post.slug}`} />
+        <meta property="og:image" content={post.ogImage || post.featuredImage} />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.seo.title} />
+        <meta name="twitter:description" content={post.seo.description} />
+        <meta name="twitter:image" content={post.ogImage || post.featuredImage} />
+      </Helmet>
+      
       {/* Structured Data for Google */}
       <BlogStructuredData
         title={post.title}
@@ -140,7 +160,11 @@ const BlogPostPage = () => {
           readingTime={post.readingTime}
           tags={post.tags}
         />
-        <BlogPostImage src={post.featuredImage} alt={post.title} />
+        <BlogPostImage 
+          src={post.featuredImage} 
+          alt={post.title} 
+          category={post.category}
+        />
         <BlogPostContent content={post.content} />
         <BlogPostToRecipeSection post={{
           title: post.title,

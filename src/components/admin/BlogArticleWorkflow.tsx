@@ -5,6 +5,7 @@ import EnhancedBlogArticleEditor from "./EnhancedBlogArticleEditor";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { generateUniqueSlug, sanitizeContent, validateBlogPostData } from "@/utils/slugHelpers";
+import { getBlogPostImage } from "@/utils/unsplashService";
 
 interface BlogArticleWorkflowProps {
   suggestionSelections: string[];
@@ -81,6 +82,22 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
 
       const currentUserId = user?.id || null; // NULL statt leerer String
       
+      // Suche nach passendem Bild, wenn keines angegeben wurde
+      let featuredImageUrl = imageUrl;
+      if (!featuredImageUrl) {
+        try {
+          setDebugLogs(prev => [...prev, `[SAVE] Suche passendes Bild für "${sanitizedTitle}"`]);
+          const unsplashImage = await getBlogPostImage(sanitizedTitle, sanitizedContent, category);
+          if (unsplashImage) {
+            featuredImageUrl = unsplashImage.urls.regular;
+            setDebugLogs(prev => [...prev, `[SAVE] Passendes Bild gefunden: ${featuredImageUrl}`]);
+          }
+        } catch (imgError) {
+          console.error('[BlogWorkflow] Fehler bei Bildsuche:', imgError);
+          setDebugLogs(prev => [...prev, `[WARN] Bildsuche fehlgeschlagen: ${imgError}`]);
+        }
+      }
+      
       // Bereite Artikel-Daten vor
       const article = {
         slug,
@@ -93,8 +110,8 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
         tags: tags.length ? tags : [],
         content_types: contentType.length ? contentType : ["blog"],
         audiences: audiences.length ? audiences : ["anfaenger"],
-        featured_image: imageUrl || "",
-        og_image: imageUrl || "",
+        featured_image: featuredImageUrl || "",
+        og_image: featuredImageUrl || "",
         original_title: sanitizedTitle || suggestion,
         seo_description: excerpt || sanitizedContent.slice(0, 156).replace(/<[^>]*>/g, ''),
         seo_title: sanitizedTitle || suggestion,
