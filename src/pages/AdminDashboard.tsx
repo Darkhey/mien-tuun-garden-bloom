@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -35,30 +34,24 @@ const AdminDashboard: React.FC = () => {
     handleDelete
   } = useAdminActions();
 
-  // Check if user is admin
-  const { data: userRoles, isLoading } = useQuery({
+  // Check if user is admin - simplified check since we already have AdminProtectedRoute
+  const { isLoading } = useQuery({
     queryKey: ["user-roles"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id);
       
-      if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
-  }
-
-  const isAdmin = userRoles?.some(role => role.role === "admin");
-  if (!isAdmin) {
-    return <Navigate to="/" replace />;
   }
 
   const renderView = () => {

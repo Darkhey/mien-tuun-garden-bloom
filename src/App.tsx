@@ -34,21 +34,43 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let isMounted = true;
     const check = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        navigate("/");
-        return;
+      try {
+        console.log("Checking admin rights...");
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          console.log("No session found, redirecting to home");
+          navigate("/");
+          return;
+        }
+        
+        const userId = sessionData.session.user.id;
+        console.log("User ID:", userId);
+        
+        const { data, error } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("role", "admin");
+        
+        if (error) {
+          console.error("Error checking admin role:", error);
+          if (isMounted) setIsAllowed(false);
+          navigate("/profil");
+          return;
+        }
+        
+        const isAdmin = data && data.length > 0;
+        console.log("Is admin:", isAdmin, "Data:", data);
+        
+        if (isMounted) setIsAllowed(isAdmin);
+        if (!isAdmin) navigate("/profil");
+      } catch (error) {
+        console.error("Unexpected error checking admin status:", error);
+        if (isMounted) setIsAllowed(false);
+        navigate("/profil");
       }
-      const userId = sessionData.session.user.id;
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .eq("role", "admin")
-        .single();
-      if (isMounted) setIsAllowed(!!data);
-      if (!data) navigate("/profil");
     };
+    
     check();
     return () => { isMounted = false };
   }, [navigate]);
