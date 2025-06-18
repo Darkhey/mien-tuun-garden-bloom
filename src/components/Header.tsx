@@ -24,13 +24,24 @@ const Header: React.FC = () => {
   useEffect(() => {
     const checkAdmin = async () => {
       if (session?.user) {
-        const { data } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "admin")
-          .single();
-        setIsAdmin(!!data);
+        try {
+          const { data, error } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .eq("role", "admin");
+          
+          if (error) {
+            console.error("Error checking admin role:", error);
+            setIsAdmin(false);
+            return;
+          }
+          
+          setIsAdmin(data && data.length > 0);
+        } catch (error) {
+          console.error("Unexpected error checking admin status:", error);
+          setIsAdmin(false);
+        }
       } else {
         setIsAdmin(false);
       }
