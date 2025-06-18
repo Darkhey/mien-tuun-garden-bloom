@@ -8,13 +8,17 @@ import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search }
 import { contentStrategyService, ContentStrategy, ContentCalendarEntry } from "@/services/ContentStrategyService";
 import { contextAnalyzer, TrendData, ContentGap } from "@/services/ContextAnalyzer";
 import { blogAnalyticsService, TrendKeyword } from "@/services/BlogAnalyticsService";
+import { contentInsightsService, CategoryStat, ContentSuggestion, ScheduledPost } from "@/services/ContentInsightsService";
 
 const ContentStrategyDashboard: React.FC = () => {
   const [strategies, setStrategies] = useState<ContentStrategy[]>([]);
   const [calendar, setCalendar] = useState<ContentCalendarEntry[]>([]);
+  const [scheduled, setScheduled] = useState<ScheduledPost[]>([]);
   const [trends, setTrends] = useState<TrendData[]>([]);
   const [gaps, setGaps] = useState<ContentGap[]>([]);
   const [keywordGaps, setKeywordGaps] = useState<TrendKeyword[]>([]);
+  const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
+  const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
   const [loading, setLoading] = useState(false);
 
   const loadStrategicData = async () => {
@@ -23,11 +27,12 @@ const ContentStrategyDashboard: React.FC = () => {
       console.log("[StrategyDashboard] Loading strategic data");
       
       // Parallel laden für bessere Performance
-      const [strategiesData, posts, trendsData, gapsData] = await Promise.all([
+      const [strategiesData, posts, trendsData, gapsData, insights] = await Promise.all([
         contentStrategyService.generateContentStrategy({ timeframe: 4 }),
         blogAnalyticsService.fetchBlogPosts(),
         blogAnalyticsService.fetchCurrentTrends(),
-        Promise.resolve(contextAnalyzer.analyzeContentGaps())
+        Promise.resolve(contextAnalyzer.analyzeContentGaps()),
+        contentInsightsService.fetchInsights()
       ]);
 
       const existing = blogAnalyticsService.extractKeywords(posts);
@@ -37,6 +42,9 @@ const ContentStrategyDashboard: React.FC = () => {
       setTrends(trendsData.slice(0, 6));
       setGaps(gapsData);
       setKeywordGaps(kwGaps);
+      setCategoryStats(insights.categoryStats);
+      setSuggestions(insights.suggestions.slice(0, 5));
+      setScheduled(insights.scheduled.slice(0, 5));
 
       // Content-Kalender generieren
       const calendarData = await contentStrategyService.generateContentCalendar(strategiesData, 2);
@@ -160,6 +168,29 @@ const ContentStrategyDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Content-Vorschläge */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lightbulb className="h-5 w-5" />
+            Neue Artikelideen
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {suggestions.map((s, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <div className="font-medium">{s.topic}</div>
+                  <div className="text-sm text-gray-600">{s.category}</div>
+                </div>
+                <Badge variant="outline">{s.reason}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Content-Strategien */}
       <Card>
         <CardHeader>
@@ -248,6 +279,31 @@ const ContentStrategyDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Geplante Veröffentlichungen */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Geplante Veröffentlichungen
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {scheduled.map((p, idx) => (
+              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <div className="font-medium">{p.title}</div>
+                  <div className="text-sm text-gray-600">
+                    {new Date(p.date).toLocaleDateString('de-DE')}
+                  </div>
+                </div>
+                <Badge variant="secondary">{p.status || 'geplant'}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Quick Actions */}
       <Card>
         <CardHeader>
@@ -261,21 +317,21 @@ const ContentStrategyDashboard: React.FC = () => {
             <Button variant="outline" className="h-auto p-4 flex flex-col items-start">
               <div className="font-medium mb-1">Top-Trend Content</div>
               <div className="text-sm text-gray-600">
-                Artikel zu #{trends[0]?.keyword} erstellen
+                {trends[0] ? `Artikel zu ${trends[0].keyword} erstellen` : 'Keine Trends'}
               </div>
             </Button>
-            
+
             <Button variant="outline" className="h-auto p-4 flex flex-col items-start">
               <div className="font-medium mb-1">Gap-Content</div>
               <div className="text-sm text-gray-600">
-                Fehlende Inhalte ergänzen
+                {categoryStats[0] ? `Kategorie ${categoryStats[0].category} ausbauen` : 'Keine Lücken'}
               </div>
             </Button>
-            
+
             <Button variant="outline" className="h-auto p-4 flex flex-col items-start">
-              <div className="font-medium mb-1">Saisonaler Content</div>
+              <div className="font-medium mb-1">Trend-Vorschlag</div>
               <div className="text-sm text-gray-600">
-                Passende Inhalte für aktuelle Saison
+                {suggestions[0] ? suggestions[0].topic : 'Keine Vorschläge'}
               </div>
             </Button>
           </div>
