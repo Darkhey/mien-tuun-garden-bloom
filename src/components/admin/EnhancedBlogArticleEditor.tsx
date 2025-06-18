@@ -9,6 +9,8 @@ import { contentGenerationService, GeneratedContent } from "@/services/ContentGe
 import { contextAnalyzer, TrendData } from "@/services/ContextAnalyzer";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface EnhancedBlogArticleEditorProps {
   initialPrompt: string;

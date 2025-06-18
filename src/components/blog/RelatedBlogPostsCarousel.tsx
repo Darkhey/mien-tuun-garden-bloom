@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,11 +70,11 @@ const RelatedBlogPostsCarousel: React.FC<RelatedBlogPostsCarouselProps> = ({ cur
 
   return (
     <section className="mt-16">
-      <h2 className="text-2xl font-serif font-bold mb-6 text-sage-900">Ähnliche Artikel</h2>
+      <h2 className="text-2xl font-serif font-bold mb-6 text-sage-900">Das könnte dich auch interessieren</h2>
       <Carousel className="relative">
         <CarouselContent>
           {posts.map((post) => (
-            <CarouselItem key={post.slug} className="max-w-md">
+            <CarouselItem key={post.slug} className="md:basis-1/2 lg:basis-1/3">
               <BlogPostCard post={post} />
             </CarouselItem>
           ))}

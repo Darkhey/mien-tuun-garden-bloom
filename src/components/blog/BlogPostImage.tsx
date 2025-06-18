@@ -31,7 +31,7 @@ const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => 
         setFallbackImage(image.urls.regular);
       }
     } catch (error) {
-      console.error('Error fetching fallback image:', error);
+      console.warn('Error fetching fallback image:', error);
     }
   };
 

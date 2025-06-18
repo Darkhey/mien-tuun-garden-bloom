@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from "react-helmet";
 import { useQuery } from '@tanstack/react-query';
 import BlogPostCard from "@/components/blog/BlogPostCard";
@@ -7,6 +6,7 @@ import BlogFilter from "@/components/blog/BlogFilter";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from '@/integrations/supabase/types';
 import type { BlogPost } from '@/types/content';
+import { useSearchParams } from 'react-router-dom';
 
 // Erweiterte Kategorien für die Blog-Übersicht
 const categories = [
@@ -30,9 +30,20 @@ const fetchBlogPosts = async () => {
 };
 
 const BlogOverview: React.FC = () => {
+  // URL-Parameter auslesen
+  const [searchParams] = useSearchParams();
+  const categoryParam = searchParams.get('category');
+  
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Setze Kategorie aus URL-Parameter, wenn vorhanden
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategory(categoryParam);
+    }
+  }, [categoryParam]);
 
   const { data: blogRows = [], isLoading, error } = useQuery({
     queryKey: ["all-blog-posts"],

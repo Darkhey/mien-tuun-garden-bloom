@@ -13,6 +13,7 @@ import type { BlogPost } from '@/types/content';
 import BlogComments from "@/components/blog/BlogComments";
 import BlogStructuredData from "@/components/blog/BlogStructuredData";
 import { Helmet } from "react-helmet";
+import CallToActionSection from '@/components/blog/CallToActionSection';
 
 const BlogPostPage = () => {
   const { slug } = useParams();
@@ -173,14 +174,21 @@ const BlogPostPage = () => {
           slug: post.slug,
           category: post.category
         }} />
-        <BlogPostShareSection />
-        {/* ----- Start Related Carousel ----- */}
+        <BlogPostShareSection 
+          title={post.title}
+          imageUrl={post.featuredImage}
+          excerpt={post.excerpt}
+        />
+        
+        {/* Call to Action Section */}
+        <CallToActionSection category={post.category} />
+        
+        {/* Related Articles Carousel */}
         <RelatedBlogPostsCarousel
           currentSlug={post.slug}
           category={post.category}
           tags={post.tags}
         />
-        {/* ----- End Related Carousel ----- */}
 
         {/* Blog Kommentare */}
         <BlogComments blogSlug={post.slug} userId={userId} />
