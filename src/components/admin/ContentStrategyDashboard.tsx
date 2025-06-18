@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search } from "lucide-react";
 import { contentStrategyService, ContentStrategy, ContentCalendarEntry } from "@/services/ContentStrategyService";
-import { contextAnalyzer, TrendData, ContentGap } from "@/services/ContextAnalyzer";
+import { contextAnalyzer, ContentGap } from "@/services/ContextAnalyzer";
 import { blogAnalyticsService, TrendKeyword } from "@/services/BlogAnalyticsService";
 import { contentInsightsService, CategoryStat, ContentSuggestion, ScheduledPost } from "@/services/ContentInsightsService";
 
@@ -14,7 +14,7 @@ const ContentStrategyDashboard: React.FC = () => {
   const [strategies, setStrategies] = useState<ContentStrategy[]>([]);
   const [calendar, setCalendar] = useState<ContentCalendarEntry[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledPost[]>([]);
-  const [trends, setTrends] = useState<TrendData[]>([]);
+  const [trends, setTrends] = useState<TrendKeyword[]>([]);
   const [gaps, setGaps] = useState<ContentGap[]>([]);
   const [keywordGaps, setKeywordGaps] = useState<TrendKeyword[]>([]);
   const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
@@ -110,7 +110,7 @@ const ContentStrategyDashboard: React.FC = () => {
                   <Badge variant="outline">{Math.round(trend.relevance * 100)}%</Badge>
                 </div>
                 <div className="text-sm text-gray-600 mb-2">
-                  {trend.category} • {trend.season}
+                  {trend.category}
                 </div>
                 <Progress value={trend.relevance * 100} className="h-2" />
               </div>
