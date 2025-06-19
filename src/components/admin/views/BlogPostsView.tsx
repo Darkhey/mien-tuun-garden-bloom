@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, Eye, EyeOff, Loader2, RefreshCw } from "lucide-react";
+import { Edit, Trash2, Eye, EyeOff, Loader2, RefreshCw, Instagram } from "lucide-react";
 import { AdminBlogPost } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import EditBlogPostModal from "../EditBlogPostModal";
+import InstagramPostModal from "../InstagramPostModal";
 
 const BlogPostsView: React.FC = () => {
   const [posts, setPosts] = useState<AdminBlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingPost, setEditingPost] = useState<AdminBlogPost | null>(null);
+  const [instagramPost, setInstagramPost] = useState<AdminBlogPost | null>(null);
+  const [instagramStatuses, setInstagramStatuses] = useState<{ [key: string]: string }>({});
   const { toast } = useToast();
 
   const loadBlogPosts = async () => {
@@ -38,6 +41,7 @@ const BlogPostsView: React.FC = () => {
       }));
 
       setPosts(transformedPosts);
+      await loadInstagramStatuses();
       console.log(`[BlogPostsView] Loaded ${transformedPosts.length} blog posts`);
     } catch (error: any) {
       console.error("[BlogPostsView] Error loading blog posts:", error);
@@ -49,6 +53,25 @@ const BlogPostsView: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadInstagramStatuses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('instagram_posts')
+        .select('blog_post_id, status');
+
+      if (error) throw error;
+
+      const statusMap: { [key: string]: string } = {};
+      (data || []).forEach(item => {
+        statusMap[item.blog_post_id] = item.status;
+      });
+      
+      setInstagramStatuses(statusMap);
+    } catch (error) {
+      console.error('Error loading Instagram statuses:', error);
     }
   };
 
@@ -117,6 +140,26 @@ const BlogPostsView: React.FC = () => {
     setEditingPost(post);
   };
 
+  const handleInstagramPost = (post: AdminBlogPost) => {
+    if (post.status !== 'veröffentlicht') {
+      toast({
+        title: "Hinweis",
+        description: "Nur veröffentlichte Artikel können auf Instagram geteilt werden",
+        variant: "destructive"
+      });
+      return;
+    }
+    setInstagramPost(post);
+  };
+
+  const handleInstagramSuccess = () => {
+    loadInstagramStatuses();
+    toast({
+      title: "Erfolg!",
+      description: "Post wurde erfolgreich auf Instagram geteilt"
+    });
+  };
+
   useEffect(() => {
     loadBlogPosts();
   }, []);
@@ -152,6 +195,7 @@ const BlogPostsView: React.FC = () => {
               <TableHead>Autor</TableHead>
               <TableHead>Kategorie</TableHead>
               <TableHead>Featured</TableHead>
+              <TableHead>Instagram</TableHead>
               <TableHead>Veröffentlicht</TableHead>
               <TableHead>Aktionen</TableHead>
             </TableRow>
@@ -173,6 +217,13 @@ const BlogPostsView: React.FC = () => {
                 <TableCell>{post.author}</TableCell>
                 <TableCell>{post.category}</TableCell>
                 <TableCell>{post.featured ? "Ja" : "Nein"}</TableCell>
+                <TableCell>
+                  {instagramStatuses[post.id] ? (
+                    <span className="text-green-600 text-sm">Geteilt</span>
+                  ) : (
+                    <span className="text-gray-400 text-sm">Nicht geteilt</span>
+                  )}
+                </TableCell>
                 <TableCell>{new Date(post.published_at).toLocaleDateString('de-DE')}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">
@@ -182,6 +233,15 @@ const BlogPostsView: React.FC = () => {
                       onClick={() => handleEdit(post)}
                     >
                       <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleInstagramPost(post)}
+                      disabled={post.status !== 'veröffentlicht' || instagramStatuses[post.id] === 'posted'}
+                      title={post.status !== 'veröffentlicht' ? 'Nur für veröffentlichte Artikel' : 'Auf Instagram teilen'}
+                    >
+                      <Instagram className="h-4 w-4" />
                     </Button>
                     <Button
                       size="sm"
@@ -206,6 +266,15 @@ const BlogPostsView: React.FC = () => {
             setEditingPost(null);
             loadBlogPosts();
           }}
+        />
+      )}
+
+      {instagramPost && (
+        <InstagramPostModal
+          post={instagramPost}
+          isOpen={true}
+          onClose={() => setInstagramPost(null)}
+          onSuccess={handleInstagramSuccess}
         />
       )}
     </>

@@ -80,3 +80,16 @@ export interface AdminBlogPost {
   category: string;
   featured: boolean;
 }
+
+export interface InstagramPost {
+  id: string;
+  blog_post_id: string;
+  caption: string;
+  image_url?: string;
+  status: 'pending' | 'processing' | 'posted' | 'failed';
+  instagram_id?: string;
+  scheduled_at?: string;
+  posted_at?: string;
+  error_message?: string;
+  created_at: string;
+}
