@@ -4,24 +4,25 @@ export interface JobConfig {
   id?: string;
   name: string;
   description?: string;
-  schedule_pattern: string;
-  schedule_type: 'daily' | 'weekly' | 'monthly' | 'custom';
-  target_table: string;
-  template_data: Record<string, any>;
-  is_active: boolean;
+  cron_expression: string;
+  job_type: 'content_generation' | 'seo_optimization' | 'performance_analysis' | 'cleanup' | 'backup' | 'custom';
+  function_name: string;
+  function_payload: Record<string, any>;
+  status: 'active' | 'inactive' | 'paused' | 'error';
+  enabled: boolean;
 }
 
 export interface JobExecution {
   id: string;
-  job_id: string;
-  status: 'success' | 'failed' | 'partial_success';
+  cron_job_id: string;
+  execution_id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   started_at: string;
   completed_at?: string;
   duration_ms?: number;
-  entries_created: number;
-  entries_failed: number;
-  error_details?: string;
-  execution_log?: Record<string, any>[];
+  output?: Record<string, any>;
+  error_message?: string;
+  retry_attempt: number;
 }
 
 export interface JobStats {
@@ -37,7 +38,7 @@ class ScheduledJobService {
    */
   async getJobConfigs(): Promise<JobConfig[]> {
     const { data, error } = await supabase
-      .from('scheduled_jobs.job_configs')
+      .from('cron_jobs')
       .select('*')
       .order('created_at', { ascending: false });
 
@@ -50,7 +51,7 @@ class ScheduledJobService {
    */
   async getJobConfigById(id: string): Promise<JobConfig | null> {
     const { data, error } = await supabase
-      .from('scheduled_jobs.job_configs')
+      .from('cron_jobs')
       .select('*')
       .eq('id', id)
       .single();
@@ -75,7 +76,7 @@ class ScheduledJobService {
     };
 
     const { data, error } = await supabase
-      .from('scheduled_jobs.job_configs')
+      .from('cron_jobs')
       .insert(jobData)
       .select()
       .single();
@@ -89,7 +90,7 @@ class ScheduledJobService {
    */
   async updateJobConfig(id: string, updates: Partial<JobConfig>): Promise<JobConfig> {
     const { data, error } = await supabase
-      .from('scheduled_jobs.job_configs')
+      .from('cron_jobs')
       .update(updates)
       .eq('id', id)
       .select()
@@ -104,7 +105,7 @@ class ScheduledJobService {
    */
   async deleteJobConfig(id: string): Promise<void> {
     const { error } = await supabase
-      .from('scheduled_jobs.job_configs')
+      .from('cron_jobs')
       .delete()
       .eq('id', id);
 
@@ -116,8 +117,8 @@ class ScheduledJobService {
    */
   async toggleJobActive(id: string, isActive: boolean): Promise<JobConfig> {
     const { data, error } = await supabase
-      .from('scheduled_jobs.job_configs')
-      .update({ is_active: isActive })
+      .from('cron_jobs')
+      .update({ enabled: isActive })
       .eq('id', id)
       .select()
       .single();
@@ -131,13 +132,13 @@ class ScheduledJobService {
    */
   async getJobExecutions(jobId?: string, limit = 50): Promise<JobExecution[]> {
     let query = supabase
-      .from('scheduled_jobs.execution_history')
+      .from('job_execution_logs')
       .select('*')
       .order('started_at', { ascending: false })
       .limit(limit);
 
     if (jobId) {
-      query = query.eq('job_id', jobId);
+      query = query.eq('cron_job_id', jobId);
     }
 
     const { data, error } = await query;
@@ -150,15 +151,15 @@ class ScheduledJobService {
    */
   async runJobManually(id: string): Promise<{ success: boolean; executionId?: string; error?: string }> {
     try {
-      const { data, error } = await supabase.rpc('scheduled_jobs.execute_job', { job_id: id });
+      const { data, error } = await supabase.rpc('execute_cron_job', { job_id: id });
 
       if (error) throw error;
       
       // Get the latest execution for this job
       const { data: executions } = await supabase
-        .from('scheduled_jobs.execution_history')
+        .from('job_execution_logs')
         .select('id')
-        .eq('job_id', id)
+        .eq('cron_job_id', id)
         .order('started_at', { ascending: false })
         .limit(1);
       
@@ -177,9 +178,9 @@ class ScheduledJobService {
    */
   async getJobStats(): Promise<JobStats> {
     const [jobsResult, executionsResult] = await Promise.all([
-      supabase.from('scheduled_jobs.job_configs').select('*'),
+      supabase.from('cron_jobs').select('*'),
       supabase
-        .from('scheduled_jobs.execution_history')
+        .from('job_execution_logs')
         .select('*')
         .order('started_at', { ascending: false })
         .limit(10)
@@ -192,16 +193,16 @@ class ScheduledJobService {
     const executions = executionsResult.data || [];
 
     const totalJobs = jobs.length;
-    const activeJobs = jobs.filter(job => job.is_active).length;
+    const activeJobs = jobs.filter(job => job.enabled).length;
     
     const allExecutions = await supabase
-      .from('scheduled_jobs.execution_history')
+      .from('job_execution_logs')
       .select('status', { count: 'exact' });
     
     const successfulExecutions = await supabase
-      .from('scheduled_jobs.execution_history')
+      .from('job_execution_logs')
       .select('status', { count: 'exact' })
-      .in('status', ['success', 'partial_success']);
+      .in('status', ['completed']);
     
     const totalExecutions = allExecutions.count || 0;
     const successCount = successfulExecutions.count || 0;
