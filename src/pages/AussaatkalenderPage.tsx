@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Helmet } from "react-helmet";
 import SowingCalendar from '@/components/admin/SowingCalendar';
@@ -6,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar, Sprout, Search, Filter, Leaf, Info } from 'lucide-react';
+import { Calendar, Sprout, Search, Filter, Leaf, Info, Thermometer, Droplets, Sun, Clock } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -55,7 +54,7 @@ const COMPANION_PLANTS: Record<string, {
   "Gurken": {
     good: [
       {plant: "Bohnen", reason: "Bohnen fixieren Stickstoff, den Gurken für ihr Blattwachstum benötigen"},
-      {plant: "Erbsen", reason: "Stickstoffdüngung durch Knöllchenbakterien kommt Gurken zugute"},
+      {plant: "Erbsen", reason: "Stickstoffdüngung durch Bohnen kommt Gurken zugute"},
       {plant: "Salat", reason: "Bodenbeschattung hält Feuchtigkeit, verschiedene Wurzeltiefen"},
       {plant: "Zwiebeln", reason: "Halten Blattläuse und andere Schädlinge durch Geruch fern"},
       {plant: "Kohl", reason: "Kohl profitiert von der Bodenbeschattung der Gurken"},
@@ -175,6 +174,144 @@ const COMPANION_PLANTS: Record<string, {
   }
 };
 
+// Enhanced plant-specific growing tips
+const PLANT_GROWING_TIPS: Record<string, {
+  temperature: string;
+  watering: string;
+  light: string;
+  timing: string;
+  difficulty: 'Einfach' | 'Mittel' | 'Schwer';
+  specificTips: string[];
+  commonMistakes: string[];
+}> = {
+  "Tomaten": {
+    temperature: "18-25°C optimal, mindestens 15°C nachts",
+    watering: "Gleichmäßig feucht, aber nicht nass. Morgens gießen.",
+    light: "6-8 Stunden direktes Sonnenlicht täglich",
+    timing: "Nach den Eisheiligen (Mitte Mai) auspflanzen",
+    difficulty: "Mittel",
+    specificTips: [
+      "Ausgeizen (Seitentriebe entfernen) für bessere Fruchtentwicklung",
+      "Stütze oder Rankhilfe bereits beim Pflanzen anbringen",
+      "Mulchen verhindert Krankheiten und hält Feuchtigkeit",
+      "Kalium-reiche Düngung für bessere Fruchtbildung"
+    ],
+    commonMistakes: [
+      "Zu früh auspflanzen - Frostgefahr!",
+      "Blätter beim Gießen benetzen - fördert Krankheiten",
+      "Überdüngung mit Stickstoff - viel Blatt, wenig Frucht"
+    ]
+  },
+  "Karotten": {
+    temperature: "15-20°C optimal, keimen ab 8°C",
+    watering: "Gleichmäßig feucht, besonders während Keimung",
+    light: "Volle Sonne bis Halbschatten",
+    timing: "März bis Juli säen möglich",
+    difficulty: "Einfach",
+    specificTips: [
+      "Boden tiefgründig lockern für gerade Wurzeln",
+      "Dünn säen und später vereinzeln",
+      "Samen vor Aussaat in feuchtem Sand stratifizieren",
+      "Reihen mit Radieschen markieren (keimen schneller)"
+    ],
+    commonMistakes: [
+      "Frischen Mist verwenden - führt zu gegabelten Wurzeln",
+      "Zu dicht säen - Karotten bleiben klein",
+      "Unregelmäßiges Gießen - rissige Wurzeln"
+    ]
+  },
+  "Salat": {
+    temperature: "10-18°C optimal, schosst bei Hitze",
+    watering: "Regelmäßig, aber nicht zu nass",
+    light: "Halbschatten bis volle Sonne",
+    timing: "Frühjahr und Herbst ideal",
+    difficulty: "Einfach",
+    specificTips: [
+      "Lichtkeimer - Samen nur andrücken, nicht bedecken",
+      "Bei Hitze Schattierung verwenden",
+      "Kopfsalat braucht mehr Platz als Pflücksalat",
+      "Gestaffelte Aussaat alle 2 Wochen für kontinuierliche Ernte"
+    ],
+    commonMistakes: [
+      "Zu tief säen - Samen keimen nicht",
+      "Im Hochsommer säen - schosst sofort",
+      "Zu wenig Abstand - kleine Köpfe"
+    ]
+  },
+  "Gurken": {
+    temperature: "20-25°C optimal, sehr wärmebedürftig",
+    watering: "Viel Wasser, aber keine Staunässe",
+    light: "Volle Sonne, windgeschützt",
+    timing: "Nach Eisheiligen, ab 15°C Bodentemperatur",
+    difficulty: "Mittel",
+    specificTips: [
+      "Rankhilfe für Schlangengurken bereitstellen",
+      "Regelmäßig ernten für kontinuierliche Produktion",
+      "Weibliche Blüten nicht entfernen bei Freilandgurken",
+      "Kalium-reiche Düngung für aromatische Früchte"
+    ],
+    commonMistakes: [
+      "Zu früh säen - Kälteschock",
+      "Unregelmäßiges Gießen - bittere Gurken",
+      "Früchte zu spät ernten - hemmt weitere Bildung"
+    ]
+  },
+  "Radieschen": {
+    temperature: "12-18°C optimal, sehr anspruchslos",
+    watering: "Gleichmäßig feucht für zarte Knollen",
+    light: "Volle Sonne bis Halbschatten",
+    timing: "März bis September möglich",
+    difficulty: "Einfach",
+    specificTips: [
+      "Schnellwachsend - nach 4-6 Wochen erntereif",
+      "Alle 2 Wochen nachsäen für kontinuierliche Ernte",
+      "Bei Hitze täglich gießen",
+      "Erdflöhe mit Kulturschutznetz abhalten"
+    ],
+    commonMistakes: [
+      "Zu spät ernten - werden holzig und scharf",
+      "Unregelmäßiges Gießen - platzen auf",
+      "Zu dicht stehen lassen - bilden keine Knollen"
+    ]
+  },
+  "Basilikum": {
+    temperature: "20-25°C, sehr wärmebedürftig",
+    watering: "Mäßig, nicht über Blätter gießen",
+    light: "Volle Sonne, geschützter Standort",
+    timing: "Nach Eisheiligen ins Freie",
+    difficulty: "Mittel",
+    specificTips: [
+      "Blütenstände ausbrechen für mehr Blattmasse",
+      "Triebspitzen regelmäßig entspitzen",
+      "Im Topf überwintern möglich",
+      "Nicht zu früh ernten - Pflanze muss etabliert sein"
+    ],
+    commonMistakes: [
+      "Zu kalt stellen - stirbt ab",
+      "Überwässern - Wurzelfäule",
+      "Blüten stehen lassen - weniger aromatische Blätter"
+    ]
+  },
+  "Zwiebeln": {
+    temperature: "15-20°C, relativ robust",
+    watering: "Mäßig, vor Ernte weniger gießen",
+    light: "Volle Sonne",
+    timing: "März-April säen oder Steckzwiebeln setzen",
+    difficulty: "Mittel",
+    specificTips: [
+      "Steckzwiebeln sind einfacher als Aussaat",
+      "Boden sollte nicht zu feucht sein",
+      "Unkraut regelmäßig entfernen - konkurriert stark",
+      "Laub welkt vor Ernte - dann mit Ernte warten"
+    ],
+    commonMistakes: [
+      "Zu tief setzen - Zwiebeln bleiben klein",
+      "Zu viel Stickstoff - schlechte Lagerfähigkeit",
+      "Zu früh ernten - nicht ausgereift"
+    ]
+  }
+};
+
 const AussaatkalenderPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
@@ -192,6 +329,8 @@ const AussaatkalenderPage: React.FC = () => {
   const filteredPlants = Object.keys(COMPANION_PLANTS).filter(plant =>
     plant.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const selectedPlantTips = selectedPlant ? PLANT_GROWING_TIPS[selectedPlant] : null;
 
   return (
     <>
@@ -371,66 +510,177 @@ const AussaatkalenderPage: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="tipps">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Sprout className="h-5 w-5 text-sage-600" />
-                    Aussaat-Tipps
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div className="bg-sage-50 p-4 rounded-lg border border-sage-200">
-                      <h3 className="font-medium text-earth-800 mb-2">Aussaat im Freiland</h3>
-                      <p className="text-earth-600">
-                        Achte auf die richtige Bodentemperatur und Frostgefahr. Viele Gemüsesorten benötigen mindestens 8-10°C Bodentemperatur für eine erfolgreiche Keimung.
-                      </p>
-                    </div>
-                    
-                    <div className="bg-accent-50 p-4 rounded-lg border border-accent-200">
-                      <h3 className="font-medium text-earth-800 mb-2">Vorziehen auf der Fensterbank</h3>
-                      <p className="text-earth-600">
-                        Wärmebedürftige Pflanzen wie Tomaten, Paprika und Auberginen sollten 6-8 Wochen vor dem Auspflanzen vorgezogen werden. Achte auf ausreichend Licht!
-                      </p>
-                    </div>
-                    
-                    <div className="bg-sage-50 p-4 rounded-lg border border-sage-200">
-                      <h3 className="font-medium text-earth-800 mb-2">Saattiefe</h3>
-                      <p className="text-earth-600">
-                        Als Faustregel gilt: Saattiefe = etwa das Doppelte des Samendurchmessers. Lichtkeimer wie Salat werden nur leicht angedrückt.
-                      </p>
-                    </div>
-                    
-                    <div className="bg-accent-50 p-4 rounded-lg border border-accent-200">
-                      <h3 className="font-medium text-earth-800 mb-2">Gießen</h3>
-                      <p className="text-earth-600">
-                        Halte die Aussaat gleichmäßig feucht, aber nicht nass. Verwende eine Sprühflasche für feine Samen, um sie nicht wegzuspülen.
-                      </p>
-                    </div>
-                    
-                    <div className="bg-sage-50 p-4 rounded-lg border border-sage-200">
-                      <h3 className="font-medium text-earth-800 mb-2">Abhärten</h3>
-                      <p className="text-earth-600">
-                        Vorgezogene Pflanzen vor dem Auspflanzen 1-2 Wochen abhärten, indem du sie tagsüber nach draußen stellst und nachts wieder reinholst.
-                      </p>
-                    </div>
+              <div className="grid gap-6">
+                {/* Plant Selection for Tips */}
+                {selectedPlant && (
+                  <Card className="border-sage-300 bg-sage-50">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Sprout className="h-5 w-5 text-sage-600" />
+                        Spezielle Tipps für {selectedPlant}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {selectedPlantTips ? (
+                        <div className="space-y-4">
+                          {/* Quick Info Cards */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="bg-white p-3 rounded-lg border border-sage-200">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Thermometer className="h-4 w-4 text-orange-500" />
+                                <span className="text-xs font-medium text-earth-600">Temperatur</span>
+                              </div>
+                              <p className="text-sm text-earth-800">{selectedPlantTips.temperature}</p>
+                            </div>
+                            
+                            <div className="bg-white p-3 rounded-lg border border-sage-200">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Droplets className="h-4 w-4 text-blue-500" />
+                                <span className="text-xs font-medium text-earth-600">Gießen</span>
+                              </div>
+                              <p className="text-sm text-earth-800">{selectedPlantTips.watering}</p>
+                            </div>
+                            
+                            <div className="bg-white p-3 rounded-lg border border-sage-200">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Sun className="h-4 w-4 text-yellow-500" />
+                                <span className="text-xs font-medium text-earth-600">Licht</span>
+                              </div>
+                              <p className="text-sm text-earth-800">{selectedPlantTips.light}</p>
+                            </div>
+                            
+                            <div className="bg-white p-3 rounded-lg border border-sage-200">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Clock className="h-4 w-4 text-green-500" />
+                                <span className="text-xs font-medium text-earth-600">Timing</span>
+                              </div>
+                              <p className="text-sm text-earth-800">{selectedPlantTips.timing}</p>
+                            </div>
+                          </div>
 
-                    <div className="bg-accent-50 p-4 rounded-lg border border-accent-200">
-                      <h3 className="font-medium text-earth-800 mb-2">Mischkultur-Prinzipien</h3>
-                      <p className="text-earth-600">
-                        Nutze die natürlichen Eigenschaften der Pflanzen: Tiefwurzler neben Flachwurzlern, Starkzehrer neben Schwachzehrern, duftende Kräuter als natürlicher Schädlingsschutz.
-                      </p>
-                    </div>
+                          {/* Difficulty Badge */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-earth-600">Schwierigkeit:</span>
+                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                              selectedPlantTips.difficulty === 'Einfach' 
+                                ? 'bg-green-100 text-green-800' 
+                                : selectedPlantTips.difficulty === 'Mittel'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {selectedPlantTips.difficulty}
+                            </span>
+                          </div>
 
-                    <div className="bg-sage-50 p-4 rounded-lg border border-sage-200">
-                      <h3 className="font-medium text-earth-800 mb-2">Fruchtfolge beachten</h3>
-                      <p className="text-earth-600">
-                        Baue nicht jedes Jahr die gleichen Pflanzen am selben Standort an. Eine gute Fruchtfolge beugt Bodenmüdigkeit und Krankheiten vor.
-                      </p>
+                          {/* Specific Tips */}
+                          <div className="bg-white p-4 rounded-lg border border-sage-200">
+                            <h4 className="font-medium text-earth-800 mb-3">💡 Profi-Tipps</h4>
+                            <ul className="space-y-2">
+                              {selectedPlantTips.specificTips.map((tip, index) => (
+                                <li key={index} className="flex items-start gap-2 text-sm text-earth-700">
+                                  <span className="text-sage-500 mt-1">•</span>
+                                  {tip}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          {/* Common Mistakes */}
+                          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                            <h4 className="font-medium text-earth-800 mb-3 flex items-center gap-2">
+                              <span className="text-red-600">⚠️</span>
+                              Häufige Fehler vermeiden
+                            </h4>
+                            <ul className="space-y-2">
+                              {selectedPlantTips.commonMistakes.map((mistake, index) => (
+                                <li key={index} className="flex items-start gap-2 text-sm text-earth-700">
+                                  <span className="text-red-500 mt-1">•</span>
+                                  {mistake}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-earth-600">Wähle eine Pflanze im Beetnachbarn-Finder aus, um spezielle Tipps zu erhalten.</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* General Tips */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sprout className="h-5 w-5 text-sage-600" />
+                      Allgemeine Aussaat-Tipps
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div className="bg-sage-50 p-4 rounded-lg border border-sage-200">
+                        <h3 className="font-medium text-earth-800 mb-2">Aussaat im Freiland</h3>
+                        <p className="text-earth-600">
+                          Achte auf die richtige Bodentemperatur und Frostgefahr. Viele Gemüsesorten benötigen mindestens 8-10°C Bodentemperatur für eine erfolgreiche Keimung.
+                        </p>
+                      </div>
+                      
+                      <div className="bg-accent-50 p-4 rounded-lg border border-accent-200">
+                        <h3 className="font-medium text-earth-800 mb-2">Vorziehen auf der Fensterbank</h3>
+                        <p className="text-earth-600">
+                          Wärmebedürftige Pflanzen wie Tomaten, Paprika und Auberginen sollten 6-8 Wochen vor dem Auspflanzen vorgezogen werden. Achte auf ausreichend Licht!
+                        </p>
+                      </div>
+                      
+                      <div className="bg-sage-50 p-4 rounded-lg border border-sage-200">
+                        <h3 className="font-medium text-earth-800 mb-2">Saattiefe</h3>
+                        <p className="text-earth-600">
+                          Als Faustregel gilt: Saattiefe = etwa das Doppelte des Samendurchmessers. Lichtkeimer wie Salat werden nur leicht angedrückt.
+                        </p>
+                      </div>
+                      
+                      <div className="bg-accent-50 p-4 rounded-lg border border-accent-200">
+                        <h3 className="font-medium text-earth-800 mb-2">Gießen</h3>
+                        <p className="text-earth-600">
+                          Halte die Aussaat gleichmäßig feucht, aber nicht nass. Verwende eine Sprühflasche für feine Samen, um sie nicht wegzuspülen.
+                        </p>
+                      </div>
+                      
+                      <div className="bg-sage-50 p-4 rounded-lg border border-sage-200">
+                        <h3 className="font-medium text-earth-800 mb-2">Abhärten</h3>
+                        <p className="text-earth-600">
+                          Vorgezogene Pflanzen vor dem Auspflanzen 1-2 Wochen abhärten, indem du sie tagsüber nach draußen stellst und nachts wieder reinholst.
+                        </p>
+                      </div>
+
+                      <div className="bg-accent-50 p-4 rounded-lg border border-accent-200">
+                        <h3 className="font-medium text-earth-800 mb-2">Mischkultur-Prinzipien</h3>
+                        <p className="text-earth-600">
+                          Nutze die natürlichen Eigenschaften der Pflanzen: Tiefwurzler neben Flachwurzlern, Starkzehrer neben Schwachzehrern, duftende Kräuter als natürlicher Schädlingsschutz.
+                        </p>
+                      </div>
+
+                      <div className="bg-sage-50 p-4 rounded-lg border border-sage-200">
+                        <h3 className="font-medium text-earth-800 mb-2">Fruchtfolge beachten</h3>
+                        <p className="text-earth-600">
+                          Baue nicht jedes Jahr die gleichen Pflanzen am selben Standort an. Eine gute Fruchtfolge beugt Bodenmüdigkeit und Krankheiten vor.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+
+                {/* Tip to select a plant */}
+                {!selectedPlant && (
+                  <Alert className="bg-accent-50 border-accent-200">
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Tipp</AlertTitle>
+                    <AlertDescription>
+                      Wähle eine Pflanze im "Beetnachbarn-Finder" Tab aus, um spezielle, detaillierte Anbautipps für diese Pflanze zu erhalten.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </div>
