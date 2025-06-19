@@ -1,4 +1,3 @@
-
 /**
  * Hilfsfunktionen zur Generierung von Blogpost-Slug und SEO-Metadaten.
  * - Schneidet Sonderzeichen, numeriert Slugs bei Bedarf hoch, normalisiert Umlaute
@@ -68,6 +67,69 @@ export function getBlogPostMeta({
     ogImage: featuredImage || '/images/og-default.jpg',
     ogUrl: `${urlBase}/blog/${slug}`,
     twitterCard: 'summary_large_image',
+    canonicalUrl: `${urlBase}/blog/${slug}`,
+    author: seo.author || "Mien Tuun",
+    language: "de",
+    revisitAfter: "7 days",
+    robots: "index, follow"
   };
 }
 
+/**
+ * Generiert Schema.org JSON-LD für Blogposts
+ */
+export function generateStructuredData({
+  title,
+  description,
+  author,
+  publishedAt,
+  updatedAt,
+  featuredImage,
+  slug,
+  category,
+  tags,
+  siteName = "Mien Tuun",
+  urlBase = "https://mien-tuun.de"
+}: {
+  title: string;
+  description: string;
+  author: string;
+  publishedAt: string;
+  updatedAt?: string;
+  featuredImage?: string;
+  slug: string;
+  category?: string;
+  tags?: string[];
+  siteName?: string;
+  urlBase?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: title,
+    name: title,
+    description: description,
+    datePublished: publishedAt,
+    dateModified: updatedAt || publishedAt,
+    author: {
+      "@type": "Person",
+      name: author
+    },
+    publisher: {
+      "@type": "Organization",
+      name: siteName,
+      logo: {
+        "@type": "ImageObject",
+        url: `${urlBase}/logo.png`
+      }
+    },
+    image: featuredImage ? [featuredImage] : undefined,
+    url: `${urlBase}/blog/${slug}`,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${urlBase}/blog/${slug}`
+    },
+    articleSection: category,
+    keywords: tags?.join(", ")
+  };
+}
