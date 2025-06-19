@@ -16,7 +16,8 @@ import {
   Lightbulb,
   TrendingUp,
   RefreshCw,
-  PlusCircle
+  PlusCircle,
+  Play
 } from "lucide-react";
 import { contentAutomationService, ContentAutomationConfig, ContentAutomationStats as ContentAutomationStatsType } from "@/services/ContentAutomationService";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +33,8 @@ const ContentAutomationDashboard: React.FC = () => {
   const [overallStats, setOverallStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showWizard, setShowWizard] = useState(false);
+  const [executingConfig, setExecutingConfig] = useState<string | null>(null);
+  const [executionProgress, setExecutionProgress] = useState<any>(null);
   const { toast } = useToast();
 
   // Sample data for the encouragement card
@@ -215,6 +218,118 @@ const ContentAutomationDashboard: React.FC = () => {
       // Refresh data
       loadData();
     }, 3000);
+  };
+
+  const handleExecuteConfig = async (configId: string) => {
+    if (!configId) return;
+    
+    setExecutingConfig(configId);
+    setExecutionProgress({
+      status: 'running',
+      progress: 0,
+      stages: [
+        { id: 'initialization', name: 'Initialisierung', status: 'running', progress: 0 },
+        { id: 'topic_selection', name: 'Themenauswahl', status: 'idle', progress: 0 },
+        { id: 'content_generation', name: 'Content-Generierung', status: 'idle', progress: 0 },
+        { id: 'quality_check', name: 'Qualitätsprüfung', status: 'idle', progress: 0 },
+        { id: 'image_generation', name: 'Bild-Generierung', status: 'idle', progress: 0 },
+        { id: 'seo_optimization', name: 'SEO-Optimierung', status: 'idle', progress: 0 },
+        { id: 'publishing', name: 'Veröffentlichung', status: 'idle', progress: 0 }
+      ],
+      startTime: new Date()
+    });
+    
+    try {
+      toast({
+        title: "Ausführung gestartet",
+        description: "Die Content-Automatisierung wird jetzt ausgeführt."
+      });
+      
+      // Simulate the execution process with progress updates
+      await simulateExecution(setExecutionProgress);
+      
+      toast({
+        title: "Ausführung abgeschlossen",
+        description: "Die Content-Automatisierung wurde erfolgreich ausgeführt."
+      });
+      
+      // Refresh data
+      loadData();
+    } catch (error) {
+      console.error('Error executing configuration:', error);
+      toast({
+        title: "Fehler",
+        description: "Die Ausführung konnte nicht abgeschlossen werden",
+        variant: "destructive"
+      });
+    } finally {
+      setExecutingConfig(null);
+    }
+  };
+
+  const simulateExecution = async (setProgress: React.Dispatch<React.SetStateAction<any>>) => {
+    const stages = [
+      'initialization',
+      'topic_selection',
+      'content_generation',
+      'quality_check',
+      'image_generation',
+      'seo_optimization',
+      'publishing'
+    ];
+    
+    const stageDurations = [2, 3, 8, 4, 6, 3, 2]; // in seconds
+    
+    for (let i = 0; i < stages.length; i++) {
+      const stage = stages[i];
+      const duration = stageDurations[i] * 1000;
+      
+      // Start stage
+      setProgress(prev => ({
+        ...prev,
+        progress: Math.round((i / stages.length) * 100),
+        stages: prev.stages.map((s: any) => 
+          s.id === stage 
+            ? { ...s, status: 'running', progress: 0 }
+            : s
+        )
+      }));
+      
+      // Simulate progress
+      const steps = 10;
+      const stepTime = duration / steps;
+      
+      for (let step = 1; step <= steps; step++) {
+        await new Promise(resolve => setTimeout(resolve, stepTime));
+        
+        setProgress(prev => ({
+          ...prev,
+          stages: prev.stages.map((s: any) => 
+            s.id === stage 
+              ? { ...s, progress: Math.round((step / steps) * 100) }
+              : s
+          )
+        }));
+      }
+      
+      // Complete stage
+      setProgress(prev => ({
+        ...prev,
+        stages: prev.stages.map((s: any) => 
+          s.id === stage 
+            ? { ...s, status: 'completed', progress: 100 }
+            : s
+        )
+      }));
+    }
+    
+    // Complete execution
+    setProgress(prev => ({
+      ...prev,
+      status: 'completed',
+      progress: 100,
+      endTime: new Date()
+    }));
   };
 
   const getMotivationalMessage = (stats: ContentAutomationStatsType) => {
@@ -499,6 +614,14 @@ const ContentAutomationDashboard: React.FC = () => {
                           </Button>
                           
                           <Button
+                            onClick={() => handleExecuteConfig(selectedConfig.id!)}
+                            disabled={!!executingConfig}
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Jetzt ausführen
+                          </Button>
+                          
+                          <Button
                             variant="destructive"
                             onClick={() => handleDeleteConfig(selectedConfig.id!)}
                           >
@@ -592,12 +715,31 @@ const ContentAutomationDashboard: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="progress" className="mt-4">
-              <ContentAutomationProgress 
-                status={automationProgress.status}
-                progress={automationProgress.progress}
-                stages={automationProgress.stages}
-                startTime={automationProgress.startTime}
-              />
+              {executingConfig ? (
+                <ContentAutomationProgress 
+                  status={executionProgress.status}
+                  progress={executionProgress.progress}
+                  stages={executionProgress.stages}
+                  startTime={executionProgress.startTime}
+                  endTime={executionProgress.endTime}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Keine laufende Ausführung</h3>
+                    <p className="text-gray-500 mb-4">
+                      Starte eine Ausführung, um den Fortschritt zu sehen.
+                    </p>
+                    {selectedConfig && (
+                      <Button onClick={() => handleExecuteConfig(selectedConfig.id!)}>
+                        <Play className="h-4 w-4 mr-2" />
+                        Jetzt ausführen
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
           </Tabs>
         </div>

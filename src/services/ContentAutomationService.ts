@@ -175,6 +175,53 @@ class ContentAutomationService {
   }
 
   /**
+   * Execute a content automation configuration
+   */
+  async executeConfiguration(id: string): Promise<any> {
+    const { data: config, error } = await supabase
+      .from('content_automation_configs')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    if (!config) throw new Error('Configuration not found');
+    
+    // Log the execution start
+    await this.logAction(id, 'execute_configuration', 'success', { 
+      started_at: new Date().toISOString() 
+    });
+    
+    try {
+      // Call the content-automation-executor edge function
+      const { data: result, error: execError } = await supabase.functions.invoke(
+        'content-automation-executor',
+        {
+          body: { configId: id, action: 'execute' }
+        }
+      );
+      
+      if (execError) throw execError;
+      
+      // Log the successful execution
+      await this.logAction(id, 'execution_completed', 'success', { 
+        completed_at: new Date().toISOString(),
+        result
+      });
+      
+      return result;
+    } catch (error) {
+      // Log the failed execution
+      await this.logAction(id, 'execution_failed', 'error', { 
+        error: error.message,
+        completed_at: new Date().toISOString()
+      });
+      
+      throw error;
+    }
+  }
+
+  /**
    * Get logs for a configuration
    */
   async getLogs(configId?: string, limit = 50): Promise<ContentAutomationLog[]> {
@@ -441,7 +488,7 @@ class ContentAutomationService {
         const dateStr = date.toISOString().split('T')[0];
         
         const count = contentData?.filter(c => 
-          c.published_at.startsWith(dateStr)
+          c.published_at?.startsWith(dateStr)
         ).length || 0;
         
         contentTrend.push({ date: dateStr, count });

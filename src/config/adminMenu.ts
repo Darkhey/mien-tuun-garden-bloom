@@ -61,25 +61,27 @@ export const adminMenuItems: AdminMenuItem[] = [
     ]
   },
   {
-    id: "content-strategy",
-    label: "Content Strategy",
-    icon: BarChart3,
-    path: "/admin/content-strategy",
-    description: "Content-Strategien und Analytics"
-  },
-  {
-    id: "automatisierung",
-    label: "Automatisierung",
-    icon: Zap,
-    path: "/admin/automatisierung",
-    description: "Automatisierte Workflows"
-  },
-  {
     id: "content-automation",
     label: "Content-Automatisierung",
     icon: Zap,
     path: "/admin/content-automation",
-    description: "Automatisierte Content-Erstellung"
+    description: "Automatisierte Content-Erstellung",
+    children: [
+      {
+        id: "content-strategy",
+        label: "Content Strategy",
+        icon: BarChart3,
+        path: "/admin/content-strategy",
+        description: "Content-Strategien und Analytics"
+      },
+      {
+        id: "scheduled-jobs",
+        label: "Geplante Jobs",
+        icon: Clock,
+        path: "/admin/scheduled-jobs",
+        description: "Automatisierte Eintragsgeneration"
+      }
+    ]
   },
   {
     id: "system",
@@ -100,13 +102,6 @@ export const adminMenuItems: AdminMenuItem[] = [
         icon: Calendar,
         path: "/admin/sowing-calendar",
         description: "Verwalte Aussaatzeiten"
-      },
-      {
-        id: "scheduled-jobs",
-        label: "Geplante Jobs",
-        icon: Clock,
-        path: "/admin/scheduled-jobs",
-        description: "Automatisierte Eintragsgeneration"
       },
       {
         id: "blog-testing",
