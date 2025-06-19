@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { 
@@ -41,7 +42,7 @@ const BlogPostShareSection: React.FC<BlogPostShareSectionProps> = ({
         </p>
         
         <div className="flex flex-wrap justify-center gap-4">
-          <FacebookShareButton url={url} quote={title} className="hover:scale-110 transition-transform">
+          <FacebookShareButton url={url} hashtag="#MienTuun" className="hover:scale-110 transition-transform">
             <FacebookIcon size={iconSize} round style={roundedIconStyle} />
           </FacebookShareButton>
           

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -171,7 +172,7 @@ const ContentAutomationWizard: React.FC<ContentAutomationWizardProps> = ({ onCom
         },
         yaml_config: generateYAMLConfig(),
         is_active: true,
-        created_by: user.id // Add the required created_by field
+        created_by: user.id
       };
 
       await contentAutomationService.createConfiguration(configData);
@@ -262,7 +263,6 @@ const ContentAutomationWizard: React.FC<ContentAutomationWizardProps> = ({ onCom
                   <div>
                     <Label htmlFor={`priority-${category}`}>Priorität</Label>
                     <Select
-                      id={`priority-${category}`}
                       value={categoryPriorities[category] || "medium"}
                       onValueChange={value => setCategoryPriorities({ ...categoryPriorities, [category]: value })}
                     >
@@ -311,7 +311,6 @@ const ContentAutomationWizard: React.FC<ContentAutomationWizardProps> = ({ onCom
               <div>
                 <Label htmlFor="interval">Intervall</Label>
                 <Select
-                  id="interval"
                   value={publishingSettings.interval}
                   onValueChange={value => setPublishingSettings({ ...publishingSettings, interval: value })}
                 >
@@ -405,7 +404,6 @@ const ContentAutomationWizard: React.FC<ContentAutomationWizardProps> = ({ onCom
               <div>
                 <Label htmlFor="readabilityLevel">Lesbarkeitsgrad</Label>
                 <Select
-                  id="readabilityLevel"
                   value={contentSettings.readabilityLevel}
                   onValueChange={value => setContentSettings({ ...contentSettings, readabilityLevel: value })}
                 >

@@ -236,7 +236,10 @@ class ScheduledJobService {
    */
   async runJobManually(id: string): Promise<{ success: boolean; executionId?: string; error?: string }> {
     try {
-      const { data, error } = await supabase.rpc('execute_cron_job', { job_id: id });
+      // Use edge function instead of RPC
+      const { data, error } = await supabase.functions.invoke('cron-executor', {
+        body: { jobId: id, action: 'execute' }
+      });
 
       if (error) throw error;
       
