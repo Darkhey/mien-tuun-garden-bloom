@@ -17,8 +17,9 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Info } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const SOWING_DATA = [
   {
@@ -372,6 +373,96 @@ const SOWING_DATA = [
     plantOut: [],
     harvest: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
   },
+  {
+    plant: "Zwiebeln",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer"],
+    directSow: [3, 4],
+    indoor: [2, 3],
+    plantOut: [4, 5],
+    harvest: [7, 8, 9],
+  },
+  {
+    plant: "Knoblauch",
+    type: "Gemüse",
+    season: ["Herbst", "Winter"],
+    directSow: [10, 11],
+    indoor: [],
+    plantOut: [],
+    harvest: [7, 8],
+  },
+  {
+    plant: "Mangold",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer"],
+    directSow: [4, 5, 6, 7],
+    indoor: [3, 4],
+    plantOut: [5, 6],
+    harvest: [6, 7, 8, 9, 10],
+  },
+  {
+    plant: "Feldsalat",
+    type: "Gemüse",
+    season: ["Herbst", "Winter"],
+    directSow: [8, 9, 10],
+    indoor: [],
+    plantOut: [],
+    harvest: [10, 11, 12, 1, 2, 3],
+  },
+  {
+    plant: "Erbsen",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer"],
+    directSow: [3, 4, 5, 6],
+    indoor: [],
+    plantOut: [],
+    harvest: [6, 7, 8, 9],
+  },
+  {
+    plant: "Lavendel",
+    type: "Kräuter",
+    season: ["Sommer"],
+    directSow: [],
+    indoor: [2, 3],
+    plantOut: [5, 6],
+    harvest: [7, 8],
+  },
+  {
+    plant: "Mais",
+    type: "Gemüse",
+    season: ["Sommer"],
+    directSow: [5],
+    indoor: [4],
+    plantOut: [5],
+    harvest: [8, 9],
+  },
+  {
+    plant: "Aubergine",
+    type: "Gemüse",
+    season: ["Sommer"],
+    directSow: [],
+    indoor: [2, 3],
+    plantOut: [5, 6],
+    harvest: [8, 9, 10],
+  },
+  {
+    plant: "Melone",
+    type: "Obst",
+    season: ["Sommer"],
+    directSow: [],
+    indoor: [3, 4],
+    plantOut: [5, 6],
+    harvest: [8, 9],
+  },
+  {
+    plant: "Fenchel",
+    type: "Gemüse",
+    season: ["Sommer", "Herbst"],
+    directSow: [6, 7],
+    indoor: [5, 6],
+    plantOut: [6, 7],
+    harvest: [8, 9, 10, 11],
+  }
 ];
 
 const MONTHS = [
@@ -388,14 +479,23 @@ const CATEGORIES = [
 ];
 
 function renderMonthDots(row: typeof SOWING_DATA[number], col: number, categoryFilter: Record<string, boolean>) {
-  return CATEGORIES.map(({ key, color, label }) =>
-    categoryFilter[key] && (row[key as keyof typeof row] as number[]).includes(col + 1) ? (
-      <span
-        key={key}
-        className={`${color} inline-block w-3 h-3 rounded-full mx-0.5 shadow-sm border border-white`}
-        title={label}
-      />
-    ) : null
+  return (
+    <TooltipProvider>
+      {CATEGORIES.map(({ key, color, label }) =>
+        categoryFilter[key] && (row[key as keyof typeof row] as number[]).includes(col + 1) ? (
+          <Tooltip key={key}>
+            <TooltipTrigger asChild>
+              <span
+                className={`${color} inline-block w-3 h-3 rounded-full mx-0.5 shadow-sm border border-white cursor-help`}
+              />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{label} für {row.plant} im {MONTHS[col]}</p>
+            </TooltipContent>
+          </Tooltip>
+        ) : null
+      )}
+    </TooltipProvider>
   );
 }
 
@@ -440,7 +540,7 @@ const SowingCalendar: React.FC = () => {
       <div className="mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
           <h2 className="text-2xl font-bold font-serif text-earth-800">
-            Aussaatkalender für Obst &amp; Gemüse
+            Aussaatkalender für Obst & Gemüse
           </h2>
           <div className="flex items-center gap-2 min-w-0">
             <div className="relative flex-1 lg:w-64">
@@ -494,7 +594,7 @@ const SowingCalendar: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">Alle Monate</SelectItem>
-              {MONTHS.map((m, i) => (
+              {MONTHS.map((m) => (
                 <SelectItem key={m} value={m}>{m}</SelectItem>
               ))}
             </SelectContent>
@@ -515,7 +615,7 @@ const SowingCalendar: React.FC = () => {
               <SelectValue placeholder="Art" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Obst &amp; Gemüse</SelectItem>
+              <SelectItem value="ALL">Obst & Gemüse</SelectItem>
               {TYPES.map(t => (
                 <SelectItem key={t} value={t}>{t}</SelectItem>
               ))}
@@ -565,6 +665,8 @@ const SowingCalendar: React.FC = () => {
                     <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
                       row.type === 'Gemüse' 
                         ? 'bg-green-100 text-green-800' 
+                        : row.type === 'Kräuter'
+                        ? 'bg-purple-100 text-purple-800'
                         : 'bg-orange-100 text-orange-800'
                     }`}>
                       {row.type}

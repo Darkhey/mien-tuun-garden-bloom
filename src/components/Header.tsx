@@ -60,7 +60,7 @@ const Header: React.FC = () => {
     { name: 'Home', href: '/' },
     { name: 'Blog', href: '/blog' },
     { name: 'Rezepte', href: '/rezepte' },
-    { name: 'Garten', href: '/garten' },
+    { name: 'Aussaatkalender', href: '/aussaatkalender', badge: 'Beta' },
     { name: 'Über mich', href: '/about' },
   ];
 
@@ -88,6 +88,11 @@ const Header: React.FC = () => {
                 className="text-earth-700 hover:text-sage-600 font-medium transition-colors relative group"
               >
                 {item.name}
+                {item.badge && (
+                  <span className="absolute -top-3 -right-8 bg-accent-200 text-accent-800 text-xs px-1.5 py-0.5 rounded-full">
+                    {item.badge}
+                  </span>
+                )}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-sage-500 transition-all group-hover:w-full"></span>
               </Link>
             ))}
@@ -146,9 +151,14 @@ const Header: React.FC = () => {
                   key={item.name}
                   to={item.href}
                   onClick={() => setIsMenuOpen(false)}
-                  className="text-earth-700 hover:text-sage-600 font-medium px-3 py-2 rounded-lg hover:bg-sage-50 transition-colors"
+                  className="text-earth-700 hover:text-sage-600 font-medium px-3 py-2 rounded-lg hover:bg-sage-50 transition-colors flex items-center justify-between"
                 >
                   {item.name}
+                  {item.badge && (
+                    <span className="bg-accent-200 text-accent-800 text-xs px-1.5 py-0.5 rounded-full">
+                      {item.badge}
+                    </span>
+                  )}
                 </Link>
               ))}
               {!session?.user && (

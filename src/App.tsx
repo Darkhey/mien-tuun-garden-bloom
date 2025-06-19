@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ContactPage from "./pages/ContactPage";
 import NewsletterConfirmPage from "./pages/NewsletterConfirmPage";
 import LoginPage from "./pages/LoginPage";
+import AussaatkalenderPage from "./pages/AussaatkalenderPage";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,7 +102,7 @@ function App() {
               <Route path="/rezepte" element={<RecipeOverview />} />
               <Route path="/rezepte/:id" element={<RecipeDetail />} />
               <Route path="/rezeptebuch" element={<RecipeBook />} />
-              <Route path="/garten" element={<BlogOverview />} />
+              <Route path="/aussaatkalender" element={<AussaatkalenderPage />} />
               <Route path="/about" element={<About />} />
               <Route path="/links" element={<Links />} />
               <Route path="/datenschutz" element={<Datenschutz />} />
