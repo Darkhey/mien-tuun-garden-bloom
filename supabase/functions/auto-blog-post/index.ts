@@ -63,15 +63,15 @@ serve(async (req) => {
     const now = new Date();
     const season = getRandom(SEASONS);
     const category = getRandom(CATEGORIES);
-    const author = getRandom(AUTHORS);
+    const author = "Marianne"; // Geändert von getRandom(AUTHORS)
     const trend = getRandom(TAGS);
-    const contextPrompt = `Kategorie: ${category}, Saison: ${season}, Trend: ${trend}. Schreibe einen Blogartikel, der zum Kontext und aktuellen Zeit passt – inspiriere HobbygärtnerInnen oder Kochbegeisterte.`;
+    const contextPrompt = `Kategorie: ${category} (PFLICHT), Saison: ${season} (PFLICHT), Trend: ${trend} (PFLICHT). Schreibe einen Blogartikel, der zum Kontext und aktuellen Zeit passt – inspiriere HobbygärtnerInnen oder Kochbegeisterte. WICHTIG: Der Artikel MUSS zur angegebenen Kategorie passen und saisonalen Bezug haben.`;
 
     // 2. Uniques Thema besorgen (max 3 Versuche -> siehe getUniqueTopic)
     const { topicIdea, slug, title, attempt } = await getUniqueTopic(supabase, contextPrompt, 3);
 
     // 3. Prompt zusammensetzen & Artikel generieren
-    const prompt = `Thema: ${topicIdea}. ${contextPrompt} Schreibe einen originellen, inspirierenden SEO-Blogartikel auf Deutsch. Baue Trends & Saisonalität ein.`;
+    const prompt = `Thema: ${topicIdea}. ${contextPrompt} Schreibe einen originellen, inspirierenden SEO-Blogartikel auf Deutsch. Baue Trends & Saisonalität ein. PFLICHT: Der Artikel muss zur Kategorie "${category}" passen und den Trend "${trend}" behandeln.`;
     const articleContent = await generateArticle(prompt);
 
     // 4. Teaser/Excerpt extrahieren
@@ -99,7 +99,7 @@ serve(async (req) => {
       title: topicIdea,
       excerpt,
       content: articleContent,
-      author,
+      author: "Marianne", // Geändert
       published: true,
       featured: false,
       featured_image,
@@ -135,7 +135,7 @@ serve(async (req) => {
       title: topicIdea,
       excerpt,
       content: articleContent,
-      author,
+      author: "Marianne", // Geändert
       featured_image,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -149,4 +149,3 @@ serve(async (req) => {
     });
   }
 });
-

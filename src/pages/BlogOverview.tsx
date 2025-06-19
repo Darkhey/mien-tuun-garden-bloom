@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from "react-helmet";
 import { useQuery } from '@tanstack/react-query';
@@ -8,15 +9,32 @@ import type { Tables } from '@/integrations/supabase/types';
 import type { BlogPost } from '@/types/content';
 import { useSearchParams } from 'react-router-dom';
 
-// Erweiterte Kategorien für die Blog-Übersicht
-const categories = [
-  'Gartenplanung', 'Aussaat & Pflanzung', 'Pflanzenpflege', 'Schädlingsbekämpfung', 
-  'Kompostierung', 'Saisonale Küche', 'Konservieren & Haltbarmachen', 'Kräuter & Heilpflanzen',
-  'Nachhaltigkeit', 'Wassersparen & Bewässerung', 'DIY Projekte', 'Gartengeräte & Werkzeuge',
-  'Ernte', 'Lagerung & Vorratshaltung', 'Selbstversorgung', 'Permakultur', 'Urban Gardening',
-  'Balkon & Terrasse', 'Indoor Gardening', 'Tipps & Tricks', 'Jahreszeitliche Arbeiten',
-  'Bodenpflege', 'Sonstiges'
-];
+// Mapping der Kategorie-Values zu den Labels für das Frontend
+const CATEGORY_MAPPING = {
+  'Gartenplanung': 'Gartenplanung',
+  'Aussaat & Pflanzung': 'Aussaat & Pflanzung', 
+  'Pflanzenpflege': 'Pflanzenpflege',
+  'Schädlingsbekämpfung': 'Schädlingsbekämpfung',
+  'Kompostierung': 'Kompostierung',
+  'Saisonale Küche': 'Saisonale Küche',
+  'Konservieren & Haltbarmachen': 'Konservieren & Haltbarmachen',
+  'Kräuter & Heilpflanzen': 'Kräuter & Heilpflanzen',
+  'Nachhaltigkeit': 'Nachhaltigkeit',
+  'Wassersparen & Bewässerung': 'Wassersparen & Bewässerung',
+  'DIY Projekte': 'DIY Projekte',
+  'Gartengeräte & Werkzeuge': 'Gartengeräte & Werkzeuge',
+  'Ernte': 'Ernte',
+  'Lagerung & Vorratshaltung': 'Lagerung & Vorratshaltung',
+  'Selbstversorgung': 'Selbstversorgung',
+  'Permakultur': 'Permakultur',
+  'Urban Gardening': 'Urban Gardening',
+  'Balkon & Terrasse': 'Balkon & Terrasse',
+  'Indoor Gardening': 'Indoor Gardening',
+  'Tipps & Tricks': 'Tipps & Tricks',
+  'Jahreszeitliche Arbeiten': 'Jahreszeitliche Arbeiten',
+  'Bodenpflege': 'Bodenpflege',
+  'Sonstiges': 'Sonstiges'
+};
 
 // Blog-Posts aus Supabase laden
 const fetchBlogPosts = async () => {
@@ -40,7 +58,7 @@ const BlogOverview: React.FC = () => {
 
   // Setze Kategorie aus URL-Parameter, wenn vorhanden
   useEffect(() => {
-    if (categoryParam) {
+    if (categoryParam && Object.keys(CATEGORY_MAPPING).includes(categoryParam)) {
       setSelectedCategory(categoryParam);
     }
   }, [categoryParam]);
@@ -50,12 +68,25 @@ const BlogOverview: React.FC = () => {
     queryFn: fetchBlogPosts,
   });
 
+  // Dynamische Kategorien aus den tatsächlichen Posts extrahieren
+  const availableCategories = useMemo(() => {
+    const categoriesFromPosts = Array.from(new Set(
+      blogRows
+        .map((post: Tables<'blog_posts'>) => post.category)
+        .filter(Boolean)
+    ));
+    
+    // Verwende die tatsächlich vorhandenen Kategorien
+    return categoriesFromPosts.sort();
+  }, [blogRows]);
+
   // Enhanced Filter-Logik mit verbessertem Typ-Handling
   const filteredPosts = useMemo(() => {
     const posts = blogRows as Tables<'blog_posts'>[];
     return posts.filter((post: Tables<'blog_posts'>) => {
-      // Kategorie
+      // Kategorie-Filter
       if (selectedCategory && post.category !== selectedCategory) return false;
+      
       // Suchbegriff - verbesserte Suche
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -63,8 +94,9 @@ const BlogOverview: React.FC = () => {
         const excerptMatch = post.excerpt?.toLowerCase().includes(searchLower);
         const descriptionMatch = post.description?.toLowerCase().includes(searchLower);
         const tagMatch = post.tags?.some(tag => tag.toLowerCase().includes(searchLower));
+        const categoryMatch = post.category?.toLowerCase().includes(searchLower);
         
-        if (!titleMatch && !excerptMatch && !descriptionMatch && !tagMatch) {
+        if (!titleMatch && !excerptMatch && !descriptionMatch && !tagMatch && !categoryMatch) {
           return false;
         }
       }
@@ -81,6 +113,7 @@ const BlogOverview: React.FC = () => {
         <meta property="og:title" content="Blog | Mien Tuun" />
         <meta property="og:description" content="Entdecke spannende Artikel rund um Gartenpflege, saisonale Rezepte, Nachhaltigkeit und DIY-Projekte. Lass dich inspirieren und erweitere dein Wissen!" />
       </Helmet>
+      
       {/* Header */}
       <section className="bg-gradient-to-br from-accent-50 to-sage-50 py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
@@ -92,7 +125,7 @@ const BlogOverview: React.FC = () => {
           </p>
           {/* Filter UI */}
           <BlogFilter
-            categories={categories}
+            categories={availableCategories}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
             searchTerm={searchTerm}
@@ -100,6 +133,7 @@ const BlogOverview: React.FC = () => {
           />
         </div>
       </section>
+      
       {/* Blog Posts Grid */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
@@ -122,7 +156,7 @@ const BlogOverview: React.FC = () => {
                   updatedAt: post.updated_at || undefined,
                   featuredImage: post.featured_image || '/placeholder.svg',
                   category: post.category || '',
-                  season: post.season || undefined, // Jetzt verfügbar
+                  season: post.season || undefined,
                   tags: post.tags || [],
                   readingTime: post.reading_time || 5,
                   seo: {
@@ -135,7 +169,7 @@ const BlogOverview: React.FC = () => {
                   structuredData: post.structured_data || undefined,
                   originalTitle: post.original_title || undefined,
                   ogImage: post.og_image || undefined,
-                  description: post.description || undefined, // Neue Beschreibung
+                  description: post.description || undefined,
                 };
                 return <BlogPostCard post={mappedPost} key={post.id} />;
               })}
@@ -143,7 +177,10 @@ const BlogOverview: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <p className="text-earth-500 text-lg">
-                Keine Artikel gefunden. Versuche andere Filter oder Suchbegriffe.
+                {selectedCategory || searchTerm 
+                  ? `Keine Artikel gefunden für "${selectedCategory || searchTerm}". Versuche andere Filter oder Suchbegriffe.`
+                  : "Noch keine Artikel verfügbar."
+                }
               </p>
             </div>
           )}

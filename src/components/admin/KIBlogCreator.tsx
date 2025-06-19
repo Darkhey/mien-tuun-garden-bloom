@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -116,7 +117,7 @@ const KIBlogCreator: React.FC = () => {
         published: false,
         featured: quality?.score > 90,
         reading_time: Math.ceil(content.split(/\s+/).length / 160),
-        author: "KI-Enhanced Pipeline",
+        author: "Marianne",
         status: "entwurf",
         user_id: currentUserId
       };

@@ -26,7 +26,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
 
   useEffect(() => {
     // If the image source is empty or invalid, try to get a fallback from Unsplash
-    if (!post.featuredImage || post.featuredImage === '/placeholder.svg') {
+    if (!post.featuredImage || post.featuredImage === '/placeholder.svg' || post.featuredImage.trim() === '') {
       fetchFallbackImage();
     }
   }, [post.featuredImage, post.category]);
@@ -45,6 +45,20 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
     }
   };
 
+  const getImageUrl = (imagePath: string): string => {
+    if (!imagePath || imagePath.trim() === '' || imagePath === '/placeholder.svg') {
+      return fallbackImage || "/placeholder.svg";
+    }
+    
+    // If it's already a full URL, use it directly
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    // Otherwise, assume it's a path in the Supabase storage
+    return `https://ublbxvpmoccmegtwaslh.supabase.co/storage/v1/object/public/blog-images/${imagePath}`;
+  };
+
   const handleImageError = () => {
     setImgError(true);
     if (!fallbackImage) {
@@ -54,7 +68,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
 
   const imageSource = imgError 
     ? (fallbackImage || "/placeholder.svg") 
-    : post.featuredImage;
+    : getImageUrl(post.featuredImage);
 
   return (
     <article className="bg-white rounded-2xl shadow group hover:shadow-lg transition-all duration-200 overflow-hidden h-full flex flex-col">

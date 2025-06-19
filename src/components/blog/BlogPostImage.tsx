@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { getRandomUnsplashImage } from '@/utils/unsplashService';
 
@@ -16,7 +17,7 @@ const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => 
 
   useEffect(() => {
     // If the image source is empty or invalid, try to get a fallback from Unsplash
-    if (!src || src === '/placeholder.svg') {
+    if (!src || src === '/placeholder.svg' || src.trim() === '') {
       fetchFallbackImage();
     }
   }, [src, category]);
@@ -36,11 +37,16 @@ const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => 
   };
 
   function getImageUrl(imagePath: string): string {
-    if (!imagePath) return fallbackImage || "/placeholder.svg";
+    if (!imagePath || imagePath.trim() === '') return fallbackImage || "/placeholder.svg";
     
     // If it's already a full URL, use it directly
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
+    }
+    
+    // If it's a placeholder, use fallback
+    if (imagePath === '/placeholder.svg' || imagePath === 'placeholder.svg') {
+      return fallbackImage || "/placeholder.svg";
     }
     
     // Otherwise, assume it's a path in the Supabase storage
