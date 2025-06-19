@@ -112,6 +112,76 @@ class ContentAutomationService {
     };
   }
 
+  async deleteConfiguration(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('content_automation_configs')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  async toggleConfigurationActive(id: string, isActive: boolean): Promise<ContentAutomationConfig> {
+    return this.updateConfiguration(id, { is_active: isActive });
+  }
+
+  async getOverallStats(): Promise<any> {
+    // Mock implementation for overall stats
+    return {
+      active_configurations: 2,
+      total_content_created: 45,
+      avg_success_rate: 85,
+      top_categories: [
+        { category: "Gartenplanung", count: 15 },
+        { category: "Saisonale Küche", count: 12 },
+        { category: "Nachhaltigkeit", count: 8 }
+      ],
+      content_creation_trend: [
+        { date: "2024-01-13", count: 3 },
+        { date: "2024-01-14", count: 5 },
+        { date: "2024-01-15", count: 2 },
+        { date: "2024-01-16", count: 4 },
+        { date: "2024-01-17", count: 6 },
+        { date: "2024-01-18", count: 3 },
+        { date: "2024-01-19", count: 4 }
+      ]
+    };
+  }
+
+  async createScheduledJobsFromConfig(configId: string): Promise<void> {
+    // Mock implementation for creating scheduled jobs
+    console.log(`Creating scheduled jobs for config ${configId}`);
+  }
+
+  getMotivationalMessage(stats: ContentAutomationStatsType): string {
+    const messages = [
+      "Großartig! Deine Content-Automatisierung läuft wie am Schnürchen!",
+      "Fantastisch! Du hast bereits viele inspirierende Inhalte erstellt!",
+      "Weiter so! Deine Erfolgsrate ist beeindruckend!",
+      "Toll! Deine automatisierten Inhalte begeistern die Leser!"
+    ];
+    
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
+
+  getImprovementSuggestions(stats: ContentAutomationStatsType): string[] {
+    const suggestions = [];
+    
+    if (stats.success_rate < 80) {
+      suggestions.push("Überprüfe die Qualitätskriterien für bessere Erfolgsraten");
+    }
+    
+    if (stats.engagement_rate < 15) {
+      suggestions.push("Füge mehr interaktive Elemente hinzu");
+    }
+    
+    if (stats.total_content_created < 10) {
+      suggestions.push("Erhöhe die Frequenz der Content-Erstellung");
+    }
+    
+    return suggestions;
+  }
+
   private generateMockStats(): ContentAutomationStatsType {
     return {
       total_content_created: Math.floor(Math.random() * 100) + 20,
@@ -131,4 +201,4 @@ class ContentAutomationService {
 }
 
 export const contentAutomationService = new ContentAutomationService();
-export { ContentAutomationStatsType as ContentAutomationStats };
+export type { ContentAutomationStatsType as ContentAutomationStats };

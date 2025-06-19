@@ -1,7 +1,8 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Clock } from "lucide-react";
-import ScheduledJobManager from "../ScheduledJobManager";
+import SimpleScheduledJobManager from "../SimpleScheduledJobManager";
 
 const ScheduledJobsView: React.FC = () => {
   return (
@@ -42,7 +43,7 @@ const ScheduledJobsView: React.FC = () => {
         </Card>
       </div>
 
-      <ScheduledJobManager />
+      <SimpleScheduledJobManager />
     </div>
   );
 };

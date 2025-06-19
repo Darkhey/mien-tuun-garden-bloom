@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export interface JobConfig {
@@ -43,7 +44,19 @@ class ScheduledJobService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    
+    // Map database fields to our interface
+    return (data || []).map(job => ({
+      id: job.id,
+      name: job.name,
+      description: job.description || '',
+      cron_expression: job.cron_expression,
+      job_type: job.job_type as any,
+      function_name: job.function_name,
+      function_payload: job.function_payload as Record<string, any>,
+      status: job.status as any,
+      enabled: job.enabled
+    }));
   }
 
   /**
@@ -60,7 +73,18 @@ class ScheduledJobService {
       if (error.code === 'PGRST116') return null;
       throw error;
     }
-    return data;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description || '',
+      cron_expression: data.cron_expression,
+      job_type: data.job_type as any,
+      function_name: data.function_name,
+      function_payload: data.function_payload as Record<string, any>,
+      status: data.status as any,
+      enabled: data.enabled
+    };
   }
 
   /**
@@ -71,7 +95,14 @@ class ScheduledJobService {
     if (!session.session?.user) throw new Error('Not authenticated');
 
     const jobData = {
-      ...config,
+      name: config.name,
+      description: config.description,
+      cron_expression: config.cron_expression,
+      job_type: config.job_type,
+      function_name: config.function_name,
+      function_payload: config.function_payload,
+      status: config.status,
+      enabled: config.enabled,
       created_by: session.session.user.id
     };
 
@@ -82,7 +113,18 @@ class ScheduledJobService {
       .single();
 
     if (error) throw error;
-    return data;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description || '',
+      cron_expression: data.cron_expression,
+      job_type: data.job_type as any,
+      function_name: data.function_name,
+      function_payload: data.function_payload as Record<string, any>,
+      status: data.status as any,
+      enabled: data.enabled
+    };
   }
 
   /**
@@ -91,13 +133,33 @@ class ScheduledJobService {
   async updateJobConfig(id: string, updates: Partial<JobConfig>): Promise<JobConfig> {
     const { data, error } = await supabase
       .from('cron_jobs')
-      .update(updates)
+      .update({
+        name: updates.name,
+        description: updates.description,
+        cron_expression: updates.cron_expression,
+        job_type: updates.job_type,
+        function_name: updates.function_name,
+        function_payload: updates.function_payload,
+        status: updates.status,
+        enabled: updates.enabled
+      })
       .eq('id', id)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description || '',
+      cron_expression: data.cron_expression,
+      job_type: data.job_type as any,
+      function_name: data.function_name,
+      function_payload: data.function_payload as Record<string, any>,
+      status: data.status as any,
+      enabled: data.enabled
+    };
   }
 
   /**
@@ -124,7 +186,18 @@ class ScheduledJobService {
       .single();
 
     if (error) throw error;
-    return data;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description || '',
+      cron_expression: data.cron_expression,
+      job_type: data.job_type as any,
+      function_name: data.function_name,
+      function_payload: data.function_payload as Record<string, any>,
+      status: data.status as any,
+      enabled: data.enabled
+    };
   }
 
   /**
@@ -143,7 +216,19 @@ class ScheduledJobService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return data || [];
+    
+    return (data || []).map(execution => ({
+      id: execution.id,
+      cron_job_id: execution.cron_job_id,
+      execution_id: execution.execution_id,
+      status: execution.status as any,
+      started_at: execution.started_at,
+      completed_at: execution.completed_at || undefined,
+      duration_ms: execution.duration_ms || undefined,
+      output: execution.output as Record<string, any> || undefined,
+      error_message: execution.error_message || undefined,
+      retry_attempt: execution.retry_attempt
+    }));
   }
 
   /**
@@ -190,7 +275,18 @@ class ScheduledJobService {
     if (executionsResult.error) throw executionsResult.error;
 
     const jobs = jobsResult.data || [];
-    const executions = executionsResult.data || [];
+    const executions = (executionsResult.data || []).map(execution => ({
+      id: execution.id,
+      cron_job_id: execution.cron_job_id,
+      execution_id: execution.execution_id,
+      status: execution.status as any,
+      started_at: execution.started_at,
+      completed_at: execution.completed_at || undefined,
+      duration_ms: execution.duration_ms || undefined,
+      output: execution.output as Record<string, any> || undefined,
+      error_message: execution.error_message || undefined,
+      retry_attempt: execution.retry_attempt
+    }));
 
     const totalJobs = jobs.length;
     const activeJobs = jobs.filter(job => job.enabled).length;
