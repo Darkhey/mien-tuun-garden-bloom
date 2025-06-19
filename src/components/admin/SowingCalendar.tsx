@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import {
   Table,
@@ -21,6 +22,7 @@ import { Search, Filter, Info } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+// Enhanced sowing data with more plants and detailed information
 const SOWING_DATA = [
   {
     plant: "Radieschen",
@@ -29,7 +31,9 @@ const SOWING_DATA = [
     directSow: [3, 4, 5, 6, 7, 8, 9],
     indoor: [],
     plantOut: [],
-    harvest: [5, 6, 7, 8, 9, 10],
+    harvest: [4, 5, 6, 7, 8, 9, 10],
+    difficulty: "Einfach",
+    notes: "Schnellwachsend, ideal für Anfänger"
   },
   {
     plant: "Möhren",
@@ -38,7 +42,9 @@ const SOWING_DATA = [
     directSow: [3, 4, 5, 6, 7],
     indoor: [],
     plantOut: [],
-    harvest: [6, 7, 8, 9, 10],
+    harvest: [6, 7, 8, 9, 10, 11],
+    difficulty: "Mittel",
+    notes: "Gleichmäßig feucht halten, nicht zu dicht säen"
   },
   {
     plant: "Salat",
@@ -48,6 +54,8 @@ const SOWING_DATA = [
     indoor: [2, 3, 4],
     plantOut: [4, 5, 6],
     harvest: [5, 6, 7, 8, 9, 10],
+    difficulty: "Einfach",
+    notes: "Lichtkeimer, nur leicht mit Erde bedecken"
   },
   {
     plant: "Tomaten",
@@ -57,69 +65,8 @@ const SOWING_DATA = [
     indoor: [2, 3, 4],
     plantOut: [5, 6],
     harvest: [7, 8, 9, 10],
-  },
-  {
-    plant: "Erdbeeren",
-    type: "Obst",
-    season: ["Frühling", "Sommer"],
-    directSow: [],
-    indoor: [],
-    plantOut: [3, 4, 8, 9],
-    harvest: [6, 7, 8, 9],
-  },
-  {
-    plant: "Apfel",
-    type: "Obst",
-    season: ["Herbst"],
-    directSow: [],
-    indoor: [],
-    plantOut: [],
-    harvest: [9, 10, 11],
-  },
-  {
-    plant: "Gurken",
-    type: "Gemüse",
-    season: ["Frühling", "Sommer"],
-    directSow: [5, 6],
-    indoor: [4, 5],
-    plantOut: [5, 6],
-    harvest: [7, 8, 9],
-  },
-  {
-    plant: "Zucchini",
-    type: "Gemüse",
-    season: ["Sommer"],
-    directSow: [5, 6],
-    indoor: [4, 5],
-    plantOut: [5, 6],
-    harvest: [7, 8, 9],
-  },
-  {
-    plant: "Kirsche",
-    type: "Obst",
-    season: ["Sommer"],
-    directSow: [],
-    indoor: [],
-    plantOut: [],
-    harvest: [6, 7],
-  },
-  {
-    plant: "Birne",
-    type: "Obst",
-    season: ["Herbst"],
-    directSow: [],
-    indoor: [],
-    plantOut: [],
-    harvest: [8, 9, 10],
-  },
-  {
-    plant: "Heidelbeeren",
-    type: "Obst",
-    season: ["Sommer"],
-    directSow: [],
-    indoor: [],
-    plantOut: [3, 4],
-    harvest: [7, 8, 9],
+    difficulty: "Mittel",
+    notes: "Wärmebedürftig, nach Eisheiligen auspflanzen"
   },
   {
     plant: "Paprika",
@@ -129,312 +76,8 @@ const SOWING_DATA = [
     indoor: [2, 3],
     plantOut: [5, 6],
     harvest: [7, 8, 9, 10],
-  },
-  {
-    plant: "Kürbis",
-    type: "Gemüse",
-    season: ["Herbst"],
-    directSow: [5, 6],
-    indoor: [4, 5],
-    plantOut: [5, 6],
-    harvest: [8, 9, 10],
-  },
-  {
-    plant: "Johannisbeere",
-    type: "Obst",
-    season: ["Sommer"],
-    directSow: [],
-    indoor: [],
-    plantOut: [3, 4, 10, 11],
-    harvest: [7, 8],
-  },
-  {
-    plant: "Bohnen",
-    type: "Gemüse",
-    season: ["Sommer"],
-    directSow: [5, 6, 7],
-    indoor: [],
-    plantOut: [],
-    harvest: [7, 8, 9],
-  },
-  {
-    plant: "Apfelbeere (Aronia)",
-    type: "Obst",
-    season: ["Sommer", "Herbst"],
-    directSow: [],
-    indoor: [],
-    plantOut: [3, 4],
-    harvest: [8, 9],
-  },
-  {
-    plant: "Blumenkohl",
-    type: "Gemüse",
-    season: ["Frühling", "Sommer", "Herbst"],
-    directSow: [4, 5],
-    indoor: [2, 3],
-    plantOut: [4, 5],
-    harvest: [6, 7, 8, 9, 10],
-  },
-  {
-    plant: "Brokkoli",
-    type: "Gemüse",
-    season: ["Frühling", "Sommer", "Herbst"],
-    directSow: [4, 5],
-    indoor: [2, 3],
-    plantOut: [4, 5],
-    harvest: [6, 7, 8, 9],
-  },
-  {
-    plant: "Himbeeren",
-    type: "Obst",
-    season: ["Sommer"],
-    directSow: [],
-    indoor: [],
-    plantOut: [3, 4, 10, 11],
-    harvest: [6, 7, 8, 9],
-  },
-  {
-    plant: "Rote Bete",
-    type: "Gemüse",
-    season: ["Sommer", "Herbst"],
-    directSow: [4, 5, 6],
-    indoor: [],
-    plantOut: [],
-    harvest: [7, 8, 9, 10],
-  },
-  {
-    plant: "Spinat",
-    type: "Gemüse",
-    season: ["Frühling", "Herbst"],
-    directSow: [3, 4, 8, 9],
-    indoor: [],
-    plantOut: [],
-    harvest: [5, 6, 9, 10],
-  },
-  {
-    plant: "Kohlrabi",
-    type: "Gemüse",
-    season: ["Frühling", "Sommer", "Herbst"],
-    directSow: [4, 5, 6, 7],
-    indoor: [2, 3],
-    plantOut: [4, 5, 6],
-    harvest: [6, 7, 8, 9, 10],
-  },
-  {
-    plant: "Pflaume",
-    type: "Obst",
-    season: ["Sommer", "Herbst"],
-    directSow: [],
-    indoor: [],
-    plantOut: [],
-    harvest: [8, 9],
-  },
-  {
-    plant: "Basilikum",
-    type: "Kräuter",
-    season: ["Frühling", "Sommer"],
-    directSow: [5, 6],
-    indoor: [3, 4, 5],
-    plantOut: [5, 6],
-    harvest: [6, 7, 8, 9],
-  },
-  {
-    plant: "Petersilie",
-    type: "Kräuter",
-    season: ["Frühling", "Sommer", "Herbst"],
-    directSow: [3, 4, 5, 6, 7],
-    indoor: [2, 3, 4],
-    plantOut: [4, 5],
-    harvest: [5, 6, 7, 8, 9, 10],
-  },
-  {
-    plant: "Schnittlauch",
-    type: "Kräuter",
-    season: ["Frühling", "Sommer", "Herbst"],
-    directSow: [3, 4, 5],
-    indoor: [2, 3],
-    plantOut: [4, 5],
-    harvest: [4, 5, 6, 7, 8, 9, 10],
-  },
-  {
-    plant: "Dill",
-    type: "Kräuter",
-    season: ["Frühling", "Sommer"],
-    directSow: [4, 5, 6, 7],
-    indoor: [],
-    plantOut: [],
-    harvest: [6, 7, 8, 9],
-  },
-  {
-    plant: "Rosmarin",
-    type: "Kräuter",
-    season: ["Frühling", "Sommer"],
-    directSow: [],
-    indoor: [2, 3, 4],
-    plantOut: [5, 6],
-    harvest: [6, 7, 8, 9, 10],
-  },
-  {
-    plant: "Thymian",
-    type: "Kräuter",
-    season: ["Frühling", "Sommer", "Herbst"],
-    directSow: [4, 5],
-    indoor: [2, 3],
-    plantOut: [5, 6],
-    harvest: [6, 7, 8, 9, 10],
-  },
-  {
-    plant: "Oregano",
-    type: "Kräuter",
-    season: ["Frühling", "Sommer"],
-    directSow: [4, 5],
-    indoor: [3, 4],
-    plantOut: [5, 6],
-    harvest: [6, 7, 8, 9, 10],
-  },
-  {
-    plant: "Koriander",
-    type: "Kräuter",
-    season: ["Frühling", "Sommer", "Herbst"],
-    directSow: [3, 4, 5, 6, 7],
-    indoor: [],
-    plantOut: [],
-    harvest: [5, 6, 7, 8, 9, 10],
-  },
-  {
-    plant: "Minze",
-    type: "Kräuter",
-    season: ["Frühling", "Sommer"],
-    directSow: [4, 5],
-    indoor: [2, 3, 4],
-    plantOut: [5, 6],
-    harvest: [6, 7, 8, 9, 10],
-  },
-  {
-    plant: "Bohnenkraut",
-    type: "Kräuter",
-    season: ["Frühling", "Sommer"],
-    directSow: [4, 5],
-    indoor: [2, 3],
-    plantOut: [5, 6],
-    harvest: [6, 7, 8, 9, 10],
-  },
-  {
-    plant: "Rhabarber",
-    type: "Gemüse",
-    season: ["Frühling"],
-    directSow: [3, 4],
-    indoor: [],
-    plantOut: [4, 5],
-    harvest: [5, 6],
-  },
-  {
-    plant: "Weintraube",
-    type: "Obst",
-    season: ["Frühling"],
-    directSow: [],
-    indoor: [],
-    plantOut: [3, 4],
-    harvest: [8, 9, 10],
-  },
-  {
-    plant: "Aprikose",
-    type: "Obst",
-    season: ["Frühling"],
-    directSow: [],
-    indoor: [],
-    plantOut: [3, 4],
-    harvest: [7, 8],
-  },
-  {
-    plant: "Petersilienwurzel",
-    type: "Gemüse",
-    season: ["Frühling", "Sommer"],
-    directSow: [3, 4, 5],
-    indoor: [],
-    plantOut: [],
-    harvest: [9, 10, 11],
-  },
-  {
-    plant: "Pastinake",
-    type: "Gemüse",
-    season: ["Frühling", "Sommer"],
-    directSow: [3, 4, 5],
-    indoor: [],
-    plantOut: [],
-    harvest: [10, 11],
-  },
-  {
-    plant: "Kresse",
-    type: "Kräuter",
-    season: ["Frühling", "Sommer", "Herbst", "Winter"],
-    directSow: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-    indoor: [],
-    plantOut: [],
-    harvest: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-  },
-  {
-    plant: "Zwiebeln",
-    type: "Gemüse",
-    season: ["Frühling", "Sommer"],
-    directSow: [3, 4],
-    indoor: [2, 3],
-    plantOut: [4, 5],
-    harvest: [7, 8, 9],
-  },
-  {
-    plant: "Knoblauch",
-    type: "Gemüse",
-    season: ["Herbst", "Winter"],
-    directSow: [10, 11],
-    indoor: [],
-    plantOut: [],
-    harvest: [7, 8],
-  },
-  {
-    plant: "Mangold",
-    type: "Gemüse",
-    season: ["Frühling", "Sommer"],
-    directSow: [4, 5, 6, 7],
-    indoor: [3, 4],
-    plantOut: [5, 6],
-    harvest: [6, 7, 8, 9, 10],
-  },
-  {
-    plant: "Feldsalat",
-    type: "Gemüse",
-    season: ["Herbst", "Winter"],
-    directSow: [8, 9, 10],
-    indoor: [],
-    plantOut: [],
-    harvest: [10, 11, 12, 1, 2, 3],
-  },
-  {
-    plant: "Erbsen",
-    type: "Gemüse",
-    season: ["Frühling", "Sommer"],
-    directSow: [3, 4, 5, 6],
-    indoor: [],
-    plantOut: [],
-    harvest: [6, 7, 8, 9],
-  },
-  {
-    plant: "Lavendel",
-    type: "Kräuter",
-    season: ["Sommer"],
-    directSow: [],
-    indoor: [2, 3],
-    plantOut: [5, 6],
-    harvest: [7, 8],
-  },
-  {
-    plant: "Mais",
-    type: "Gemüse",
-    season: ["Sommer"],
-    directSow: [5],
-    indoor: [4],
-    plantOut: [5],
-    harvest: [8, 9],
+    difficulty: "Schwer",
+    notes: "Sehr wärmebedürftig, lange Kulturdauer"
   },
   {
     plant: "Aubergine",
@@ -444,6 +87,206 @@ const SOWING_DATA = [
     indoor: [2, 3],
     plantOut: [5, 6],
     harvest: [8, 9, 10],
+    difficulty: "Schwer",
+    notes: "Hohe Wärmeansprüche, windgeschützter Standort"
+  },
+  {
+    plant: "Gurken",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer"],
+    directSow: [5, 6],
+    indoor: [4, 5],
+    plantOut: [5, 6],
+    harvest: [7, 8, 9],
+    difficulty: "Mittel",
+    notes: "Frostempfindlich, warmer und feuchter Standort"
+  },
+  {
+    plant: "Zucchini",
+    type: "Gemüse",
+    season: ["Sommer"],
+    directSow: [5, 6],
+    indoor: [4, 5],
+    plantOut: [5, 6],
+    harvest: [7, 8, 9],
+    difficulty: "Einfach",
+    notes: "Viel Platz benötigt, sehr ertragreich"
+  },
+  {
+    plant: "Kürbis",
+    type: "Gemüse",
+    season: ["Herbst"],
+    directSow: [5, 6],
+    indoor: [4, 5],
+    plantOut: [5, 6],
+    harvest: [8, 9, 10],
+    difficulty: "Mittel",
+    notes: "Sehr viel Platz und Nährstoffe benötigt"
+  },
+  {
+    plant: "Bohnen",
+    type: "Gemüse",
+    season: ["Sommer"],
+    directSow: [5, 6, 7],
+    indoor: [],
+    plantOut: [],
+    harvest: [7, 8, 9],
+    difficulty: "Einfach",
+    notes: "Frostempfindlich, erst nach Eisheiligen säen"
+  },
+  {
+    plant: "Erbsen",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer"],
+    directSow: [3, 4, 5, 6],
+    indoor: [],
+    plantOut: [],
+    harvest: [6, 7, 8, 9],
+    difficulty: "Einfach",
+    notes: "Kälteresistent, frühe Aussaat möglich"
+  },
+  {
+    plant: "Zwiebeln",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer"],
+    directSow: [3, 4],
+    indoor: [2, 3],
+    plantOut: [4, 5],
+    harvest: [7, 8, 9],
+    difficulty: "Mittel",
+    notes: "Steckzwiebeln sind einfacher als Aussaat"
+  },
+  {
+    plant: "Knoblauch",
+    type: "Gemüse",
+    season: ["Herbst", "Winter"],
+    directSow: [10, 11],
+    indoor: [],
+    plantOut: [],
+    harvest: [7, 8],
+    difficulty: "Einfach",
+    notes: "Winterknoblauch im Herbst stecken"
+  },
+  {
+    plant: "Blumenkohl",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer", "Herbst"],
+    directSow: [4, 5],
+    indoor: [2, 3],
+    plantOut: [4, 5],
+    harvest: [6, 7, 8, 9, 10],
+    difficulty: "Schwer",
+    notes: "Gleichmäßige Feuchtigkeit wichtig"
+  },
+  {
+    plant: "Brokkoli",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer", "Herbst"],
+    directSow: [4, 5],
+    indoor: [2, 3],
+    plantOut: [4, 5],
+    harvest: [6, 7, 8, 9],
+    difficulty: "Mittel",
+    notes: "Nach Haupternte Seitentriebe nutzen"
+  },
+  {
+    plant: "Kohlrabi",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer", "Herbst"],
+    directSow: [4, 5, 6, 7],
+    indoor: [2, 3],
+    plantOut: [4, 5, 6],
+    harvest: [6, 7, 8, 9, 10],
+    difficulty: "Einfach",
+    notes: "Schnellwachsend, mehrere Sätze möglich"
+  },
+  {
+    plant: "Rote Bete",
+    type: "Gemüse",
+    season: ["Sommer", "Herbst"],
+    directSow: [4, 5, 6],
+    indoor: [],
+    plantOut: [],
+    harvest: [7, 8, 9, 10],
+    difficulty: "Einfach",
+    notes: "Samen vorher einweichen für bessere Keimung"
+  },
+  {
+    plant: "Spinat",
+    type: "Gemüse",
+    season: ["Frühling", "Herbst"],
+    directSow: [3, 4, 8, 9],
+    indoor: [],
+    plantOut: [],
+    harvest: [5, 6, 9, 10],
+    difficulty: "Einfach",
+    notes: "Schosst bei Hitze, besser im Frühjahr/Herbst"
+  },
+  {
+    plant: "Mangold",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer"],
+    directSow: [4, 5, 6, 7],
+    indoor: [3, 4],
+    plantOut: [5, 6],
+    harvest: [6, 7, 8, 9, 10],
+    difficulty: "Einfach",
+    notes: "Blätter nach Bedarf ernten, wächst nach"
+  },
+  {
+    plant: "Feldsalat",
+    type: "Gemüse",
+    season: ["Herbst", "Winter"],
+    directSow: [8, 9, 10],
+    indoor: [],
+    plantOut: [],
+    harvest: [10, 11, 12, 1, 2, 3],
+    difficulty: "Einfach",
+    notes: "Winterhart, frische Vitamine im Winter"
+  },
+  {
+    plant: "Rhabarber",
+    type: "Gemüse",
+    season: ["Frühling"],
+    directSow: [3, 4],
+    indoor: [],
+    plantOut: [4, 5],
+    harvest: [5, 6],
+    difficulty: "Mittel",
+    notes: "Mehrjährige Kultur, nur bis Juni ernten"
+  },
+  {
+    plant: "Petersilienwurzel",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer"],
+    directSow: [3, 4, 5],
+    indoor: [],
+    plantOut: [],
+    harvest: [9, 10, 11],
+    difficulty: "Mittel",
+    notes: "Lange Kulturdauer, tiefe Bodenbearbeitung"
+  },
+  {
+    plant: "Pastinake",
+    type: "Gemüse",
+    season: ["Frühling", "Sommer"],
+    directSow: [3, 4, 5],
+    indoor: [],
+    plantOut: [],
+    harvest: [10, 11],
+    difficulty: "Mittel",
+    notes: "Frostverträglich, Geschmack verbessert sich durch Frost"
+  },
+  {
+    plant: "Mais",
+    type: "Gemüse",
+    season: ["Sommer"],
+    directSow: [5],
+    indoor: [4],
+    plantOut: [5],
+    harvest: [8, 9],
+    difficulty: "Mittel",
+    notes: "Wärmebedürftig, windgeschützter Standort"
   },
   {
     plant: "Melone",
@@ -453,6 +296,8 @@ const SOWING_DATA = [
     indoor: [3, 4],
     plantOut: [5, 6],
     harvest: [8, 9],
+    difficulty: "Schwer",
+    notes: "Sehr wärmebedürftig, am besten im Gewächshaus"
   },
   {
     plant: "Fenchel",
@@ -462,6 +307,263 @@ const SOWING_DATA = [
     indoor: [5, 6],
     plantOut: [6, 7],
     harvest: [8, 9, 10, 11],
+    difficulty: "Mittel",
+    notes: "Schosst bei Hitze und Trockenheit"
+  },
+  // Kräuter
+  {
+    plant: "Basilikum",
+    type: "Kräuter",
+    season: ["Frühling", "Sommer"],
+    directSow: [5, 6],
+    indoor: [3, 4, 5],
+    plantOut: [5, 6],
+    harvest: [6, 7, 8, 9],
+    difficulty: "Mittel",
+    notes: "Wärmebedürftig, regelmäßig entspitzen"
+  },
+  {
+    plant: "Petersilie",
+    type: "Kräuter",
+    season: ["Frühling", "Sommer", "Herbst"],
+    directSow: [3, 4, 5, 6, 7],
+    indoor: [2, 3, 4],
+    plantOut: [4, 5],
+    harvest: [5, 6, 7, 8, 9, 10],
+    difficulty: "Einfach",
+    notes: "Samen langsam keimend, vorher einweichen"
+  },
+  {
+    plant: "Schnittlauch",
+    type: "Kräuter",
+    season: ["Frühling", "Sommer", "Herbst"],
+    directSow: [3, 4, 5],
+    indoor: [2, 3],
+    plantOut: [4, 5],
+    harvest: [4, 5, 6, 7, 8, 9, 10],
+    difficulty: "Einfach",
+    notes: "Mehrjährig, schneidet immer wieder nach"
+  },
+  {
+    plant: "Dill",
+    type: "Kräuter",
+    season: ["Frühling", "Sommer"],
+    directSow: [4, 5, 6, 7],
+    indoor: [],
+    plantOut: [],
+    harvest: [6, 7, 8, 9],
+    difficulty: "Einfach",
+    notes: "Selbstaussaat, mehrere Sätze für kontinuierliche Ernte"
+  },
+  {
+    plant: "Rosmarin",
+    type: "Kräuter",
+    season: ["Frühling", "Sommer"],
+    directSow: [],
+    indoor: [2, 3, 4],
+    plantOut: [5, 6],
+    harvest: [6, 7, 8, 9, 10],
+    difficulty: "Schwer",
+    notes: "Mehrjährig, frostschutz erforderlich"
+  },
+  {
+    plant: "Thymian",
+    type: "Kräuter",
+    season: ["Frühling", "Sommer", "Herbst"],
+    directSow: [4, 5],
+    indoor: [2, 3],
+    plantOut: [5, 6],
+    harvest: [6, 7, 8, 9, 10],
+    difficulty: "Mittel",
+    notes: "Mehrjährig, mag trockene Standorte"
+  },
+  {
+    plant: "Oregano",
+    type: "Kräuter",
+    season: ["Frühling", "Sommer"],
+    directSow: [4, 5],
+    indoor: [3, 4],
+    plantOut: [5, 6],
+    harvest: [6, 7, 8, 9, 10],
+    difficulty: "Einfach",
+    notes: "Mehrjährig, vor Blüte ernten für bestes Aroma"
+  },
+  {
+    plant: "Koriander",
+    type: "Kräuter",
+    season: ["Frühling", "Sommer", "Herbst"],
+    directSow: [3, 4, 5, 6, 7],
+    indoor: [],
+    plantOut: [],
+    harvest: [5, 6, 7, 8, 9, 10],
+    difficulty: "Einfach",
+    notes: "Schosst schnell bei Hitze, mehrere Sätze säen"
+  },
+  {
+    plant: "Minze",
+    type: "Kräuter",
+    season: ["Frühling", "Sommer"],
+    directSow: [4, 5],
+    indoor: [2, 3, 4],
+    plantOut: [5, 6],
+    harvest: [6, 7, 8, 9, 10],
+    difficulty: "Einfach",
+    notes: "Mehrjährig, breitet sich stark aus, Rhizomsperre empfehlenswert"
+  },
+  {
+    plant: "Bohnenkraut",
+    type: "Kräuter",
+    season: ["Frühling", "Sommer"],
+    directSow: [4, 5],
+    indoor: [2, 3],
+    plantOut: [5, 6],
+    harvest: [6, 7, 8, 9, 10],
+    difficulty: "Einfach",
+    notes: "Guter Partner zu Bohnen, hält Schädlinge fern"
+  },
+  {
+    plant: "Lavendel",
+    type: "Kräuter",
+    season: ["Sommer"],
+    directSow: [],
+    indoor: [2, 3],
+    plantOut: [5, 6],
+    harvest: [7, 8],
+    difficulty: "Mittel",
+    notes: "Mehrjährig, mag trockene, sonnige Standorte"
+  },
+  {
+    plant: "Kresse",
+    type: "Kräuter",
+    season: ["Frühling", "Sommer", "Herbst", "Winter"],
+    directSow: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    indoor: [],
+    plantOut: [],
+    harvest: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    difficulty: "Einfach",
+    notes: "Ganzjährig auf der Fensterbank, sehr schnellwachsend"
+  },
+  // Obst
+  {
+    plant: "Erdbeeren",
+    type: "Obst",
+    season: ["Frühling", "Sommer"],
+    directSow: [],
+    indoor: [],
+    plantOut: [3, 4, 8, 9],
+    harvest: [6, 7, 8, 9],
+    difficulty: "Einfach",
+    notes: "Mehrjährig, Grünschnitt und Ausläufer beachten"
+  },
+  {
+    plant: "Himbeeren",
+    type: "Obst",
+    season: ["Sommer"],
+    directSow: [],
+    indoor: [],
+    plantOut: [3, 4, 10, 11],
+    harvest: [6, 7, 8, 9],
+    difficulty: "Mittel",
+    notes: "Mehrjährig, Rückschnitt nach Ernte"
+  },
+  {
+    plant: "Johannisbeere",
+    type: "Obst",
+    season: ["Sommer"],
+    directSow: [],
+    indoor: [],
+    plantOut: [3, 4, 10, 11],
+    harvest: [7, 8],
+    difficulty: "Einfach",
+    notes: "Mehrjährig, verträgt auch Halbschatten"
+  },
+  {
+    plant: "Heidelbeeren",
+    type: "Obst",
+    season: ["Sommer"],
+    directSow: [],
+    indoor: [],
+    plantOut: [3, 4],
+    harvest: [7, 8, 9],
+    difficulty: "Mittel",
+    notes: "Mehrjährig, benötigt sauren Boden"
+  },
+  {
+    plant: "Apfelbeere (Aronia)",
+    type: "Obst",
+    season: ["Sommer", "Herbst"],
+    directSow: [],
+    indoor: [],
+    plantOut: [3, 4],
+    harvest: [8, 9],
+    difficulty: "Einfach",
+    notes: "Mehrjährig, sehr robust und anspruchslos"
+  },
+  {
+    plant: "Weintraube",
+    type: "Obst",
+    season: ["Frühling"],
+    directSow: [],
+    indoor: [],
+    plantOut: [3, 4],
+    harvest: [8, 9, 10],
+    difficulty: "Schwer",
+    notes: "Mehrjährig, benötigt Rankhilfe und Schnitt"
+  },
+  {
+    plant: "Apfel",
+    type: "Obst",
+    season: ["Herbst"],
+    directSow: [],
+    indoor: [],
+    plantOut: [],
+    harvest: [9, 10, 11],
+    difficulty: "Schwer",
+    notes: "Mehrjährig, Baum benötigt Bestäubersorte"
+  },
+  {
+    plant: "Kirsche",
+    type: "Obst",
+    season: ["Sommer"],
+    directSow: [],
+    indoor: [],
+    plantOut: [],
+    harvest: [6, 7],
+    difficulty: "Schwer",
+    notes: "Mehrjährig, Vogelschutz erforderlich"
+  },
+  {
+    plant: "Birne",
+    type: "Obst",
+    season: ["Herbst"],
+    directSow: [],
+    indoor: [],
+    plantOut: [],
+    harvest: [8, 9, 10],
+    difficulty: "Schwer",
+    notes: "Mehrjährig, windgeschützter Standort"
+  },
+  {
+    plant: "Pflaume",
+    type: "Obst",
+    season: ["Sommer", "Herbst"],
+    directSow: [],
+    indoor: [],
+    plantOut: [],
+    harvest: [8, 9],
+    difficulty: "Mittel",
+    notes: "Mehrjährig, regelmäßiger Schnitt wichtig"
+  },
+  {
+    plant: "Aprikose",
+    type: "Obst",
+    season: ["Frühling"],
+    directSow: [],
+    indoor: [],
+    plantOut: [3, 4],
+    harvest: [7, 8],
+    difficulty: "Schwer",
+    notes: "Mehrjährig, spätfrostgefährdet"
   }
 ];
 
@@ -470,6 +572,7 @@ const MONTHS = [
 ];
 const SEASONS = ["Frühling", "Sommer", "Herbst", "Winter"];
 const TYPES = ["Gemüse", "Obst", "Kräuter"];
+const DIFFICULTIES = ["Einfach", "Mittel", "Schwer"];
 
 const CATEGORIES = [
   { key: "directSow", color: "bg-green-500", label: "Aussaat draußen" },
@@ -510,6 +613,7 @@ const SowingCalendar: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
   const [selectedSeason, setSelectedSeason] = useState<string>("ALL");
   const [selectedType, setSelectedType] = useState<string>("ALL");
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("ALL");
 
   // Filtere alle rows, die den Kriterien entsprechen
   const filteredRows = useMemo(() => {
@@ -518,6 +622,8 @@ const SowingCalendar: React.FC = () => {
       if (selectedType !== "ALL" && row.type !== selectedType) return false;
       // Saison-Filter
       if (selectedSeason !== "ALL" && !row.season.includes(selectedSeason)) return false;
+      // Difficulty-Filter
+      if (selectedDifficulty !== "ALL" && row.difficulty !== selectedDifficulty) return false;
       // Textsuche auf Name
       if (search && !row.plant.toLowerCase().includes(search.toLowerCase())) return false;
       // Monat-Filter: nur zeigen, wenn in diesem Monat eine relevante Kategorie belegt ist
@@ -532,7 +638,7 @@ const SowingCalendar: React.FC = () => {
       }
       return true;
     });
-  }, [search, selectedType, selectedSeason, categoryFilter, selectedMonth]);
+  }, [search, selectedType, selectedSeason, selectedDifficulty, categoryFilter, selectedMonth]);
 
   return (
     <div className="w-full max-w-6xl mx-auto bg-white shadow-lg rounded-xl p-6 overflow-hidden animate-fade-in">
@@ -540,7 +646,7 @@ const SowingCalendar: React.FC = () => {
       <div className="mb-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
           <h2 className="text-2xl font-bold font-serif text-earth-800">
-            Aussaatkalender für Obst & Gemüse
+            Aussaatkalender für Obst, Gemüse & Kräuter
           </h2>
           <div className="flex items-center gap-2 min-w-0">
             <div className="relative flex-1 lg:w-64">
@@ -615,9 +721,20 @@ const SowingCalendar: React.FC = () => {
               <SelectValue placeholder="Art" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Obst & Gemüse</SelectItem>
+              <SelectItem value="ALL">Alle Arten</SelectItem>
               {TYPES.map(t => (
                 <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
+            <SelectTrigger className="w-32 border-sage-200 focus:border-sage-400">
+              <SelectValue placeholder="Schwierigkeit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Alle Level</SelectItem>
+              {DIFFICULTIES.map(d => (
+                <SelectItem key={d} value={d}>{d}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -630,11 +747,14 @@ const SowingCalendar: React.FC = () => {
           <Table>
             <TableHeader className="bg-sage-50">
               <TableRow className="border-sage-200">
-                <TableHead className="min-w-[120px] sticky left-0 bg-sage-50 border-r border-sage-200 font-semibold text-earth-800 z-20">
+                <TableHead className="min-w-[140px] sticky left-0 bg-sage-50 border-r border-sage-200 font-semibold text-earth-800 z-20">
                   Pflanze
                 </TableHead>
                 <TableHead className="min-w-[80px] text-center font-semibold text-earth-800">
                   Art
+                </TableHead>
+                <TableHead className="min-w-[100px] text-center font-semibold text-earth-800">
+                  Schwierigkeit
                 </TableHead>
                 {MONTHS.map((month, i) => (
                   <TableHead key={i} className="text-center w-16 font-semibold text-earth-800">
@@ -646,7 +766,7 @@ const SowingCalendar: React.FC = () => {
             <TableBody>
               {filteredRows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={14} className="text-center text-sage-500 py-8 italic">
+                  <TableCell colSpan={15} className="text-center text-sage-500 py-8 italic">
                     Keine passenden Einträge gefunden.
                   </TableCell>
                 </TableRow>
@@ -658,8 +778,21 @@ const SowingCalendar: React.FC = () => {
                     index % 2 === 0 ? 'bg-white' : 'bg-sage-25/30'
                   }`}
                 >
-                  <TableCell className="font-semibold sticky left-0 bg-inherit border-r border-sage-200 z-10 text-earth-800">
-                    {row.plant}
+                  <TableCell className="sticky left-0 bg-inherit border-r border-sage-200 z-10">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2 cursor-help">
+                            <span className="font-semibold text-earth-800">{row.plant}</span>
+                            <Info className="h-3 w-3 text-sage-500" />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          <p className="text-sm font-medium mb-1">Anbautipps:</p>
+                          <p className="text-sm">{row.notes}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </TableCell>
                   <TableCell className="text-center">
                     <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
@@ -670,6 +803,17 @@ const SowingCalendar: React.FC = () => {
                         : 'bg-orange-100 text-orange-800'
                     }`}>
                       {row.type}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                      row.difficulty === 'Einfach' 
+                        ? 'bg-green-100 text-green-800' 
+                        : row.difficulty === 'Mittel'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {row.difficulty}
                     </span>
                   </TableCell>
                   {Array.from({ length: 12 }, (_, col) => (
@@ -698,6 +842,11 @@ const SowingCalendar: React.FC = () => {
               <span className="text-sage-700 font-medium">{cat.label}</span>
             </div>
           ))}
+        </div>
+        <div className="text-center mt-3 text-xs text-sage-600">
+          💡 Schwierigkeitsgrade: <span className="text-green-600 font-medium">Einfach</span> für Anfänger, 
+          <span className="text-yellow-600 font-medium"> Mittel</span> mit etwas Erfahrung, 
+          <span className="text-red-600 font-medium"> Schwer</span> für erfahrene Gärtner
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Helmet } from "react-helmet";
 import SowingCalendar from '@/components/admin/SowingCalendar';
@@ -7,48 +8,170 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar, Sprout, Search, Filter, Leaf, Info } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Companion planting data
-const COMPANION_PLANTS: Record<string, { good: string[], bad: string[] }> = {
+// Enhanced companion planting data with reasons
+const COMPANION_PLANTS: Record<string, { 
+  good: Array<{plant: string, reason: string}>, 
+  bad: Array<{plant: string, reason: string}> 
+}> = {
   "Tomaten": {
-    good: ["Basilikum", "Karotten", "Zwiebeln", "Petersilie", "Spinat"],
-    bad: ["Kartoffeln", "Fenchel", "Mais", "Kohl"]
+    good: [
+      {plant: "Basilikum", reason: "Verbessert den Geschmack und hält Schädlinge wie Weiße Fliegen fern"},
+      {plant: "Karotten", reason: "Lockern den Boden und konkurrieren nicht um die gleichen Nährstoffe"},
+      {plant: "Zwiebeln", reason: "Halten Blattläuse und andere Schädlinge fern durch ihren intensiven Geruch"},
+      {plant: "Petersilie", reason: "Verbessert das Wachstum und den Geschmack der Tomaten"},
+      {plant: "Spinat", reason: "Beschattet den Boden und hält die Feuchtigkeit, wächst schnell ab"},
+      {plant: "Tagetes", reason: "Hält Nematoden und andere Bodenschädlinge fern"},
+      {plant: "Sellerie", reason: "Verbessert den Geschmack und hält Schädlinge ab"}
+    ],
+    bad: [
+      {plant: "Kartoffeln", reason: "Beide Nachtschattengewächse - fördern Krankheitsübertragung wie Kraut- und Braunfäule"},
+      {plant: "Fenchel", reason: "Hemmt das Wachstum durch allelopathische Substanzen"},
+      {plant: "Mais", reason: "Konkurriert um Licht und Nährstoffe, kann Tomaten überschatten"},
+      {plant: "Kohl", reason: "Hoher Nährstoffbedarf führt zu Konkurrenz um Stickstoff"},
+      {plant: "Gurken", reason: "Ähnliche Krankheitsanfälligkeit und Nährstoffkonkurrenz"},
+      {plant: "Rotkohl", reason: "Allelopathische Wirkung hemmt das Tomatenwachstum"}
+    ]
   },
   "Karotten": {
-    good: ["Zwiebeln", "Lauch", "Tomaten", "Radieschen", "Salat"],
-    bad: ["Dill", "Petersilie", "Sellerie"]
+    good: [
+      {plant: "Zwiebeln", reason: "Möhrenfliege wird durch Zwiebelgeruch abgehalten, Zwiebeln profitieren von lockerem Boden"},
+      {plant: "Lauch", reason: "Ähnlicher Effekt wie Zwiebeln - hält Möhrenfliege fern"},
+      {plant: "Tomaten", reason: "Karotten lockern Boden für Tomatenwurzeln, verschiedene Wurzeltiefen"},
+      {plant: "Radieschen", reason: "Radieschen sind schnell abgeerntet und lockern Boden für Karotten"},
+      {plant: "Salat", reason: "Oberflächlicher Wurzelbereich, keine Konkurrenz um Nährstoffe"},
+      {plant: "Erbsen", reason: "Erbsen fixieren Stickstoff, den Karotten gut verwerten können"},
+      {plant: "Schnittlauch", reason: "Hält Blattläuse und Möhrenfliege durch ätherische Öle fern"}
+    ],
+    bad: [
+      {plant: "Dill", reason: "Kann das Karottenwachstum hemmen und zieht Möhrenfliege an"},
+      {plant: "Petersilie", reason: "Verwandte Doldenblütler - können sich gegenseitig in der Entwicklung hemmen"},
+      {plant: "Sellerie", reason: "Ebenfalls Doldenblütler mit ähnlichen Nährstoffansprüchen"},
+      {plant: "Fenchel", reason: "Allelopathische Wirkung hemmt Karottenwachstum"},
+      {plant: "Anis", reason: "Doldenblütler-Konkurrenz und mögliche Wachstumshemmung"}
+    ]
   },
   "Gurken": {
-    good: ["Bohnen", "Erbsen", "Salat", "Zwiebeln", "Kohl"],
-    bad: ["Kartoffeln", "Tomaten", "Radieschen"]
+    good: [
+      {plant: "Bohnen", reason: "Bohnen fixieren Stickstoff, den Gurken für ihr Blattwachstum benötigen"},
+      {plant: "Erbsen", reason: "Stickstoffdüngung durch Knöllchenbakterien kommt Gurken zugute"},
+      {plant: "Salat", reason: "Bodenbeschattung hält Feuchtigkeit, verschiedene Wurzeltiefen"},
+      {plant: "Zwiebeln", reason: "Halten Blattläuse und andere Schädlinge durch Geruch fern"},
+      {plant: "Kohl", reason: "Kohl profitiert von der Bodenbeschattung der Gurken"},
+      {plant: "Dill", reason: "Verbessert Geschmack und hält Schädlinge wie Spinnmilben fern"},
+      {plant: "Basilikum", reason: "Natürlicher Schädlingsschutz und Geschmacksverbesserung"}
+    ],
+    bad: [
+      {plant: "Kartoffeln", reason: "Konkurrenz um Wasser und Nährstoffe, ähnliche Krankheitsanfälligkeit"},
+      {plant: "Tomaten", reason: "Beide wärmebedürftig - Konkurrenz um beste Standorte und Krankheitsübertragung"},
+      {plant: "Radieschen", reason: "Radieschen können Gurkenwurzeln beim Wachstum stören"},
+      {plant: "Aromahafte Kräuter", reason: "Zu intensive Gerüche können Gurkengeschmack beeinträchtigen"}
+    ]
   },
   "Kartoffeln": {
-    good: ["Bohnen", "Kohl", "Mais", "Spinat"],
-    bad: ["Tomaten", "Gurken", "Kürbis", "Sonnenblumen"]
+    good: [
+      {plant: "Bohnen", reason: "Stickstoffdüngung durch Bohnen kommt Kartoffeln zugute"},
+      {plant: "Kohl", reason: "Kohl hält Kartoffelkäfer fern, Kartoffeln lockern Boden für Kohl"},
+      {plant: "Mais", reason: "Verschiedene Wurzeltiefen und Mais beschattet Kartoffeln nicht"},
+      {plant: "Spinat", reason: "Schnell abgeerntet, beschattet Boden und hält Feuchtigkeit"},
+      {plant: "Kapuzinerkresse", reason: "Hält Kartoffelkäfer natürlich fern"},
+      {plant: "Meerrettich", reason: "Wirkt fungizid und bakterizid, schützt vor Krankheiten"}
+    ],
+    bad: [
+      {plant: "Tomaten", reason: "Beide Nachtschattengewächse - erhöhtes Risiko für Kraut- und Braunfäule"},
+      {plant: "Gurken", reason: "Hoher Wasserbedarf beider Pflanzen führt zu Konkurrenz"},
+      {plant: "Kürbis", reason: "Platzbedarf und Nährstoffkonkurrenz um Kalium"},
+      {plant: "Sonnenblumen", reason: "Allelopathische Wirkung hemmt Kartoffelwachstum"},
+      {plant: "Himbeeren", reason: "Können Verticillium-Welke übertragen"}
+    ]
   },
   "Bohnen": {
-    good: ["Karotten", "Gurken", "Kartoffeln", "Kohl"],
-    bad: ["Zwiebeln", "Knoblauch", "Fenchel"]
+    good: [
+      {plant: "Karotten", reason: "Bohnen fixieren Stickstoff, Karotten lockern Boden für Bohnenwurzeln"},
+      {plant: "Gurken", reason: "Stickstoffdüngung durch Bohnen unterstützt Gurkenwachstum"},
+      {plant: "Kartoffeln", reason: "Ergänzende Nährstoffbedürfnisse und Bohnen verbessern Bodenstruktur"},
+      {plant: "Kohl", reason: "Stickstoffversorgung für Kohl, verschiedene Wurzeltiefen"},
+      {plant: "Salat", reason: "Schnelle Ernte, profitiert von Stickstoff der Bohnen"},
+      {plant: "Radieschen", reason: "Kurze Kulturdauer, lockern Boden für Bohnen"}
+    ],
+    bad: [
+      {plant: "Zwiebeln", reason: "Zwiebeln hemmen das Wachstum der Knöllchenbakterien an Bohnenwurzeln"},
+      {plant: "Knoblauch", reason: "Ähnlicher hemmender Effekt auf Stickstoff-Fixierung wie Zwiebeln"},
+      {plant: "Fenchel", reason: "Allelopathische Substanzen können Bohnenwachstum beeinträchtigen"},
+      {plant: "Lauch", reason: "Kann die Stickstoff-Fixierung der Bohnen beeinträchtigen"}
+    ]
   },
   "Kohl": {
-    good: ["Zwiebeln", "Kartoffeln", "Salat", "Spinat"],
-    bad: ["Erdbeeren", "Tomaten", "Bohnen"]
+    good: [
+      {plant: "Zwiebeln", reason: "Halten Kohlweißling und andere Schädlinge durch intensiven Geruch fern"},
+      {plant: "Kartoffeln", reason: "Kartoffeln halten Erdflöhe fern, Kohl schützt vor Kartoffelkäfer"},
+      {plant: "Salat", reason: "Beschattet Boden, verschiedene Nährstoffansprüche"},
+      {plant: "Spinat", reason: "Bodenbeschattung und schnelle Ernte vor Kohlentwicklung"},
+      {plant: "Sellerie", reason: "Hält Kohlweißling fern und verbessert Bodenstruktur"},
+      {plant: "Tomaten", reason: "Tomaten können Kohlweißling abhalten"}
+    ],
+    bad: [
+      {plant: "Erdbeeren", reason: "Kohl entzieht Erdbeeren wichtige Nährstoffe und hemmt Fruchtbildung"},
+      {plant: "Knoblauch", reason: "Kann Kohlwachstum durch allelopathische Wirkung hemmen"},
+      {plant: "Andere Kohlarten", reason: "Gleiche Schädlinge und Krankheiten, Nährstoffkonkurrenz"}
+    ]
   },
   "Salat": {
-    good: ["Karotten", "Radieschen", "Gurken", "Erdbeeren"],
-    bad: ["Petersilie", "Sellerie"]
+    good: [
+      {plant: "Karotten", reason: "Oberflächliche Wurzeln konkurrieren nicht mit tiefen Karottenwurzeln"},
+      {plant: "Radieschen", reason: "Beide schnellwachsend, Radieschen lockern Boden für Salat"},
+      {plant: "Gurken", reason: "Salat beschattet Boden und hält Feuchtigkeit für Gurken"},
+      {plant: "Erdbeeren", reason: "Salat hält Boden feucht und unkrautfrei für Erdbeeren"},
+      {plant: "Zwiebeln", reason: "Zwiebelgeruch hält Blattläuse vom Salat fern"},
+      {plant: "Lauch", reason: "Ähnlicher Schutzeffekt wie Zwiebeln gegen Schädlinge"}
+    ],
+    bad: [
+      {plant: "Petersilie", reason: "Kann Salat in der Entwicklung hemmen durch Wurzelausscheidungen"},
+      {plant: "Sellerie", reason: "Konkurrenz um oberflächennahe Nährstoffe"}
+    ]
   },
   "Zwiebeln": {
-    good: ["Karotten", "Rote Bete", "Salat", "Tomaten"],
-    bad: ["Bohnen", "Erbsen", "Kohl"]
+    good: [
+      {plant: "Karotten", reason: "Klassische Partnerschaft - Zwiebelgeruch hält Möhrenfliege fern"},
+      {plant: "Rote Bete", reason: "Verschiedene Wurzeltiefen, Zwiebeln schützen vor Blattläusen"},
+      {plant: "Salat", reason: "Schutz vor Schädlingen, verschiedene Nährstoffansprüche"},
+      {plant: "Tomaten", reason: "Halten Blattläuse und andere Schädlinge von Tomaten fern"},
+      {plant: "Erdbeeren", reason: "Schützen vor Grauschimmel und anderen Pilzkrankheiten"},
+      {plant: "Kohl", reason: "Intensiver Geruch hält Kohlschädlinge fern"}
+    ],
+    bad: [
+      {plant: "Bohnen", reason: "Hemmen die Knöllchenbakterien und damit Stickstoff-Fixierung der Bohnen"},
+      {plant: "Erbsen", reason: "Ähnlicher negativer Effekt auf Stickstoff-Fixierung wie bei Bohnen"},
+      {plant: "Lauch", reason: "Konkurrenz der Zwiebelgewächse um gleiche Nährstoffe"}
+    ]
   },
   "Erdbeeren": {
-    good: ["Spinat", "Salat", "Zwiebeln", "Knoblauch"],
-    bad: ["Kohl", "Blumenkohl"]
+    good: [
+      {plant: "Spinat", reason: "Hält Boden feucht und unkrautfrei, schnelle Ernte vor Erdbeersaison"},
+      {plant: "Salat", reason: "Bodenbeschattung und Unkrautunterdrückung"},
+      {plant: "Zwiebeln", reason: "Schützen vor Grauschimmel und anderen Pilzkrankheiten"},
+      {plant: "Knoblauch", reason: "Natürlicher Fungizidschutz gegen Erdbeerkrankheiten"},
+      {plant: "Thymian", reason: "Hält Schnecken fern und verbessert Erdbeergeschmack"},
+      {plant: "Borretsch", reason: "Verbessert Geschmack und zieht Bestäuber an"}
+    ],
+    bad: [
+      {plant: "Kohl", reason: "Entzieht Erdbeeren wichtige Nährstoffe und kann Wachstum hemmen"},
+      {plant: "Blumenkohl", reason: "Starke Nährstoffkonkurrenz schadet der Fruchtbildung"}
+    ]
   },
   "Spinat": {
-    good: ["Erdbeeren", "Kohl", "Radieschen", "Kartoffeln"],
-    bad: ["Rote Bete", "Mangold"]
+    good: [
+      {plant: "Erdbeeren", reason: "Beschattet Boden, hält Feuchtigkeit und ist früh abgeerntet"},
+      {plant: "Kohl", reason: "Verschiedene Wachstumsperioden, Spinat ist vor Kohlentwicklung geerntet"},
+      {plant: "Radieschen", reason: "Beide schnellwachsend, ergänzen sich in der Bodennutzung"},
+      {plant: "Kartoffeln", reason: "Bodenbeschattung für Kartoffeln, verschiedene Nährstoffbedürfnisse"},
+      {plant: "Tomaten", reason: "Frühe Ernte vor Tomatenhauptwachstum"}
+    ],
+    bad: [
+      {plant: "Rote Bete", reason: "Beide Gänsefußgewächse - können sich gegenseitig hemmen"},
+      {plant: "Mangold", reason: "Verwandte Pflanzen konkurrieren um gleiche Nährstoffe"}
+    ]
   }
 };
 
@@ -65,6 +188,10 @@ const AussaatkalenderPage: React.FC = () => {
     // Scroll to top when page loads
     window.scrollTo(0, 0);
   }, []);
+
+  const filteredPlants = Object.keys(COMPANION_PLANTS).filter(plant =>
+    plant.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <>
@@ -171,7 +298,7 @@ const AussaatkalenderPage: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-6">
-                      {Object.keys(COMPANION_PLANTS).map(plant => (
+                      {filteredPlants.map(plant => (
                         <Button 
                           key={plant}
                           variant={selectedPlant === plant ? "default" : "outline"}
@@ -190,31 +317,51 @@ const AussaatkalenderPage: React.FC = () => {
                       
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
-                          <h4 className="font-medium text-earth-800 mb-2 flex items-center gap-2">
+                          <h4 className="font-medium text-earth-800 mb-3 flex items-center gap-2">
                             <span className="text-green-600">✓</span> Gute Nachbarn
                           </h4>
-                          <ul className="space-y-2">
-                            {COMPANION_PLANTS[selectedPlant].good.map(plant => (
-                              <li key={plant} className="flex items-center gap-2">
-                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                                <span>{plant}</span>
-                              </li>
+                          <div className="space-y-3">
+                            {COMPANION_PLANTS[selectedPlant].good.map(({plant, reason}) => (
+                              <TooltipProvider key={plant}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 cursor-help transition-colors">
+                                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                      <span className="font-medium">{plant}</span>
+                                      <Info className="h-3 w-3 text-green-600 ml-auto" />
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right" className="max-w-xs">
+                                    <p className="text-sm">{reason}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             ))}
-                          </ul>
+                          </div>
                         </div>
                         
                         <div>
-                          <h4 className="font-medium text-earth-800 mb-2 flex items-center gap-2">
+                          <h4 className="font-medium text-earth-800 mb-3 flex items-center gap-2">
                             <span className="text-red-600">✗</span> Schlechte Nachbarn
                           </h4>
-                          <ul className="space-y-2">
-                            {COMPANION_PLANTS[selectedPlant].bad.map(plant => (
-                              <li key={plant} className="flex items-center gap-2">
-                                <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                                <span>{plant}</span>
-                              </li>
+                          <div className="space-y-3">
+                            {COMPANION_PLANTS[selectedPlant].bad.map(({plant, reason}) => (
+                              <TooltipProvider key={plant}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-2 p-2 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 cursor-help transition-colors">
+                                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                                      <span className="font-medium">{plant}</span>
+                                      <Info className="h-3 w-3 text-red-600 ml-auto" />
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right" className="max-w-xs">
+                                    <p className="text-sm">{reason}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             ))}
-                          </ul>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -265,6 +412,20 @@ const AussaatkalenderPage: React.FC = () => {
                       <h3 className="font-medium text-earth-800 mb-2">Abhärten</h3>
                       <p className="text-earth-600">
                         Vorgezogene Pflanzen vor dem Auspflanzen 1-2 Wochen abhärten, indem du sie tagsüber nach draußen stellst und nachts wieder reinholst.
+                      </p>
+                    </div>
+
+                    <div className="bg-accent-50 p-4 rounded-lg border border-accent-200">
+                      <h3 className="font-medium text-earth-800 mb-2">Mischkultur-Prinzipien</h3>
+                      <p className="text-earth-600">
+                        Nutze die natürlichen Eigenschaften der Pflanzen: Tiefwurzler neben Flachwurzlern, Starkzehrer neben Schwachzehrern, duftende Kräuter als natürlicher Schädlingsschutz.
+                      </p>
+                    </div>
+
+                    <div className="bg-sage-50 p-4 rounded-lg border border-sage-200">
+                      <h3 className="font-medium text-earth-800 mb-2">Fruchtfolge beachten</h3>
+                      <p className="text-earth-600">
+                        Baue nicht jedes Jahr die gleichen Pflanzen am selben Standort an. Eine gute Fruchtfolge beugt Bodenmüdigkeit und Krankheiten vor.
                       </p>
                     </div>
                   </div>
