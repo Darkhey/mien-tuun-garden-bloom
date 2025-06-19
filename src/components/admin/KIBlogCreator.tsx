@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,10 +68,11 @@ const KIBlogCreator: React.FC = () => {
     content: string,
     title: string,
     quality: any,
+    featuredImage?: string,
     suggestion?: string
   ) => {
     try {
-      console.log("Speichere Enhanced Artikel:", { title, quality: quality.score });
+      console.log("Speichere Enhanced Artikel:", { title, quality: quality.score, featuredImage });
       
       // Generiere einen eindeutigen Slug
       const baseSlug = title
@@ -108,8 +108,8 @@ const KIBlogCreator: React.FC = () => {
         tags: tags.length ? tags : [],
         content_types: contentType.length ? contentType : ["blog"],
         audiences: audiences.length ? audiences : ["anfaenger"],
-        featured_image: imageUrl || "",
-        og_image: imageUrl || "",
+        featured_image: featuredImage || imageUrl || "",
+        og_image: featuredImage || imageUrl || "",
         original_title: title,
         seo_description: excerpt || content.slice(0, 156).replace(/<[^>]*>/g, ''),
         seo_title: title,
@@ -150,7 +150,7 @@ const KIBlogCreator: React.FC = () => {
       
       toast({
         title: "Enhanced Artikel gespeichert!",
-        description: `"${title}" wurde mit Quality Score ${quality.score} gespeichert.`,
+        description: `"${title}" wurde mit Quality Score ${quality.score} und KI-Bild gespeichert.`,
       });
       
       if (suggestion) {

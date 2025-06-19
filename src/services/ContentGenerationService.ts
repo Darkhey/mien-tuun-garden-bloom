@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { aiImageGenerationService } from "./AIImageGenerationService";
 
 export interface ContentGenerationOptions {
   prompt: string;
@@ -25,6 +26,7 @@ export interface GeneratedContent {
   content: string;
   title: string;
   quality: ContentQualityMetrics;
+  featuredImage?: string;
   metadata: {
     generationTime: number;
     promptUsed: string;
@@ -85,10 +87,31 @@ class ContentGenerationService {
 
       const title = this.extractTitleFromContent(content) || options.prompt.slice(0, 100);
       
+      // Generiere passendes KI-Bild wenn kein Bild-URL angegeben wurde
+      let featuredImage = options.imageUrl;
+      if (!featuredImage || featuredImage.trim() === '') {
+        try {
+          console.log("[ContentGeneration] Generating AI image for blog post");
+          const generatedImage = await aiImageGenerationService.generateBlogImage({
+            title,
+            content,
+            category: options.category,
+            season: options.season,
+            tags: options.tags
+          });
+          featuredImage = generatedImage.url;
+          console.log("[ContentGeneration] AI image generated successfully:", featuredImage);
+        } catch (imageError) {
+          console.warn("[ContentGeneration] AI image generation failed, using fallback:", imageError);
+          // Fallback bleibt leer, dann wird später ein Unsplash-Bild verwendet
+        }
+      }
+      
       return {
         content,
         title,
         quality,
+        featuredImage,
         metadata: {
           generationTime,
           promptUsed: fullPrompt,

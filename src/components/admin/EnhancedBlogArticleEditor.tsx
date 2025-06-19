@@ -14,7 +14,7 @@ import remarkGfm from 'remark-gfm';
 
 interface EnhancedBlogArticleEditorProps {
   initialPrompt: string;
-  onSave: (content: string, title: string, quality: any) => void;
+  onSave: (content: string, title: string, quality: any, featuredImage?: string) => void;
   category?: string;
   season?: string;
   audiences?: string[];
@@ -45,6 +45,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
   const [optimizedPrompt, setOptimizedPrompt] = useState("");
   const [currentTrends, setCurrentTrends] = useState<TrendData[]>([]);
   const [readingTime, setReadingTime] = useState<string>("5");
+  const [generatingImage, setGeneratingImage] = useState(false);
 
   // Trend-Analyse und Prompt-Optimierung beim Laden
   useEffect(() => {
@@ -63,7 +64,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
   const handleGenerate = async () => {
     setLoading(true);
     try {
-      console.log("[EnhancedEditor] Generating content with enhanced service");
+      console.log("[EnhancedEditor] Generating content with AI image");
       
       // Calculate target word count based on reading time
       const targetWordCount = parseInt(readingTime) * 250; // ~250 words per minute
@@ -81,16 +82,17 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
         contentType,
         tags,
         excerpt,
-        imageUrl
+        imageUrl: "" // Leer lassen, damit KI-Bild generiert wird
       });
 
       setGeneratedContent(result);
       setEditingContent(result.content);
       
-      console.log("[EnhancedEditor] Content generated successfully:", {
+      console.log("[EnhancedEditor] Content and image generated successfully:", {
         title: result.title,
         quality: result.quality.score,
-        wordCount: result.quality.wordCount
+        wordCount: result.quality.wordCount,
+        featuredImage: result.featuredImage
       });
     } catch (error: any) {
       console.error("[EnhancedEditor] Generation failed:", error);
@@ -122,7 +124,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
         contentType,
         tags,
         excerpt,
-        imageUrl
+        imageUrl: "" // Leer lassen, damit KI-Bild generiert wird
       });
 
       setGeneratedContent(result);
@@ -140,7 +142,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
 
   const handleSave = () => {
     if (generatedContent) {
-      onSave(editingContent, generatedContent.title, generatedContent.quality);
+      onSave(editingContent, generatedContent.title, generatedContent.quality, generatedContent.featuredImage);
     }
   };
 
@@ -253,6 +255,22 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
               </span>
             </div>
           </div>
+
+          {/* KI-generiertes Bild anzeigen */}
+          {generatedContent.featuredImage && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-medium text-green-800">KI-generiertes Bild</span>
+                </div>
+                <img 
+                  src={generatedContent.featuredImage} 
+                  alt={generatedContent.title}
+                  className="w-full max-w-md h-48 object-cover rounded-lg"
+                />
+              </CardContent>
+            </Card>
+          )}
 
           <ContentQualityIndicator quality={generatedContent.quality} />
 
