@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Clock, Play, Trash2, Plus, Settings, AlertCircle } from "lucide-react";
+import { Clock, Play, Trash2, Plus, Settings, AlertCircle, Pause } from "lucide-react";
 import { scheduledJobService, JobConfig, JobExecution } from "@/services/ScheduledJobService";
 import { cronJobService } from "@/services/CronJobService";
 import { useToast } from "@/hooks/use-toast";
@@ -53,6 +52,7 @@ const SimpleScheduledJobManager: React.FC = () => {
         enabled: job.enabled
       }));
 
+      // Fix the output type transformation
       const transformedExecutions = executionsData.map(exec => ({
         id: exec.id,
         cron_job_id: exec.cron_job_id,
@@ -61,7 +61,7 @@ const SimpleScheduledJobManager: React.FC = () => {
         started_at: exec.started_at,
         completed_at: exec.completed_at,
         duration_ms: exec.duration_ms,
-        output: exec.output,
+        output: (exec.output && typeof exec.output === 'object') ? exec.output as Record<string, any> : {},
         error_message: exec.error_message,
         retry_attempt: exec.retry_attempt
       }));
