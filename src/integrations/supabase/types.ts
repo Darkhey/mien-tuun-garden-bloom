@@ -477,6 +477,56 @@ export type Database = {
         }
         Relationships: []
       }
+      instagram_posts: {
+        Row: {
+          blog_post_id: string
+          caption: string
+          created_at: string
+          error_message: string | null
+          id: string
+          image_url: string | null
+          instagram_id: string | null
+          posted_at: string | null
+          scheduled_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          blog_post_id: string
+          caption: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          image_url?: string | null
+          instagram_id?: string | null
+          posted_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          blog_post_id?: string
+          caption?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          image_url?: string | null
+          instagram_id?: string | null
+          posted_at?: string | null
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instagram_posts_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       job_execution_logs: {
         Row: {
           completed_at: string | null

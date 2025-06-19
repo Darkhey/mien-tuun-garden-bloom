@@ -47,7 +47,7 @@ export const useAdminData = (activeView: AdminView) => {
     console.log("[AdminDashboard] Lade Blog-Artikel...");
     const { data, error } = await supabase
       .from('blog_posts')
-      .select('id, title, slug, status, author, published_at, category, featured, description')
+      .select('id, title, slug, status, author, published_at, category, featured, excerpt, featured_image')
       .order('published_at', { ascending: false })
       .limit(50);
 
@@ -62,6 +62,8 @@ export const useAdminData = (activeView: AdminView) => {
       published_at: post.published_at,
       category: post.category,
       featured: post.featured || false,
+      excerpt: post.excerpt,
+      featured_image: post.featured_image,
     }));
 
     setBlogPosts(transformedPosts);

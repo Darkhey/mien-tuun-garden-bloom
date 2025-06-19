@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,7 @@ const BlogPostsView: React.FC = () => {
       
       const { data, error } = await supabase
         .from('blog_posts')
-        .select('id, title, slug, status, author, published_at, category, featured')
+        .select('id, title, slug, status, author, published_at, category, featured, excerpt, featured_image')
         .order('published_at', { ascending: false });
 
       if (error) throw error;
@@ -38,6 +39,8 @@ const BlogPostsView: React.FC = () => {
         published_at: post.published_at,
         category: post.category,
         featured: post.featured || false,
+        excerpt: post.excerpt,
+        featured_image: post.featured_image,
       }));
 
       setPosts(transformedPosts);
@@ -58,14 +61,27 @@ const BlogPostsView: React.FC = () => {
 
   const loadInstagramStatuses = async () => {
     try {
+      // Use supabase.rpc to call a simple function that returns the data
+      // Since instagram_posts table might not be in types yet, we'll use a direct query
       const { data, error } = await supabase
+        .rpc('check_table_exists', { table_name: 'instagram_posts' });
+
+      if (error || !data) {
+        console.log('Instagram posts table does not exist yet');
+        return;
+      }
+
+      const { data: instagramData, error: instagramError } = await supabase
         .from('instagram_posts')
         .select('blog_post_id, status');
 
-      if (error) throw error;
+      if (instagramError) {
+        console.error('Error loading Instagram statuses:', instagramError);
+        return;
+      }
 
       const statusMap: { [key: string]: string } = {};
-      (data || []).forEach(item => {
+      (instagramData || []).forEach(item => {
         statusMap[item.blog_post_id] = item.status;
       });
       

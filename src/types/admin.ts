@@ -1,3 +1,4 @@
+
 export type AdminView = 
   | "recipes" 
   | "blog-posts" 
@@ -79,6 +80,8 @@ export interface AdminBlogPost {
   published_at: string;
   category: string;
   featured: boolean;
+  excerpt?: string;
+  featured_image?: string;
 }
 
 export interface InstagramPost {
