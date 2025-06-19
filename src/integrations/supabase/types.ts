@@ -165,10 +165,12 @@ export type Database = {
         Row: {
           audiences: string[]
           author: string
+          automation_config_id: string | null
           category: string
           content: string
           content_types: string[]
           description: string | null
+          engagement_score: number | null
           excerpt: string
           featured: boolean
           featured_image: string
@@ -177,6 +179,7 @@ export type Database = {
           original_title: string | null
           published: boolean
           published_at: string
+          quality_score: number | null
           reading_time: number
           season: string | null
           seo_description: string
@@ -193,10 +196,12 @@ export type Database = {
         Insert: {
           audiences?: string[]
           author: string
+          automation_config_id?: string | null
           category: string
           content: string
           content_types?: string[]
           description?: string | null
+          engagement_score?: number | null
           excerpt: string
           featured?: boolean
           featured_image: string
@@ -205,6 +210,7 @@ export type Database = {
           original_title?: string | null
           published?: boolean
           published_at?: string
+          quality_score?: number | null
           reading_time: number
           season?: string | null
           seo_description: string
@@ -221,10 +227,12 @@ export type Database = {
         Update: {
           audiences?: string[]
           author?: string
+          automation_config_id?: string | null
           category?: string
           content?: string
           content_types?: string[]
           description?: string | null
+          engagement_score?: number | null
           excerpt?: string
           featured?: boolean
           featured_image?: string
@@ -233,6 +241,7 @@ export type Database = {
           original_title?: string | null
           published?: boolean
           published_at?: string
+          quality_score?: number | null
           reading_time?: number
           season?: string | null
           seo_description?: string
@@ -246,7 +255,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "blog_posts_automation_config_id_fkey"
+            columns: ["automation_config_id"]
+            isOneToOne: false
+            referencedRelation: "content_automation_configs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       blog_ratings: {
         Row: {
@@ -325,6 +342,74 @@ export type Database = {
           used_in_post?: string | null
         }
         Relationships: []
+      }
+      content_automation_configs: {
+        Row: {
+          config: Json
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+          yaml_config: string | null
+        }
+        Insert: {
+          config: Json
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+          yaml_config?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+          yaml_config?: string | null
+        }
+        Relationships: []
+      }
+      content_automation_logs: {
+        Row: {
+          action: string
+          config_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          status: string
+        }
+        Insert: {
+          action: string
+          config_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          status: string
+        }
+        Update: {
+          action?: string
+          config_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_automation_logs_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "content_automation_configs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cron_jobs: {
         Row: {
@@ -940,6 +1025,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_table_exists: {
+        Args: { table_name: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _user_id: string
