@@ -283,7 +283,7 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
               excerpt={formData.excerpt}
               category={formData.category}
               featuredImage={formData.featured_image}
-              onSEODataChange={setSeoData}
+              onSEODataChange={(data) => setSeoData(data as SEOMetadata)}
             />
           </div>
         </div>
