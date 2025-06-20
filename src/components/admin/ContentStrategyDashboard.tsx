@@ -1,14 +1,15 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search } from "lucide-react";
+import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search, Loader2 } from "lucide-react";
 import { contentStrategyService, ContentStrategy, ContentCalendarEntry } from "@/services/ContentStrategyService";
 import { contextAnalyzer, ContentGap } from "@/services/ContextAnalyzer";
 import { blogAnalyticsService, TrendKeyword } from "@/services/BlogAnalyticsService";
 import { contentInsightsService, CategoryStat, ContentSuggestion, ScheduledPost } from "@/services/ContentInsightsService";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const ContentStrategyDashboard: React.FC = () => {
   const [strategies, setStrategies] = useState<ContentStrategy[]>([]);
@@ -20,13 +21,14 @@ const ContentStrategyDashboard: React.FC = () => {
   const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
   const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
   const [loading, setLoading] = useState(false);
+  const [creatingArticle, setCreatingArticle] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const loadStrategicData = async () => {
     setLoading(true);
     try {
       console.log("[StrategyDashboard] Loading strategic data");
       
-      // Parallel laden für bessere Performance
       const [strategiesData, posts, trendsData, gapsData, insights] = await Promise.all([
         contentStrategyService.generateContentStrategy({ timeframe: 4 }),
         blogAnalyticsService.fetchBlogPosts(),
@@ -46,7 +48,6 @@ const ContentStrategyDashboard: React.FC = () => {
       setSuggestions(insights.suggestions.slice(0, 5));
       setScheduled(insights.scheduled.slice(0, 5));
 
-      // Content-Kalender generieren
       const calendarData = await contentStrategyService.generateContentCalendar(strategiesData, 2);
       setCalendar(calendarData.slice(0, 10));
       
@@ -55,6 +56,38 @@ const ContentStrategyDashboard: React.FC = () => {
       console.error("[StrategyDashboard] Error loading data:", error);
     }
     setLoading(false);
+  };
+
+  const handleCreateArticle = async (topic: string, category: string, season?: string, urgency?: string) => {
+    setCreatingArticle(topic);
+    
+    try {
+      console.log(`[StrategyDashboard] Erstelle Artikel für: ${topic}`);
+      
+      const { data, error } = await supabase.functions.invoke('create-strategy-article', {
+        body: { topic, category, season, urgency }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Artikel erstellt! 🎉",
+        description: `"${topic}" wurde erfolgreich veröffentlicht`,
+      });
+
+      // Daten neu laden
+      await loadStrategicData();
+      
+    } catch (error: any) {
+      console.error("[StrategyDashboard] Fehler beim Erstellen:", error);
+      toast({
+        title: "Fehler",
+        description: error.message || "Artikel konnte nicht erstellt werden",
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingArticle(null);
+    }
   };
 
   useEffect(() => {
@@ -104,7 +137,8 @@ const ContentStrategyDashboard: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {trends.map((trend, idx) => (
-              <div key={idx} className="p-3 border rounded-lg">
+              <div key={idx} className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                   onClick={() => handleCreateArticle(trend.keyword, trend.category)}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium">{trend.keyword}</span>
                   <Badge variant="outline">{Math.round(trend.relevance * 100)}%</Badge>
@@ -113,6 +147,12 @@ const ContentStrategyDashboard: React.FC = () => {
                   {trend.category}
                 </div>
                 <Progress value={trend.relevance * 100} className="h-2" />
+                {creatingArticle === trend.keyword && (
+                  <div className="flex items-center gap-2 mt-2 text-sm text-blue-600">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Erstelle Artikel...
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -130,7 +170,8 @@ const ContentStrategyDashboard: React.FC = () => {
         <CardContent>
           <div className="space-y-3">
             {gaps.map((gap, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                   onClick={() => handleCreateArticle(gap.topic, 'garten', undefined, gap.urgency > 0.8 ? 'high' : 'medium')}>
                 <div>
                   <div className="font-medium">{gap.topic}</div>
                   <div className="text-sm text-gray-600">{gap.reason}</div>
@@ -139,6 +180,12 @@ const ContentStrategyDashboard: React.FC = () => {
                   <div className={`w-3 h-3 rounded-full ${getUrgencyColor(gap.urgency > 0.8 ? 'high' : 'medium')}`} />
                   <span className="text-sm">{Math.round(gap.urgency * 100)}% Priorität</span>
                 </div>
+                {creatingArticle === gap.topic && (
+                  <div className="flex items-center gap-2 ml-2 text-sm text-blue-600">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Erstelle...
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -156,12 +203,18 @@ const ContentStrategyDashboard: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {keywordGaps.map((gap, idx) => (
-              <div key={idx} className="p-3 border rounded-lg flex items-center justify-between">
+              <div key={idx} className="p-3 border rounded-lg flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+                   onClick={() => handleCreateArticle(gap.keyword, gap.category)}>
                 <div>
                   <div className="font-medium">{gap.keyword}</div>
                   <div className="text-sm text-gray-600">{gap.category}</div>
                 </div>
                 <Badge variant="destructive">Fehlt</Badge>
+                {creatingArticle === gap.keyword && (
+                  <div className="flex items-center gap-2 ml-2 text-sm text-blue-600">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -179,12 +232,19 @@ const ContentStrategyDashboard: React.FC = () => {
         <CardContent>
           <div className="space-y-3">
             {suggestions.map((s, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                   onClick={() => handleCreateArticle(s.topic, s.category)}>
                 <div>
                   <div className="font-medium">{s.topic}</div>
                   <div className="text-sm text-gray-600">{s.category}</div>
                 </div>
                 <Badge variant="outline">{s.reason}</Badge>
+                {creatingArticle === s.topic && (
+                  <div className="flex items-center gap-2 ml-2 text-sm text-blue-600">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Erstelle...
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -222,8 +282,12 @@ const ContentStrategyDashboard: React.FC = () => {
                   <div className="text-sm font-medium mb-2">Vorgeschlagene Themen:</div>
                   <div className="flex flex-wrap gap-2">
                     {strategy.suggestedTopics.map((topic, topicIdx) => (
-                      <Badge key={topicIdx} variant="outline" className="text-xs">
+                      <Badge key={topicIdx} variant="outline" className="text-xs cursor-pointer hover:bg-gray-100"
+                             onClick={() => handleCreateArticle(topic, strategy.category, undefined, strategy.urgency)}>
                         {topic}
+                        {creatingArticle === topic && (
+                          <Loader2 className="h-3 w-3 animate-spin ml-1" />
+                        )}
                       </Badge>
                     ))}
                   </div>
@@ -247,7 +311,8 @@ const ContentStrategyDashboard: React.FC = () => {
         <CardContent>
           <div className="space-y-3">
             {calendar.map((entry, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                   onClick={() => handleCreateArticle(entry.title, entry.category)}>
                 <div className="flex items-center gap-3">
                   <div className="text-sm font-medium">
                     {entry.date.toLocaleDateString('de-DE', { 
@@ -273,6 +338,11 @@ const ContentStrategyDashboard: React.FC = () => {
                     ~{entry.estimatedEngagement} Engagement
                   </div>
                 </div>
+                {creatingArticle === entry.title && (
+                  <div className="flex items-center gap-2 ml-2 text-sm text-blue-600">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -314,25 +384,40 @@ const ContentStrategyDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-start">
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-start"
+                    onClick={() => trends[0] && handleCreateArticle(trends[0].keyword, trends[0].category)}
+                    disabled={!trends[0] || creatingArticle === trends[0]?.keyword}>
               <div className="font-medium mb-1">Top-Trend Content</div>
               <div className="text-sm text-gray-600">
                 {trends[0] ? `Artikel zu ${trends[0].keyword} erstellen` : 'Keine Trends'}
               </div>
+              {creatingArticle === trends[0]?.keyword && (
+                <Loader2 className="h-4 w-4 animate-spin mt-2" />
+              )}
             </Button>
 
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-start">
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-start"
+                    onClick={() => gaps[0] && handleCreateArticle(gaps[0].topic, 'garten')}
+                    disabled={!gaps[0] || creatingArticle === gaps[0]?.topic}>
               <div className="font-medium mb-1">Gap-Content</div>
               <div className="text-sm text-gray-600">
-                {categoryStats[0] ? `Kategorie ${categoryStats[0].category} ausbauen` : 'Keine Lücken'}
+                {gaps[0] ? `Artikel zu ${gaps[0].topic} erstellen` : 'Keine Lücken'}
               </div>
+              {creatingArticle === gaps[0]?.topic && (
+                <Loader2 className="h-4 w-4 animate-spin mt-2" />
+              )}
             </Button>
 
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-start">
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-start"
+                    onClick={() => suggestions[0] && handleCreateArticle(suggestions[0].topic, suggestions[0].category)}
+                    disabled={!suggestions[0] || creatingArticle === suggestions[0]?.topic}>
               <div className="font-medium mb-1">Trend-Vorschlag</div>
               <div className="text-sm text-gray-600">
                 {suggestions[0] ? suggestions[0].topic : 'Keine Vorschläge'}
               </div>
+              {creatingArticle === suggestions[0]?.topic && (
+                <Loader2 className="h-4 w-4 animate-spin mt-2" />
+              )}
             </Button>
           </div>
         </CardContent>
