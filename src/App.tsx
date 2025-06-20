@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from "@/components/ui/sonner";
 import ErrorBoundary from '@/components/ErrorBoundary';
 import LazyRoute from '@/components/LazyRoute';
+import Layout from '@/components/Layout';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // Lazy load components
@@ -43,7 +44,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <Router>
-          <div className="min-h-screen bg-background">
+          <Layout>
             <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Lädt...</div>}>
               <Routes>
                 <Route path="/" element={
@@ -69,7 +70,7 @@ function App() {
                 <Route path="*" element={<LazyRoute><NotFound /></LazyRoute>} />
               </Routes>
             </Suspense>
-          </div>
+          </Layout>
           <Toaster />
         </Router>
       </QueryClientProvider>
