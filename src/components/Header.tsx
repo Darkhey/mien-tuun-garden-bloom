@@ -61,7 +61,7 @@ const Header: React.FC = () => {
     { name: 'Blog', href: '/blog' },
     { name: 'Rezepte', href: '/rezepte' },
     { name: 'Aussaatkalender', href: '/aussaatkalender', badge: 'Beta' },
-    { name: 'Über mich', href: '/about' },
+    { name: 'Über mich', href: '/ueber-uns' },
   ];
 
   return (
