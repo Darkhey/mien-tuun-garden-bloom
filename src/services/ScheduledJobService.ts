@@ -56,23 +56,26 @@ class ScheduledJobService {
     if (error) throw error;
     
     // Map database fields to our interface
-    return (data || []).map(job => ({
-      id: job.id,
-      name: job.name,
-      description: job.description || '',
-      cron_expression: job.cron_expression,
-      job_type: job.job_type as any,
-      function_name: job.function_name,
-      function_payload: job.function_payload as Record<string, any>,
-      status: job.status as any,
-      enabled: job.enabled,
-      schedule_pattern: job.cron_expression,
-      schedule_type: 'cron',
-      is_active: job.enabled,
-      target_table: job.function_payload?.target_table || '',
-      last_run_at: job.last_run_at,
-      next_run_at: job.next_run_at
-    }));
+    return (data || []).map(job => {
+      const payload = job.function_payload as Record<string, any> || {};
+      return {
+        id: job.id,
+        name: job.name,
+        description: job.description || '',
+        cron_expression: job.cron_expression,
+        job_type: job.job_type as any,
+        function_name: job.function_name,
+        function_payload: payload,
+        status: job.status as any,
+        enabled: job.enabled,
+        schedule_pattern: job.cron_expression,
+        schedule_type: 'cron',
+        is_active: job.enabled,
+        target_table: payload.target_table || '',
+        last_run_at: job.last_run_at,
+        next_run_at: job.next_run_at
+      };
+    });
   }
 
   /**
@@ -90,6 +93,7 @@ class ScheduledJobService {
       throw error;
     }
     
+    const payload = data.function_payload as Record<string, any> || {};
     return {
       id: data.id,
       name: data.name,
@@ -97,13 +101,13 @@ class ScheduledJobService {
       cron_expression: data.cron_expression,
       job_type: data.job_type as any,
       function_name: data.function_name,
-      function_payload: data.function_payload as Record<string, any>,
+      function_payload: payload,
       status: data.status as any,
       enabled: data.enabled,
       schedule_pattern: data.cron_expression,
       schedule_type: 'cron',
       is_active: data.enabled,
-      target_table: data.function_payload?.target_table || '',
+      target_table: payload.target_table || '',
       last_run_at: data.last_run_at,
       next_run_at: data.next_run_at
     };
@@ -136,6 +140,7 @@ class ScheduledJobService {
 
     if (error) throw error;
     
+    const payload = data.function_payload as Record<string, any> || {};
     return {
       id: data.id,
       name: data.name,
@@ -143,13 +148,13 @@ class ScheduledJobService {
       cron_expression: data.cron_expression,
       job_type: data.job_type as any,
       function_name: data.function_name,
-      function_payload: data.function_payload as Record<string, any>,
+      function_payload: payload,
       status: data.status as any,
       enabled: data.enabled,
       schedule_pattern: data.cron_expression,
       schedule_type: 'cron',
       is_active: data.enabled,
-      target_table: data.function_payload?.target_table || '',
+      target_table: payload.target_table || '',
       last_run_at: data.last_run_at,
       next_run_at: data.next_run_at
     };
@@ -177,6 +182,7 @@ class ScheduledJobService {
 
     if (error) throw error;
     
+    const payload = data.function_payload as Record<string, any> || {};
     return {
       id: data.id,
       name: data.name,
@@ -184,13 +190,13 @@ class ScheduledJobService {
       cron_expression: data.cron_expression,
       job_type: data.job_type as any,
       function_name: data.function_name,
-      function_payload: data.function_payload as Record<string, any>,
+      function_payload: payload,
       status: data.status as any,
       enabled: data.enabled,
       schedule_pattern: data.cron_expression,
       schedule_type: 'cron',
       is_active: data.enabled,
-      target_table: data.function_payload?.target_table || '',
+      target_table: payload.target_table || '',
       last_run_at: data.last_run_at,
       next_run_at: data.next_run_at
     };
@@ -221,6 +227,7 @@ class ScheduledJobService {
 
     if (error) throw error;
     
+    const payload = data.function_payload as Record<string, any> || {};
     return {
       id: data.id,
       name: data.name,
@@ -228,13 +235,13 @@ class ScheduledJobService {
       cron_expression: data.cron_expression,
       job_type: data.job_type as any,
       function_name: data.function_name,
-      function_payload: data.function_payload as Record<string, any>,
+      function_payload: payload,
       status: data.status as any,
       enabled: data.enabled,
       schedule_pattern: data.cron_expression,
       schedule_type: 'cron',
       is_active: data.enabled,
-      target_table: data.function_payload?.target_table || '',
+      target_table: payload.target_table || '',
       last_run_at: data.last_run_at,
       next_run_at: data.next_run_at
     };
