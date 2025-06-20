@@ -217,7 +217,7 @@ export const useAdminActions = () => {
 
     try {
       const table = type === 'recipe' ? 'recipes' : 'blog_posts';
-      const versionTable = type === 'recipe' ? 'recipe_versions' : 'blog_post_versions';
+      const versionTable = type === 'recipe_versions' : 'blog_post_versions';
 
       // Use maybeSingle() instead of single() to handle cases where no row is found
       const { data: current, error: fetchError } = await supabase

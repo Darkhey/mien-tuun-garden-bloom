@@ -1076,7 +1076,7 @@ export type Database = {
     }
     Functions: {
       check_table_exists: {
-        Args: { table_name: string }
+        Args: { p_table_name: string }
         Returns: boolean
       }
       has_role: {
@@ -1094,12 +1094,6 @@ export type Database = {
           _severity?: string
         }
         Returns: string
-      }
-      execute_cron_job: {
-        Args: {
-          job_id: string
-        }
-        Returns: Json
       }
     }
     Enums: {

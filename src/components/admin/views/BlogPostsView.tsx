@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,7 @@ const BlogPostsView: React.FC = () => {
       // Use supabase.rpc to call a simple function that returns the data
       // Since instagram_posts table might not be in types yet, we'll use a direct query
       const { data, error } = await supabase
-        .rpc('check_table_exists', { table_name: 'instagram_posts' });
+        .rpc('check_table_exists', { p_table_name: 'instagram_posts' });
 
       if (error || !data) {
         console.log('Instagram posts table does not exist yet');
