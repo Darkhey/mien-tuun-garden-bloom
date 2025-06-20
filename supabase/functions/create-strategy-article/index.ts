@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.5";
@@ -9,6 +8,7 @@ import { uploadImageToSupabase, saveBlogPost } from "../auto-blog-post/supabase-
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,8 +21,27 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
-    const { topic, category, season, urgency } = await req.json();
+    console.log("[create-strategy-article] Function started");
+
+    // Check environment variables
+    if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+      throw new Error("Supabase Konfiguration fehlt (URL oder Service Role Key)");
+    }
+
+    if (!OPENAI_API_KEY) {
+      throw new Error("OpenAI API-Schlüssel nicht konfiguriert. Bitte kontaktieren Sie den Administrator.");
+    }
+
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (parseError) {
+      throw new Error("Ungültiger Request Body");
+    }
+
+    const { topic, category, season, urgency } = requestBody;
 
     if (!topic || !category) {
       throw new Error("Topic und Category sind erforderlich");
@@ -37,7 +56,13 @@ serve(async (req) => {
     const prompt = buildMariannePrompt(topic, category, season);
     
     // Artikel mit OpenAI generieren
-    const articleContent = await generateArticle(prompt);
+    let articleContent;
+    try {
+      articleContent = await generateArticle(prompt);
+    } catch (openaiError) {
+      console.error("[create-strategy-article] OpenAI API Fehler:", openaiError);
+      throw new Error(`OpenAI API Fehler: ${openaiError.message}`);
+    }
     
     // Teaser/Excerpt extrahieren (erste Zeile nach der Überschrift)
     const contentLines = articleContent.split('\n').filter(line => line.trim());
@@ -52,7 +77,7 @@ serve(async (req) => {
         .slice(0, 160);
     }
 
-    // KI-Bild generieren
+    // KI-Bild generieren (mit Fallback)
     let featured_image = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&h=600&fit=crop";
     try {
       const imageB64 = await generateImage({ 
@@ -63,8 +88,10 @@ serve(async (req) => {
       });
       const fileName = `strategy-${slug}.png`;
       featured_image = await uploadImageToSupabase({ supabase, imageB64, fileName });
+      console.log("[create-strategy-article] Bild erfolgreich generiert und hochgeladen");
     } catch (imgErr) {
-      console.error("Bildgenerierung fehlgeschlagen:", imgErr);
+      console.warn("[create-strategy-article] Bildgenerierung fehlgeschlagen, verwende Fallback:", imgErr);
+      // Continue with fallback image
     }
 
     // SEO-Metadaten
@@ -96,7 +123,13 @@ serve(async (req) => {
     };
 
     // In Datenbank speichern
-    await saveBlogPost(supabase, postData);
+    try {
+      await saveBlogPost(supabase, postData);
+      console.log(`[create-strategy-article] Artikel erfolgreich in Datenbank gespeichert: ${slug}`);
+    } catch (dbError) {
+      console.error("[create-strategy-article] Datenbank Fehler:", dbError);
+      throw new Error(`Datenbank Fehler: ${dbError.message}`);
+    }
 
     console.log(`[create-strategy-article] Artikel erfolgreich erstellt: ${slug}`);
 
@@ -108,14 +141,19 @@ serve(async (req) => {
       featured_image,
       message: "Artikel wurde erfolgreich erstellt und veröffentlicht"
     }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 200
     });
 
   } catch (err) {
     console.error("[create-strategy-article] Fehler:", err);
+    
+    const errorMessage = err?.message || String(err) || "Unbekannter Fehler";
+    
     return new Response(JSON.stringify({ 
-      error: String(err?.message ?? err),
-      success: false 
+      error: errorMessage,
+      success: false,
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

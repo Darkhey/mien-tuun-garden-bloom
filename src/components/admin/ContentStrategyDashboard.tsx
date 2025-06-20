@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search, Loader2 } from "lucide-react";
+import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search, Loader2, ExclamationTriangle } from "lucide-react";
 import { contentStrategyService, ContentStrategy, ContentCalendarEntry } from "@/services/ContentStrategyService";
 import { contextAnalyzer, ContentGap } from "@/services/ContextAnalyzer";
 import { blogAnalyticsService, TrendKeyword } from "@/services/BlogAnalyticsService";
@@ -68,7 +68,18 @@ const ContentStrategyDashboard: React.FC = () => {
         body: { topic, category, season, urgency }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("[StrategyDashboard] Supabase function error:", error);
+        throw new Error(error.message || "Edge Function Fehler");
+      }
+
+      if (!data) {
+        throw new Error("Keine Antwort von der Edge Function erhalten");
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || "Artikel konnte nicht erstellt werden");
+      }
 
       toast({
         title: "Artikel erstellt! 🎉",
@@ -80,9 +91,23 @@ const ContentStrategyDashboard: React.FC = () => {
       
     } catch (error: any) {
       console.error("[StrategyDashboard] Fehler beim Erstellen:", error);
+      
+      // Better error handling with specific messages
+      let errorMessage = "Artikel konnte nicht erstellt werden";
+      
+      if (error.message?.includes("Failed to fetch")) {
+        errorMessage = "Verbindung zur Edge Function fehlgeschlagen. Bitte prüfen Sie die Konfiguration.";
+      } else if (error.message?.includes("OPENAI_API_KEY")) {
+        errorMessage = "OpenAI API-Schlüssel nicht konfiguriert. Bitte kontaktieren Sie den Administrator.";
+      } else if (error.message?.includes("Edge Function")) {
+        errorMessage = "Edge Function Fehler. Bitte versuchen Sie es später erneut.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "Fehler",
-        description: error.message || "Artikel konnte nicht erstellt werden",
+        title: "Fehler beim Erstellen",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -125,6 +150,23 @@ const ContentStrategyDashboard: React.FC = () => {
           {loading ? "Analysiere..." : "Daten aktualisieren"}
         </Button>
       </div>
+
+      {/* System Status Warning */}
+      <Card className="border-orange-200 bg-orange-50">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <ExclamationTriangle className="h-5 w-5 text-orange-600" />
+            <div>
+              <p className="text-sm font-medium text-orange-800">
+                Hinweis: Artikel-Erstellung erfordert konfigurierte OpenAI API-Schlüssel
+              </p>
+              <p className="text-xs text-orange-600">
+                Falls Fehler auftreten, kontaktieren Sie bitte den Administrator zur Konfiguration der Edge Functions.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Trend-Übersicht */}
       <Card>

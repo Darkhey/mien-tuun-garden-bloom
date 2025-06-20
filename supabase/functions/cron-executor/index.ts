@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
@@ -40,11 +39,33 @@ serve(async (req) => {
         .single();
 
       if (jobError || !job) {
-        throw new Error(`Job not found: ${jobId}`);
+        console.error(`[CronExecutor] Job not found: ${jobId}`, jobError);
+        return new Response(
+          JSON.stringify({
+            error: `Job not found: ${jobId}`,
+            success: false
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 404,
+          }
+        );
       }
 
       if (!job.enabled) {
-        throw new Error(`Job is disabled: ${jobId}`);
+        console.warn(`[CronExecutor] Job is disabled: ${jobId}`);
+        return new Response(
+          JSON.stringify({
+            error: `Job "${job.name}" ist deaktiviert. Bitte aktivieren Sie den Job zuerst.`,
+            success: false,
+            jobName: job.name,
+            jobEnabled: false
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          }
+        );
       }
 
       const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -64,7 +85,17 @@ serve(async (req) => {
         .single();
 
       if (logError) {
-        throw new Error(`Failed to create execution log: ${logError.message}`);
+        console.error(`[CronExecutor] Failed to create execution log:`, logError);
+        return new Response(
+          JSON.stringify({
+            error: `Failed to create execution log: ${logError.message}`,
+            success: false
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
       }
 
       const logId = logData.id;
@@ -118,7 +149,8 @@ serve(async (req) => {
             success: true,
             executionId,
             duration,
-            result: functionResult
+            result: functionResult,
+            jobName: job.name
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -128,6 +160,9 @@ serve(async (req) => {
 
       } catch (executionError) {
         const duration = Date.now() - startTime;
+        const errorMessage = executionError.message || 'Unknown execution error';
+        
+        console.error(`[CronExecutor] Job execution failed:`, executionError);
         
         // Update execution log with error
         await supabaseClient
@@ -135,7 +170,7 @@ serve(async (req) => {
           .update({
             status: 'failed',
             completed_at: new Date().toISOString(),
-            error_message: executionError.message,
+            error_message: errorMessage,
             duration_ms: duration
           })
           .eq('id', logId);
@@ -148,8 +183,19 @@ serve(async (req) => {
           })
           .eq('id', jobId);
 
-        console.error(`[CronExecutor] Job execution failed: ${executionError.message}`);
-        throw executionError;
+        return new Response(
+          JSON.stringify({
+            error: errorMessage,
+            success: false,
+            jobName: job.name,
+            executionId,
+            duration
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
       }
 
     } else if (action === 'get_ready_jobs') {
@@ -162,7 +208,17 @@ serve(async (req) => {
         .lte('next_run_at', new Date().toISOString());
 
       if (readyJobsError) {
-        throw new Error(`Failed to get ready jobs: ${readyJobsError.message}`);
+        console.error(`[CronExecutor] Failed to get ready jobs:`, readyJobsError);
+        return new Response(
+          JSON.stringify({
+            error: `Failed to get ready jobs: ${readyJobsError.message}`,
+            success: false
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
       }
 
       return new Response(
@@ -179,12 +235,26 @@ serve(async (req) => {
     } else if (action === 'update_next_run') {
       const { nextRunAt } = await req.json();
       
-      await supabaseClient
+      const { error: updateError } = await supabaseClient
         .from('cron_jobs')
         .update({
           next_run_at: nextRunAt
         })
         .eq('id', jobId);
+
+      if (updateError) {
+        console.error(`[CronExecutor] Failed to update next run time:`, updateError);
+        return new Response(
+          JSON.stringify({
+            error: `Failed to update next run time: ${updateError.message}`,
+            success: false
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
+      }
 
       return new Response(
         JSON.stringify({ success: true }),
@@ -196,7 +266,10 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ error: 'Unknown action' }),
+      JSON.stringify({ 
+        error: 'Unknown action',
+        success: false 
+      }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -204,11 +277,11 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('[CronExecutor] Error:', error);
+    console.error('[CronExecutor] Unexpected error:', error);
     
     return new Response(
       JSON.stringify({
-        error: error.message,
+        error: error.message || 'Internal server error',
         success: false
       }),
       {

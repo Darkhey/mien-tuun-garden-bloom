@@ -85,6 +85,26 @@ const SimpleScheduledJobManager: React.FC = () => {
     try {
       console.log(`[JobManager] Executing job manually: ${jobId}`);
       
+      // Check if job is enabled before execution
+      const job = jobs.find(j => j.id === jobId);
+      if (!job) {
+        toast({
+          title: "Fehler",
+          description: "Job nicht gefunden",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!job.enabled) {
+        toast({
+          title: "Job ist deaktiviert",
+          description: "Bitte aktivieren Sie den Job zuerst, bevor Sie ihn ausführen",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       const result = await cronJobService.executeJobManually(jobId);
       
       if (result.success) {
@@ -100,11 +120,22 @@ const SimpleScheduledJobManager: React.FC = () => {
           variant: "destructive"
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('[JobManager] Failed to execute job:', error);
+      
+      // Better error handling for specific error types
+      let errorMessage = "Job konnte nicht ausgeführt werden";
+      if (error.message?.includes("Job is disabled")) {
+        errorMessage = "Job ist deaktiviert. Bitte aktivieren Sie den Job zuerst.";
+      } else if (error.message?.includes("not found")) {
+        errorMessage = "Job wurde nicht gefunden";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Fehler",
-        description: "Job konnte nicht ausgeführt werden",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -310,6 +341,12 @@ const SimpleScheduledJobManager: React.FC = () => {
                         {job.enabled ? "Aktiv" : "Inaktiv"}
                       </Badge>
                       <Badge variant="secondary">{job.job_type}</Badge>
+                      {!job.enabled && (
+                        <Badge variant="destructive" className="text-xs">
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Deaktiviert
+                        </Badge>
+                      )}
                     </div>
                     {job.description && (
                       <p className="text-sm text-gray-600 mb-2">{job.description}</p>
@@ -333,6 +370,7 @@ const SimpleScheduledJobManager: React.FC = () => {
                       variant="outline"
                       onClick={() => handleExecuteJob(job.id!)}
                       disabled={!job.enabled}
+                      title={!job.enabled ? "Job ist deaktiviert" : "Job manuell ausführen"}
                     >
                       <Play className="h-4 w-4" />
                     </Button>
@@ -354,9 +392,16 @@ const SimpleScheduledJobManager: React.FC = () => {
                       {executions.filter(e => e.cron_job_id === job.id).slice(0, 3).map(exec => (
                         <div key={exec.id} className="flex items-center justify-between text-xs">
                           <span>{new Date(exec.started_at).toLocaleString('de-DE')}</span>
-                          <Badge variant={exec.status === 'completed' ? 'default' : exec.status === 'failed' ? 'destructive' : 'secondary'} className="text-xs">
-                            {exec.status}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={exec.status === 'completed' ? 'default' : exec.status === 'failed' ? 'destructive' : 'secondary'} className="text-xs">
+                              {exec.status}
+                            </Badge>
+                            {exec.error_message && (
+                              <span className="text-red-500 text-xs" title={exec.error_message}>
+                                <AlertCircle className="h-3 w-3" />
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
