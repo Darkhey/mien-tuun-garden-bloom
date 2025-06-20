@@ -5,8 +5,8 @@ import { Edit, Trash2, Eye, EyeOff, Loader2, RefreshCw, Instagram } from "lucide
 import { AdminBlogPost } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import EditBlogPostModal from "../EditBlogPostModal";
-import InstagramPostModal from "../InstagramPostModal";
+import EditBlogPostModal from "./EditBlogPostModal";
+import InstagramPostModal from "./InstagramPostModal";
 
 const BlogPostsView: React.FC = () => {
   const [posts, setPosts] = useState<AdminBlogPost[]>([]);
@@ -60,7 +60,6 @@ const BlogPostsView: React.FC = () => {
 
   const loadInstagramStatuses = async () => {
     try {
-      // Use updated RPC function with correct parameter name
       const { data, error } = await supabase
         .rpc('check_table_exists', { p_table_name: 'instagram_posts' });
 
