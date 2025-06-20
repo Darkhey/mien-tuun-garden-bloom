@@ -1,31 +1,46 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
-import Index from "./pages/Index";
-import BlogOverview from "./pages/BlogOverview";
-import BlogPost from "./pages/BlogPost";
-import RecipeOverview from "./pages/RecipeOverview";
-import RecipeDetail from "./pages/RecipeDetail";
-import RecipeBook from "./pages/RecipeBook";
-import About from "./pages/About";
-import Links from "./pages/Links";
-import Datenschutz from "./pages/Datenschutz";
-import Impressum from "./pages/Impressum";
-import NotFound from "./pages/NotFound";
-import ProfilePage from "./pages/ProfilePage";
-import AdminDashboard from "./pages/AdminDashboard";
-import ContactPage from "./pages/ContactPage";
-import NewsletterConfirmPage from "./pages/NewsletterConfirmPage";
-import LoginPage from "./pages/LoginPage";
-import AussaatkalenderPage from "./pages/AussaatkalenderPage";
-import React, { useEffect, useState } from "react";
+import LazyRoute from "./components/LazyRoute";
+import ErrorBoundary from "./components/ErrorBoundary";
+import React, { lazy, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import ImageOptimizationService from "@/services/ImageOptimizationService";
 
-const queryClient = new QueryClient();
+// Lazy load all page components
+const Index = lazy(() => import("./pages/Index"));
+const BlogOverview = lazy(() => import("./pages/BlogOverview"));
+const BlogPost = lazy(() => import("./pages/BlogPost"));
+const RecipeOverview = lazy(() => import("./pages/RecipeOverview"));
+const RecipeDetail = lazy(() => import("./pages/RecipeDetail"));
+const RecipeBook = lazy(() => import("./pages/RecipeBook"));
+const About = lazy(() => import("./pages/About"));
+const Links = lazy(() => import("./pages/Links"));
+const Datenschutz = lazy(() => import("./pages/Datenschutz"));
+const Impressum = lazy(() => import("./pages/Impressum"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const NewsletterConfirmPage = lazy(() => import("./pages/NewsletterConfirmPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const AussaatkalenderPage = lazy(() => import("./pages/AussaatkalenderPage"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      retry: 3,
+      retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+  },
+});
 
 // AdminProtectedRoute: Nur Admins erlaubt
 const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -88,36 +103,53 @@ const AdminProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 function App() {
+  useEffect(() => {
+    // Initialize image optimization service
+    const imageService = ImageOptimizationService.getInstance();
+    imageService.setupLazyLoading();
+  }, []);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <TooltipProvider>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/blog" element={<BlogOverview />} />
-              <Route path="/blog/:slug" element={<BlogPost />} />
-              <Route path="/rezepte" element={<RecipeOverview />} />
-              <Route path="/rezepte/:id" element={<RecipeDetail />} />
-              <Route path="/rezeptebuch" element={<RecipeBook />} />
-              <Route path="/aussaatkalender" element={<AussaatkalenderPage />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/links" element={<Links />} />
-              <Route path="/datenschutz" element={<Datenschutz />} />
-              <Route path="/impressum" element={<Impressum />} />
-              <Route path="/profil" element={<ProfilePage />} />
-              <Route path="/admin/:view?/:slug?" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-              <Route path="/kontakt" element={<ContactPage />} />
-              <Route path="/newsletter-confirm" element={<NewsletterConfirmPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </TooltipProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <TooltipProvider>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<LazyRoute><Index /></LazyRoute>} />
+                <Route path="/blog" element={<LazyRoute><BlogOverview /></LazyRoute>} />
+                <Route path="/blog/:slug" element={<LazyRoute><BlogPost /></LazyRoute>} />
+                <Route path="/rezepte" element={<LazyRoute><RecipeOverview /></LazyRoute>} />
+                <Route path="/rezepte/:id" element={<LazyRoute><RecipeDetail /></LazyRoute>} />
+                <Route path="/rezeptebuch" element={<LazyRoute><RecipeBook /></LazyRoute>} />
+                <Route path="/aussaatkalender" element={<LazyRoute><AussaatkalenderPage /></LazyRoute>} />
+                <Route path="/about" element={<LazyRoute><About /></LazyRoute>} />
+                <Route path="/links" element={<LazyRoute><Links /></LazyRoute>} />
+                <Route path="/datenschutz" element={<LazyRoute><Datenschutz /></LazyRoute>} />
+                <Route path="/impressum" element={<LazyRoute><Impressum /></LazyRoute>} />
+                <Route path="/profil" element={<LazyRoute><ProfilePage /></LazyRoute>} />
+                <Route 
+                  path="/admin/:view?/:slug?" 
+                  element={
+                    <LazyRoute>
+                      <AdminProtectedRoute>
+                        <AdminDashboard />
+                      </AdminProtectedRoute>
+                    </LazyRoute>
+                  } 
+                />
+                <Route path="/kontakt" element={<LazyRoute><ContactPage /></LazyRoute>} />
+                <Route path="/newsletter-confirm" element={<LazyRoute><NewsletterConfirmPage /></LazyRoute>} />
+                <Route path="/login" element={<LazyRoute><LoginPage /></LazyRoute>} />
+                <Route path="*" element={<LazyRoute><NotFound /></LazyRoute>} />
+              </Routes>
+            </Layout>
+          </TooltipProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
