@@ -58,8 +58,7 @@ const PersonalizedContentGenerator: React.FC = () => {
       const result = await contentGenerationService.generateBlogPost({
         prompt: personalizedPrompt,
         category: profile.preferredCategories[0],
-        audiences: [profile.skillLevel],
-        retries: 2
+        audiences: [profile.skillLevel]
       });
 
       setGeneratedContent(result.content);

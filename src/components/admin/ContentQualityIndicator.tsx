@@ -7,7 +7,7 @@ import type { ContentQuality } from "@/services/ContentGenerationService";
 
 export interface ContentQualityMetrics extends ContentQuality {
   seoScore?: number;
-  issues: string[];
+  issues?: string[]; // Made optional to fix type compatibility
 }
 
 interface ContentQualityIndicatorProps {
@@ -70,7 +70,7 @@ const ContentQualityIndicator: React.FC<ContentQualityIndicatorProps> = ({
             </div>
             <div>
               <span className="text-gray-600">SEO:</span>
-              <span className="ml-2 font-medium">{quality.seoScore}/100</span>
+              <span className="ml-2 font-medium">{quality.seoScore || 0}/100</span>
             </div>
             <div>
               <span className="text-gray-600">Struktur:</span>
@@ -78,7 +78,7 @@ const ContentQualityIndicator: React.FC<ContentQualityIndicatorProps> = ({
             </div>
           </div>
 
-          {quality.issues.length > 0 && (
+          {quality.issues && quality.issues.length > 0 && (
             <div className="mt-3">
               <div className="text-gray-600 text-xs mb-1">Verbesserungsvorschläge:</div>
               <ul className="text-xs space-y-1">

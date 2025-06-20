@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ContentQuality {
@@ -29,14 +30,14 @@ export interface GeneratedContent {
 
 import SEOService from './SEOService';
 
-export class ContentGenerationService {
-  private static instance: ContentGenerationService;
+class ContentGenerationServiceClass {
+  private static instance: ContentGenerationServiceClass;
 
-  public static getInstance(): ContentGenerationService {
-    if (!ContentGenerationService.instance) {
-      ContentGenerationService.instance = new ContentGenerationService();
+  public static getInstance(): ContentGenerationServiceClass {
+    if (!ContentGenerationServiceClass.instance) {
+      ContentGenerationServiceClass.instance = new ContentGenerationServiceClass();
     }
-    return ContentGenerationService.instance;
+    return ContentGenerationServiceClass.instance;
   }
 
   assessContentQuality(content: string, title: string): ContentQuality {
@@ -200,5 +201,4 @@ export class ContentGenerationService {
   }
 }
 
-export const contentGenerationService = ContentGenerationService.getInstance();
-export type { ContentGenerationService };
+export const contentGenerationService = ContentGenerationServiceClass.getInstance();
