@@ -199,3 +199,6 @@ export class ContentGenerationService {
     return data.imageUrl;
   }
 }
+
+export const contentGenerationService = ContentGenerationService.getInstance();
+export type { ContentGenerationService };
