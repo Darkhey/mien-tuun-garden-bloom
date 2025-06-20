@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface OptimizedQueryOptions<T> extends Omit<UseQueryOptions<T>, 'queryKey' | 'queryFn'> {
   table: string;
-  select?: string;
+  selectColumns?: string;
   filters?: Record<string, any>;
   orderBy?: { column: string; ascending?: boolean };
   limit?: number;
@@ -13,7 +13,7 @@ interface OptimizedQueryOptions<T> extends Omit<UseQueryOptions<T>, 'queryKey' |
 
 export function useOptimizedQuery<T = any>({
   table,
-  select = '*',
+  selectColumns = '*',
   filters = {},
   orderBy,
   limit,
@@ -24,7 +24,7 @@ export function useOptimizedQuery<T = any>({
 }: OptimizedQueryOptions<T>) {
   const queryKey = [
     table,
-    select,
+    selectColumns,
     filters,
     orderBy,
     limit,
@@ -34,7 +34,7 @@ export function useOptimizedQuery<T = any>({
   return useQuery({
     queryKey,
     queryFn: async () => {
-      let query = supabase.from(table).select(select);
+      let query = supabase.from(table as any).select(selectColumns);
 
       // Apply filters
       Object.entries(filters).forEach(([key, value]) => {
@@ -80,7 +80,7 @@ export function useOptimizedQuery<T = any>({
 export function useOptimizedRecipes(filters: Record<string, any> = {}) {
   return useOptimizedQuery({
     table: 'recipes',
-    select: 'id, title, slug, description, image_url, difficulty, prep_time_minutes, cook_time_minutes, servings, category, season, status',
+    selectColumns: 'id, title, slug, description, image_url, difficulty, prep_time_minutes, cook_time_minutes, servings, category, season, status',
     filters: { status: 'veröffentlicht', ...filters },
     orderBy: { column: 'created_at', ascending: false },
     limit: 50
@@ -90,7 +90,7 @@ export function useOptimizedRecipes(filters: Record<string, any> = {}) {
 export function useOptimizedBlogPosts(filters: Record<string, any> = {}) {
   return useOptimizedQuery({
     table: 'blog_posts',
-    select: 'id, title, slug, excerpt, featured_image, category, published_at, featured, status',
+    selectColumns: 'id, title, slug, excerpt, featured_image, category, published_at, featured, status',
     filters: { status: 'veröffentlicht', ...filters },
     orderBy: { column: 'published_at', ascending: false },
     limit: 50

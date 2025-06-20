@@ -1,3 +1,4 @@
+
 /**
  * Performance Monitor Service
  * Tracks Core Web Vitals and other performance metrics
@@ -131,11 +132,11 @@ class PerformanceMonitor {
           // Time to First Byte (TTFB)
           this.recordMetric('TTFB', navigation.responseStart - navigation.requestStart);
           
-          // DOM Content Loaded
-          this.recordMetric('DCL', navigation.domContentLoadedEventEnd - navigation.navigationStart);
+          // DOM Content Loaded - use relative timing
+          this.recordMetric('DCL', navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart);
           
-          // Load Complete
-          this.recordMetric('Load', navigation.loadEventEnd - navigation.navigationStart);
+          // Load Complete - use relative timing
+          this.recordMetric('Load', navigation.loadEventEnd - navigation.loadEventStart);
         }
       }, 1000);
     });
