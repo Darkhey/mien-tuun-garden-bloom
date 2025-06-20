@@ -3,7 +3,12 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle, CheckCircle, Info } from "lucide-react";
-import { ContentQualityMetrics } from "@/services/ContentGenerationService";
+import type { ContentQuality } from "@/services/ContentGenerationService";
+
+export interface ContentQualityMetrics extends ContentQuality {
+  seoScore?: number;
+  issues?: string[];
+}
 
 interface ContentQualityIndicatorProps {
   quality: ContentQualityMetrics;

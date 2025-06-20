@@ -285,7 +285,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
             category={category}
             tags={tags}
             featuredImage={generatedContent.featuredImage}
-            onSEODataChange={setSeoData}
+            onSEODataChange={(data) => setSeoData(data as SEOMetadata)}
           />
 
           {showPreview ? (
