@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search, Loader2, ExclamationTriangle } from "lucide-react";
+import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search, Loader2, Triangle as ExclamationTriangle } from "lucide-react";
 import { contentStrategyService, ContentStrategy, ContentCalendarEntry } from "@/services/ContentStrategyService";
 import { contextAnalyzer, ContentGap } from "@/services/ContextAnalyzer";
 import { blogAnalyticsService, TrendKeyword } from "@/services/BlogAnalyticsService";
