@@ -60,11 +60,18 @@ const BlogPostsView: React.FC = () => {
 
   const loadInstagramStatuses = async () => {
     try {
-      // Use supabase.rpc to call a simple function that returns the data
-      const { data, error } = await supabase
-        .rpc('check_table_exists', { p_table_name: 'instagram_posts' });
+      // First check if the instagram_posts table exists
+      const { data: tableExists, error: tableCheckError } = await supabase.rpc(
+        'check_table_exists',
+        { p_table_name: 'instagram_posts' }
+      );
 
-      if (error || !data) {
+      if (tableCheckError) {
+        console.warn('Error checking if instagram_posts table exists:', tableCheckError);
+        return;
+      }
+
+      if (!tableExists) {
         console.log('Instagram posts table does not exist yet');
         return;
       }

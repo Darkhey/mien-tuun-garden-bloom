@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -155,12 +154,42 @@ class CronJobService {
 
   async executeJob(id: string): Promise<{ success: boolean; executionId?: string; error?: string }> {
     try {
+      // First check if the job is enabled
+      const { data: job, error: jobError } = await supabase
+        .from('cron_jobs')
+        .select('enabled, name')
+        .eq('id', id)
+        .single();
+
+      if (jobError) {
+        console.error('Error checking job status:', jobError);
+        return { success: false, error: `Job nicht gefunden: ${jobError.message}` };
+      }
+
+      if (!job.enabled) {
+        return { 
+          success: false, 
+          error: `Job "${job.name}" ist deaktiviert. Bitte aktivieren Sie den Job zuerst.` 
+        };
+      }
+
       const { data, error } = await supabase.functions.invoke('cron-executor', {
         body: { jobId: id, action: 'execute' }
       });
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error invoking cron-executor function:', error);
+        return { success: false, error: error.message };
+      }
+
+      if (!data.success) {
+        return { success: false, error: data.error || 'Unbekannter Fehler' };
+      }
+
+      return { 
+        success: true, 
+        executionId: data.executionId 
+      };
     } catch (error) {
       console.error('Job execution failed:', error);
       return { success: false, error: error.message };

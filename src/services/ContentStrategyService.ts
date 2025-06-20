@@ -1,4 +1,3 @@
-
 import { contextAnalyzer, TrendData, ContentGap } from "./ContextAnalyzer";
 import { contentGenerationService } from "./ContentGenerationService";
 import { blogAnalyticsService, TrendKeyword } from "./BlogAnalyticsService";
@@ -44,35 +43,82 @@ class ContentStrategyService {
   }): Promise<ContentStrategy[]> {
     console.log("[ContentStrategy] Generating strategy for", context);
 
-    const trends = contextAnalyzer.getCurrentTrends();
-    const gaps = contextAnalyzer.analyzeContentGaps();
+    try {
+      const trends = contextAnalyzer.getCurrentTrends();
+      const gaps = contextAnalyzer.analyzeContentGaps();
 
-    const [posts, externalTrends] = await Promise.all([
-      blogAnalyticsService.fetchBlogPosts(),
-      blogAnalyticsService.fetchCurrentTrends()
-    ]);
-    const existingKeywords = blogAnalyticsService.extractKeywords(posts);
-    const keywordGaps = blogAnalyticsService.findKeywordGaps(externalTrends, existingKeywords);
+      let posts = [];
+      let externalTrends = [];
+      let keywordGaps = [];
 
-    const strategies: ContentStrategy[] = [];
-    
-    // Saisonale Strategien
-    const seasonalStrategy = this.generateSeasonalStrategy(trends, gaps);
-    strategies.push(...seasonalStrategy);
-    
-    // Trend-basierte Strategien
-    const trendStrategy = this.generateTrendBasedStrategy(trends);
-    strategies.push(...trendStrategy);
+      try {
+        [posts, externalTrends] = await Promise.all([
+          blogAnalyticsService.fetchBlogPosts(),
+          blogAnalyticsService.fetchCurrentTrends()
+        ]);
+        const existingKeywords = blogAnalyticsService.extractKeywords(posts);
+        keywordGaps = blogAnalyticsService.findKeywordGaps(externalTrends, existingKeywords);
+      } catch (error) {
+        console.warn("[ContentStrategy] Error fetching analytics data:", error);
+        // Continue with local data only
+      }
 
-    // Gap-Analysis Strategien
-    const gapStrategy = this.generateGapFillingStrategy(gaps);
-    strategies.push(...gapStrategy);
+      const strategies: ContentStrategy[] = [];
+      
+      // Saisonale Strategien
+      const seasonalStrategy = this.generateSeasonalStrategy(trends, gaps);
+      strategies.push(...seasonalStrategy);
+      
+      // Trend-basierte Strategien
+      const trendStrategy = this.generateTrendBasedStrategy(trends);
+      strategies.push(...trendStrategy);
 
-    // Keyword-Gap Strategien basierend auf externen Trends
-    const kwGapStrategy = this.generateKeywordGapStrategy(keywordGaps);
-    strategies.push(...kwGapStrategy);
+      // Gap-Analysis Strategien
+      const gapStrategy = this.generateGapFillingStrategy(gaps);
+      strategies.push(...gapStrategy);
 
-    return strategies.sort((a, b) => b.priority - a.priority);
+      // Keyword-Gap Strategien basierend auf externen Trends
+      if (keywordGaps.length > 0) {
+        const kwGapStrategy = this.generateKeywordGapStrategy(keywordGaps);
+        strategies.push(...kwGapStrategy);
+      }
+
+      return strategies.sort((a, b) => b.priority - a.priority);
+    } catch (error) {
+      console.error("[ContentStrategy] Error generating strategy:", error);
+      // Return some fallback strategies
+      return this.getFallbackStrategies();
+    }
+  }
+
+  private getFallbackStrategies(): ContentStrategy[] {
+    const currentSeason = this.getCurrentSeason();
+    return [
+      {
+        priority: 90,
+        category: "gartenplanung",
+        season: currentSeason,
+        suggestedTopics: [
+          "Hochbeet optimal nutzen",
+          "Gartenprojekte für Anfänger",
+          "Nachhaltige Gartenplanung"
+        ],
+        reasoning: "Saisonale Gartenplanung ist immer relevant",
+        urgency: 'medium'
+      },
+      {
+        priority: 85,
+        category: "saisonale-kueche",
+        season: currentSeason,
+        suggestedTopics: [
+          "Saisonale Rezepte für den Sommer",
+          "Erntefrische Gerichte",
+          "Konservieren leicht gemacht"
+        ],
+        reasoning: "Saisonale Küche hat hohe Nachfrage",
+        urgency: 'medium'
+      }
+    ];
   }
 
   private generateSeasonalStrategy(trends: TrendData[], gaps: ContentGap[]): ContentStrategy[] {
@@ -191,6 +237,8 @@ class ContentStrategyService {
   }
 
   private selectStrategyForDay(strategies: ContentStrategy[], dayOfWeek: number): ContentStrategy | null {
+    if (strategies.length === 0) return null;
+    
     // Montag/Dienstag: Hohe Priorität
     if (dayOfWeek <= 2) {
       return strategies.find(s => s.urgency === 'critical' || s.urgency === 'high') || strategies[0];
@@ -198,7 +246,7 @@ class ContentStrategyService {
     
     // Mittwoch/Donnerstag: Medium Priorität
     if (dayOfWeek <= 4) {
-      return strategies.find(s => s.urgency === 'medium') || strategies[1];
+      return strategies.find(s => s.urgency === 'medium') || strategies[1] || strategies[0];
     }
     
     // Wochenende: Entspannte Themen
