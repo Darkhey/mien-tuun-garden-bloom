@@ -1,10 +1,83 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { AdminUser, AdminRecipe, AdminBlogPost } from "@/types/admin";
+import type { Database } from "@/integrations/supabase/types";
+
+type RecipeRow = Database["public"]["Tables"]["recipes"]["Row"];
+type BlogPostRow = Database["public"]["Tables"]["blog_posts"]["Row"];
 import { useToast } from "@/hooks/use-toast";
 
 export const useAdminActions = () => {
   const { toast } = useToast();
+
+  const fetchRecipeById = async (id: string): Promise<RecipeRow | null> => {
+    const { data, error } = await supabase
+      .from('recipes')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data as RecipeRow | null;
+  };
+
+  const fetchBlogPostById = async (id: string): Promise<BlogPostRow | null> => {
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data as BlogPostRow | null;
+  };
+
+  const createRecipeVersion = async (current: RecipeRow, userId: string | null) => {
+    const versionData = {
+      recipe_id: current.id,
+      user_id: userId || current.user_id || null,
+      title: current.title,
+      image_url: current.image_url,
+      description: current.description,
+      ingredients: (current as any).ingredients,
+      instructions: (current as any).instructions,
+      category: current.category,
+      season: current.season,
+      tags: (current as any).tags,
+      author: current.author,
+      prep_time_minutes: current.prep_time_minutes,
+      cook_time_minutes: current.cook_time_minutes,
+      servings: current.servings,
+      difficulty: current.difficulty,
+      status: current.status,
+    };
+    await supabase.from('recipe_versions').insert([versionData]);
+  };
+
+  const createBlogPostVersion = async (current: BlogPostRow, userId: string | null) => {
+    const versionData = {
+      blog_post_id: current.id,
+      user_id: userId || null,
+      title: current.title,
+      slug: current.slug,
+      content: current.content || '',
+      excerpt: current.excerpt || '',
+      category: current.category,
+      tags: current.tags || [],
+      content_types: current.content_types || [],
+      season: current.season || null,
+      audiences: current.audiences || [],
+      featured_image: current.featured_image || '',
+      og_image: current.og_image || '',
+      seo_title: current.seo_title || '',
+      seo_description: current.seo_description || '',
+      seo_keywords: current.seo_keywords || [],
+      status: current.status,
+      published: current.published || false,
+      featured: current.featured || false,
+      reading_time: current.reading_time || 0,
+      author: current.author,
+    };
+    await supabase.from('blog_post_versions').insert([versionData]);
+  };
 
   const handleTogglePremium = async (
     userId: string, 
@@ -93,8 +166,8 @@ export const useAdminActions = () => {
   };
 
   const handleToggleStatus = async (
-    id: string, 
-    currentStatus: string, 
+    id: string,
+    currentStatus: string,
     type: 'recipe' | 'blog',
     recipes: AdminRecipe[],
     blogPosts: AdminBlogPost[],
@@ -102,70 +175,19 @@ export const useAdminActions = () => {
     setBlogPosts: (posts: AdminBlogPost[]) => void
   ) => {
     const newStatus = currentStatus === 'veröffentlicht' ? 'entwurf' : 'veröffentlicht';
-    
-    try {
-      const table = type === 'recipe' ? 'recipes' : 'blog_posts';
-      const versionTable = type === 'recipe' ? 'recipe_versions' : 'blog_post_versions';
 
-      // Use maybeSingle() instead of single() to handle cases where no row is found
-      const { data: current, error: fetchError } = await supabase
-        .from(table)
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-      
-      if (fetchError) throw fetchError;
+    try {
+      const current = type === 'recipe' ? await fetchRecipeById(id) : await fetchBlogPostById(id);
+      const user = await supabase.auth.getUser();
 
       if (current) {
-        const user = await supabase.auth.getUser();
-        
         if (type === 'recipe') {
-          const versionData = {
-            recipe_id: current.id,
-            user_id: user.data.user?.id || current.user_id || null,
-            title: current.title,
-            image_url: current.image_url,
-            description: current.description,
-            ingredients: current.ingredients,
-            instructions: current.instructions,
-            category: current.category,
-            season: current.season,
-            tags: current.tags,
-            author: current.author,
-            prep_time_minutes: current.prep_time_minutes,
-            cook_time_minutes: current.cook_time_minutes,
-            servings: current.servings,
-            difficulty: current.difficulty,
-            status: current.status,
-          };
-          await supabase.from(versionTable).insert([versionData]);
+          await createRecipeVersion(current as RecipeRow, user.data.user?.id || null);
         } else {
-          const versionData = {
-            blog_post_id: current.id,
-            user_id: user.data.user?.id || null,
-            title: current.title,
-            slug: current.slug,
-            content: current.content || '',
-            excerpt: current.excerpt || '',
-            category: current.category,
-            tags: current.tags || [],
-            content_types: current.content_types || [],
-            season: current.season || null,
-            audiences: current.audiences || [],
-            featured_image: current.featured_image || '',
-            og_image: current.og_image || '',
-            seo_title: current.seo_title || '',
-            seo_description: current.seo_description || '',
-            seo_keywords: current.seo_keywords || [],
-            status: current.status,
-            published: current.published || false,
-            featured: current.featured || false,
-            reading_time: current.reading_time || 0,
-            author: current.author,
-          };
-          await supabase.from(versionTable).insert([versionData]);
+          await createBlogPostVersion(current as BlogPostRow, user.data.user?.id || null);
         }
       }
+      const table = type === 'recipe' ? 'recipes' : 'blog_posts';
 
       const { error } = await supabase
         .from(table)
@@ -205,7 +227,7 @@ export const useAdminActions = () => {
   };
 
   const handleDelete = async (
-    id: string, 
+    id: string,
     type: 'recipe' | 'blog',
     recipes: AdminRecipe[],
     blogPosts: AdminBlogPost[],
@@ -217,68 +239,18 @@ export const useAdminActions = () => {
     }
 
     try {
-      const table = type === 'recipe' ? 'recipes' : 'blog_posts';
-      const versionTable = type === 'recipe' ? 'recipe_versions' : 'blog_post_versions';
-
-      // Use maybeSingle() instead of single() to handle cases where no row is found
-      const { data: current, error: fetchError } = await supabase
-        .from(table)
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-      
-      if (fetchError) throw fetchError;
+      const current = type === 'recipe' ? await fetchRecipeById(id) : await fetchBlogPostById(id);
+      const user = await supabase.auth.getUser();
 
       if (current) {
-        const user = await supabase.auth.getUser();
-        
         if (type === 'recipe') {
-          const versionData = {
-            recipe_id: current.id,
-            user_id: user.data.user?.id || current.user_id || null,
-            title: current.title,
-            image_url: current.image_url,
-            description: current.description,
-            ingredients: current.ingredients,
-            instructions: current.instructions,
-            category: current.category,
-            season: current.season,
-            tags: current.tags,
-            author: current.author,
-            prep_time_minutes: current.prep_time_minutes,
-            cook_time_minutes: current.cook_time_minutes,
-            servings: current.servings,
-            difficulty: current.difficulty,
-            status: current.status,
-          };
-          await supabase.from(versionTable).insert([versionData]);
+          await createRecipeVersion(current as RecipeRow, user.data.user?.id || null);
         } else {
-          const versionData = {
-            blog_post_id: current.id,
-            user_id: user.data.user?.id || null,
-            title: current.title,
-            slug: current.slug,
-            content: current.content || '',
-            excerpt: current.excerpt || '',
-            category: current.category,
-            tags: current.tags || [],
-            content_types: current.content_types || [],
-            season: current.season || null,
-            audiences: current.audiences || [],
-            featured_image: current.featured_image || '',
-            og_image: current.og_image || '',
-            seo_title: current.seo_title || '',
-            seo_description: current.seo_description || '',
-            seo_keywords: current.seo_keywords || [],
-            status: current.status,
-            published: current.published || false,
-            featured: current.featured || false,
-            reading_time: current.reading_time || 0,
-            author: current.author,
-          };
-          await supabase.from(versionTable).insert([versionData]);
+          await createBlogPostVersion(current as BlogPostRow, user.data.user?.id || null);
         }
       }
+
+      const table = type === 'recipe' ? 'recipes' : 'blog_posts';
 
       // Log das Löschereignis
       await supabase.rpc('log_security_event', {
