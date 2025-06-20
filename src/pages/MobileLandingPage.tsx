@@ -81,4 +81,3 @@ const MobileLandingPage = () => {
 };
 
 export default MobileLandingPage;
-
