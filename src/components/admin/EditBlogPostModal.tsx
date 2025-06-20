@@ -91,7 +91,7 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
       const contentPreview = formData.content.slice(0, 200);
       const imagePrompt = `Hyperrealistisches, stimmungsvolles Garten- oder Küchenbild passend zum Thema "${formData.title}". Basierend auf: ${contentPreview}. Natürliches Licht, viel Atmosphäre, hochwertiger Fotografie-Stil. Ohne Text.`;
 
-      const { data, error } = await supabase.functions.invoke('generate-recipe-image', {
+      const { data, error } = await supabase.functions.invoke('generate-blog-image', {
         body: { prompt: imagePrompt }
       });
 

@@ -1,4 +1,3 @@
-
 export type AdminView = 
   | "recipes" 
   | "blog-posts" 

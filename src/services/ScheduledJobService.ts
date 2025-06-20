@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface JobConfig {
@@ -11,6 +10,13 @@ export interface JobConfig {
   function_payload: Record<string, any>;
   status: 'active' | 'inactive' | 'paused' | 'error';
   enabled: boolean;
+  schedule_pattern?: string;
+  schedule_type?: string;
+  template_data?: Record<string, any>;
+  is_active?: boolean;
+  target_table?: string;
+  last_run_at?: string;
+  next_run_at?: string;
 }
 
 export interface JobExecution {
@@ -24,6 +30,10 @@ export interface JobExecution {
   output?: Record<string, any>;
   error_message?: string;
   retry_attempt: number;
+  job_id?: string;
+  entries_created?: number;
+  entries_failed?: number;
+  error_details?: string;
 }
 
 export interface JobStats {
@@ -55,7 +65,13 @@ class ScheduledJobService {
       function_name: job.function_name,
       function_payload: job.function_payload as Record<string, any>,
       status: job.status as any,
-      enabled: job.enabled
+      enabled: job.enabled,
+      schedule_pattern: job.cron_expression,
+      schedule_type: 'cron',
+      is_active: job.enabled,
+      target_table: job.function_payload?.target_table || '',
+      last_run_at: job.last_run_at,
+      next_run_at: job.next_run_at
     }));
   }
 
@@ -83,7 +99,13 @@ class ScheduledJobService {
       function_name: data.function_name,
       function_payload: data.function_payload as Record<string, any>,
       status: data.status as any,
-      enabled: data.enabled
+      enabled: data.enabled,
+      schedule_pattern: data.cron_expression,
+      schedule_type: 'cron',
+      is_active: data.enabled,
+      target_table: data.function_payload?.target_table || '',
+      last_run_at: data.last_run_at,
+      next_run_at: data.next_run_at
     };
   }
 
@@ -123,7 +145,13 @@ class ScheduledJobService {
       function_name: data.function_name,
       function_payload: data.function_payload as Record<string, any>,
       status: data.status as any,
-      enabled: data.enabled
+      enabled: data.enabled,
+      schedule_pattern: data.cron_expression,
+      schedule_type: 'cron',
+      is_active: data.enabled,
+      target_table: data.function_payload?.target_table || '',
+      last_run_at: data.last_run_at,
+      next_run_at: data.next_run_at
     };
   }
 
@@ -158,7 +186,13 @@ class ScheduledJobService {
       function_name: data.function_name,
       function_payload: data.function_payload as Record<string, any>,
       status: data.status as any,
-      enabled: data.enabled
+      enabled: data.enabled,
+      schedule_pattern: data.cron_expression,
+      schedule_type: 'cron',
+      is_active: data.enabled,
+      target_table: data.function_payload?.target_table || '',
+      last_run_at: data.last_run_at,
+      next_run_at: data.next_run_at
     };
   }
 
@@ -196,7 +230,13 @@ class ScheduledJobService {
       function_name: data.function_name,
       function_payload: data.function_payload as Record<string, any>,
       status: data.status as any,
-      enabled: data.enabled
+      enabled: data.enabled,
+      schedule_pattern: data.cron_expression,
+      schedule_type: 'cron',
+      is_active: data.enabled,
+      target_table: data.function_payload?.target_table || '',
+      last_run_at: data.last_run_at,
+      next_run_at: data.next_run_at
     };
   }
 
@@ -227,7 +267,11 @@ class ScheduledJobService {
       duration_ms: execution.duration_ms || undefined,
       output: execution.output as Record<string, any> || undefined,
       error_message: execution.error_message || undefined,
-      retry_attempt: execution.retry_attempt
+      retry_attempt: execution.retry_attempt,
+      job_id: execution.cron_job_id,
+      entries_created: 0,
+      entries_failed: 0,
+      error_details: execution.error_message
     }));
   }
 
@@ -288,7 +332,11 @@ class ScheduledJobService {
       duration_ms: execution.duration_ms || undefined,
       output: execution.output as Record<string, any> || undefined,
       error_message: execution.error_message || undefined,
-      retry_attempt: execution.retry_attempt
+      retry_attempt: execution.retry_attempt,
+      job_id: execution.cron_job_id,
+      entries_created: 0,
+      entries_failed: 0,
+      error_details: execution.error_message
     }));
 
     const totalJobs = jobs.length;

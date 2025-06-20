@@ -1095,6 +1095,12 @@ export type Database = {
         }
         Returns: string
       }
+      execute_cron_job: {
+        Args: {
+          job_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

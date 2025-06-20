@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
@@ -23,10 +22,6 @@ serve(async (req) => {
     const { blogPostId, caption, imageUrl } = await req.json();
 
     console.log('Instagram post request:', { blogPostId, imageUrl: !!imageUrl });
-
-    if (!instagramAccessToken) {
-      throw new Error('Instagram Access Token nicht konfiguriert');
-    }
 
     if (!blogPostId || !caption) {
       throw new Error('Blog Post ID und Caption sind erforderlich');
