@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, Sparkles } from "lucide-react";
+import { Loader2, Upload, Sparkles, X } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
 import SEOOptimizationPanel from './SEOOptimizationPanel';
 import type { SEOMetadata } from '@/services/SEOService';
@@ -31,20 +32,27 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
   const [seoData, setSeoData] = useState<SEOMetadata | null>(null);
   const { toast } = useToast();
 
+  // Lade die Blog-Post Daten beim Öffnen
   useEffect(() => {
+    console.log('[EditBlogModal] Loading post data:', post);
+    
     if (post) {
-      setFormData({
+      const postData = {
         title: post.title || "",
         content: post.content || "",
         excerpt: post.excerpt || "",
         category: post.category || "",
         featured_image: post.featured_image || "",
         status: post.status || "entwurf",
-      });
+      };
+      
+      console.log('[EditBlogModal] Setting form data:', postData);
+      setFormData(postData);
     }
   }, [post]);
 
   const handleInputChange = (field: string, value: string) => {
+    console.log(`[EditBlogModal] Updating ${field}:`, value);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -77,7 +85,7 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
 
       console.log("KI-Bildgenerierung Antwort:", data);
 
-      if (data.imageUrl) {
+      if (data?.imageUrl) {
         setFormData(prev => ({ ...prev, featured_image: data.imageUrl }));
         toast({
           title: "Erfolg",
@@ -97,9 +105,18 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
     setGeneratingImage(false);
   };
 
+  const removeCurrentImage = () => {
+    setFormData(prev => ({ ...prev, featured_image: "" }));
+    toast({
+      title: "Bild entfernt",
+      description: "Das Artikel-Bild wurde entfernt"
+    });
+  };
+
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Erstelle Backup der aktuellen Version
       const { data: current, error: fetchError } = await supabase
         .from("blog_posts")
         .select("*")
@@ -148,6 +165,8 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
         })
       };
 
+      console.log('[EditBlogModal] Saving blog post with data:', updateData);
+
       const { error } = await supabase
         .from("blog_posts")
         .update(updateData)
@@ -161,6 +180,7 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
       });
       onSaved();
     } catch (error: any) {
+      console.error('[EditBlogModal] Save error:', error);
       toast({
         title: "Fehler",
         description: error.message,
@@ -224,6 +244,26 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
             <div>
               <Label>Artikel-Bild</Label>
               <div className="space-y-3">
+                {/* Aktuelles Bild anzeigen */}
+                {formData.featured_image && (
+                  <div className="relative">
+                    <img
+                      src={formData.featured_image}
+                      alt="Aktuelles Artikel-Bild"
+                      className="w-full max-w-md h-48 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={removeCurrentImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+                
                 <ImageUploadField
                   value={formData.featured_image}
                   onChange={(imageUrl) => handleInputChange("featured_image", imageUrl)}
@@ -248,16 +288,6 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
                     {generatingImage ? "Generiere Bild..." : "KI-Bild generieren"}
                   </Button>
                 </div>
-                
-                {formData.featured_image && (
-                  <div className="mt-3">
-                    <img
-                      src={formData.featured_image}
-                      alt="Artikel-Bild Vorschau"
-                      className="w-full max-w-md h-48 object-cover rounded-lg border"
-                    />
-                  </div>
-                )}
               </div>
             </div>
 
@@ -275,16 +305,25 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
             </div>
           </div>
 
-          {/* Neue SEO-Spalte */}
+          {/* SEO-Optimierung Spalte */}
           <div>
-            <SEOOptimizationPanel
-              title={formData.title}
-              content={formData.content}
-              excerpt={formData.excerpt}
-              category={formData.category}
-              featuredImage={formData.featured_image}
-              onSEODataChange={(data) => setSeoData(data as SEOMetadata)}
-            />
+            {formData.title && formData.content ? (
+              <SEOOptimizationPanel
+                title={formData.title}
+                content={formData.content}
+                excerpt={formData.excerpt}
+                category={formData.category}
+                featuredImage={formData.featured_image}
+                onSEODataChange={(data) => {
+                  console.log('[EditBlogModal] SEO data received:', data);
+                  setSeoData(data as SEOMetadata);
+                }}
+              />
+            ) : (
+              <div className="p-4 border rounded-lg bg-gray-50 text-center text-gray-500">
+                Füllen Sie Titel und Inhalt aus, um die SEO-Optimierung zu aktivieren
+              </div>
+            )}
           </div>
         </div>
 
