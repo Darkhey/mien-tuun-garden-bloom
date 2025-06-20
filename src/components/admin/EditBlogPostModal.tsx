@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, Sparkles } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
+import SEOOptimizationPanel from './SEOOptimizationPanel';
+import type { SEOMetadata } from '@/services/SEOService';
 
 interface EditBlogPostModalProps {
   post: any;
@@ -27,6 +28,7 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
   });
   const [loading, setLoading] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [seoData, setSeoData] = useState<SEOMetadata | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -134,16 +136,28 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
         await supabase.from("blog_post_versions").insert([versionData]);
       }
 
+      // Erweiterte Daten mit SEO-Informationen
+      const updateData = {
+        ...formData,
+        // SEO-Daten hinzufügen wenn verfügbar
+        ...(seoData && {
+          seo_title: seoData.title,
+          seo_description: seoData.description,
+          seo_keywords: seoData.keywords,
+          structured_data: JSON.stringify(seoData.structuredData)
+        })
+      };
+
       const { error } = await supabase
         .from("blog_posts")
-        .update(formData)
+        .update(updateData)
         .eq("id", post.id);
 
       if (error) throw error;
 
       toast({
         title: "Erfolg",
-        description: "Blog-Artikel wurde aktualisiert"
+        description: "Blog-Artikel wurde mit SEO-Optimierungen aktualisiert"
       });
       onSaved();
     } catch (error: any) {
@@ -158,105 +172,119 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Blog-Artikel bearbeiten</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="title">Titel</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => handleInputChange("title", e.target.value)}
-              placeholder="Artikel-Titel"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="excerpt">Kurzbeschreibung</Label>
-            <Textarea
-              id="excerpt"
-              value={formData.excerpt}
-              onChange={(e) => handleInputChange("excerpt", e.target.value)}
-              placeholder="Kurze Beschreibung des Artikels"
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="content">Inhalt</Label>
-            <Textarea
-              id="content"
-              value={formData.content}
-              onChange={(e) => handleInputChange("content", e.target.value)}
-              placeholder="Artikel-Inhalt (Markdown möglich)"
-              rows={12}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="category">Kategorie</Label>
-            <Input
-              id="category"
-              value={formData.category}
-              onChange={(e) => handleInputChange("category", e.target.value)}
-              placeholder="Kategorie"
-            />
-          </div>
-
-          <div>
-            <Label>Artikel-Bild</Label>
-            <div className="space-y-3">
-              <ImageUploadField
-                value={formData.featured_image}
-                onChange={(imageUrl) => handleInputChange("featured_image", imageUrl)}
-                bucket="blog-images"
-                disabled={loading || generatingImage}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="title">Titel</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => handleInputChange("title", e.target.value)}
+                placeholder="Artikel-Titel"
               />
-              
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">oder</span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={generateImageFromContent}
-                  disabled={generatingImage || (!formData.title && !formData.content)}
-                  className="flex items-center gap-2"
-                >
-                  {generatingImage ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  {generatingImage ? "Generiere Bild..." : "KI-Bild generieren"}
-                </Button>
-              </div>
-              
-              {formData.featured_image && (
-                <div className="mt-3">
-                  <img
-                    src={formData.featured_image}
-                    alt="Artikel-Bild Vorschau"
-                    className="w-full max-w-md h-48 object-cover rounded-lg border"
-                  />
+            </div>
+
+            <div>
+              <Label htmlFor="excerpt">Kurzbeschreibung</Label>
+              <Textarea
+                id="excerpt"
+                value={formData.excerpt}
+                onChange={(e) => handleInputChange("excerpt", e.target.value)}
+                placeholder="Kurze Beschreibung des Artikels"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="content">Inhalt</Label>
+              <Textarea
+                id="content"
+                value={formData.content}
+                onChange={(e) => handleInputChange("content", e.target.value)}
+                placeholder="Artikel-Inhalt (Markdown möglich)"
+                rows={12}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="category">Kategorie</Label>
+              <Input
+                id="category"
+                value={formData.category}
+                onChange={(e) => handleInputChange("category", e.target.value)}
+                placeholder="Kategorie"
+              />
+            </div>
+
+            <div>
+              <Label>Artikel-Bild</Label>
+              <div className="space-y-3">
+                <ImageUploadField
+                  value={formData.featured_image}
+                  onChange={(imageUrl) => handleInputChange("featured_image", imageUrl)}
+                  bucket="blog-images"
+                  disabled={loading || generatingImage}
+                />
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">oder</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={generateImageFromContent}
+                    disabled={generatingImage || (!formData.title && !formData.content)}
+                    className="flex items-center gap-2"
+                  >
+                    {generatingImage ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                    {generatingImage ? "Generiere Bild..." : "KI-Bild generieren"}
+                  </Button>
                 </div>
-              )}
+                
+                {formData.featured_image && (
+                  <div className="mt-3">
+                    <img
+                      src={formData.featured_image}
+                      alt="Artikel-Bild Vorschau"
+                      className="w-full max-w-md h-48 object-cover rounded-lg border"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                value={formData.status}
+                onChange={(e) => handleInputChange("status", e.target.value)}
+                className="w-full p-2 border rounded-md"
+              >
+                <option value="entwurf">Entwurf</option>
+                <option value="veröffentlicht">Veröffentlicht</option>
+              </select>
             </div>
           </div>
 
+          {/* Neue SEO-Spalte */}
           <div>
-            <Label htmlFor="status">Status</Label>
-            <select
-              id="status"
-              value={formData.status}
-              onChange={(e) => handleInputChange("status", e.target.value)}
-              className="w-full p-2 border rounded-md"
-            >
-              <option value="entwurf">Entwurf</option>
-              <option value="veröffentlicht">Veröffentlicht</option>
-            </select>
+            <SEOOptimizationPanel
+              title={formData.title}
+              content={formData.content}
+              excerpt={formData.excerpt}
+              category={formData.category}
+              featuredImage={formData.featured_image}
+              onSEODataChange={setSeoData}
+            />
           </div>
         </div>
 

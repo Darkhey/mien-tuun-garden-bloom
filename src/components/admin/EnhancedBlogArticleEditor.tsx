@@ -11,10 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import SEOOptimizationPanel from './SEOOptimizationPanel';
+import type { SEOMetadata } from '@/services/SEOService';
 
 interface EnhancedBlogArticleEditorProps {
   initialPrompt: string;
-  onSave: (content: string, title: string, quality: any, featuredImage?: string) => void;
+  onSave: (content: string, title: string, quality: any, featuredImage?: string, seoData?: SEOMetadata) => void;
   category?: string;
   season?: string;
   audiences?: string[];
@@ -46,6 +48,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
   const [currentTrends, setCurrentTrends] = useState<TrendData[]>([]);
   const [readingTime, setReadingTime] = useState<string>("5");
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [seoData, setSeoData] = useState<SEOMetadata | null>(null);
 
   // Trend-Analyse und Prompt-Optimierung beim Laden
   useEffect(() => {
@@ -142,7 +145,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
 
   const handleSave = () => {
     if (generatedContent) {
-      onSave(editingContent, generatedContent.title, generatedContent.quality, generatedContent.featuredImage);
+      onSave(editingContent, generatedContent.title, generatedContent.quality, generatedContent.featuredImage, seoData || undefined);
     }
   };
 
@@ -273,6 +276,17 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
           )}
 
           <ContentQualityIndicator quality={generatedContent.quality} />
+
+          {/* Neue SEO-Optimierung */}
+          <SEOOptimizationPanel
+            title={generatedContent.title}
+            content={editingContent}
+            excerpt={excerpt || ''}
+            category={category}
+            tags={tags}
+            featuredImage={generatedContent.featuredImage}
+            onSEODataChange={setSeoData}
+          />
 
           {showPreview ? (
             <Card>

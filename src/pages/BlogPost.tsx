@@ -14,6 +14,7 @@ import BlogComments from "@/components/blog/BlogComments";
 import BlogStructuredData from "@/components/blog/BlogStructuredData";
 import { Helmet } from "react-helmet";
 import CallToActionSection from '@/components/blog/CallToActionSection';
+import DynamicMetaTags from "@/components/seo/DynamicMetaTags";
 
 const BlogPostPage = () => {
   const { slug } = useParams();
@@ -117,50 +118,23 @@ const BlogPostPage = () => {
   return (
     <>
       {/* Enhanced SEO Meta Tags */}
-      <Helmet>
-        <title>{post.seo.title}</title>
-        <meta name="description" content={post.seo.description} />
-        <meta name="keywords" content={post.seo.keywords.join(', ')} />
-        
-        {/* Canonical URL */}
-        <link rel="canonical" href={canonicalUrl} />
-        
-        {/* Open Graph */}
-        <meta property="og:title" content={post.seo.title} />
-        <meta property="og:description" content={post.seo.description} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={canonicalUrl} />
-        <meta property="og:image" content={post.ogImage || post.featuredImage} />
-        <meta property="og:site_name" content="Mien Tuun" />
-        <meta property="article:published_time" content={post.publishedAt} />
-        {post.updatedAt && <meta property="article:modified_time" content={post.updatedAt} />}
-        <meta property="article:section" content={post.category} />
-        {post.tags.map(tag => (
-          <meta property="article:tag" content={tag} key={tag} />
-        ))}
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={post.seo.title} />
-        <meta name="twitter:description" content={post.seo.description} />
-        <meta name="twitter:image" content={post.ogImage || post.featuredImage} />
-        
-        {/* Additional SEO Meta Tags */}
-        <meta name="author" content={post.author} />
-        <meta name="robots" content="index, follow" />
-        <meta name="language" content="de" />
-        <meta name="revisit-after" content="7 days" />
-      </Helmet>
-      
-      {/* Structured Data for Google */}
-      <BlogStructuredData
-        title={post.title}
-        slug={post.slug}
-        publishedAt={post.publishedAt}
+      <DynamicMetaTags
+        title={post.seo.title}
+        description={post.seo.description}
+        keywords={post.seo.keywords}
+        ogTitle={post.seo.title}
+        ogDescription={post.seo.description}
+        ogImage={post.ogImage || post.featuredImage}
+        ogUrl={canonicalUrl}
+        canonicalUrl={canonicalUrl}
         author={post.author}
-        averageRating={blogRating.average === null ? undefined : blogRating.average}
-        ratingCount={blogRating.count}
+        publishedAt={post.publishedAt || undefined}
+        updatedAt={post.updatedAt}
+        structuredData={post.structuredData ? JSON.parse(post.structuredData) : undefined}
       />
+
+      {/* Entferne die alten Helmet-Tags da sie jetzt in DynamicMetaTags sind */}
+      
       {/* Back Button */}
       <div className="max-w-4xl mx-auto px-4 pt-8">
         <Link

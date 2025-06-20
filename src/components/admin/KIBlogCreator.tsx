@@ -13,6 +13,7 @@ import PersonalizedContentGenerator from "./PersonalizedContentGenerator";
 import BlogSystemTestDashboard from "./BlogSystemTestDashboard";
 import { getTrendTags, buildContextFromMeta } from "./blogHelpers";
 import { supabase } from "@/integrations/supabase/client";
+import type { SEOMetadata } from '@/services/SEOService';
 
 const TAG_OPTIONS = [
   "Schnell", "Kinder", "Tipps", "DIY", "Low Budget", "Bio", "Natur", "Regional", "Saisonal", "Nachhaltig", "Praktisch", "Dekor", "Haushalt",
@@ -69,10 +70,11 @@ const KIBlogCreator: React.FC = () => {
     title: string,
     quality: any,
     featuredImage?: string,
+    seoData?: SEOMetadata,
     suggestion?: string
   ) => {
     try {
-      console.log("Speichere Enhanced Artikel:", { title, quality: quality.score, featuredImage });
+      console.log("Speichere Enhanced Artikel mit SEO:", { title, quality: quality.score, featuredImage, hasSEO: !!seoData });
       
       // Generiere einen eindeutigen Slug
       const baseSlug = title
@@ -96,7 +98,7 @@ const KIBlogCreator: React.FC = () => {
       
       const currentUserId = user?.id || null;
       
-      // Bereite Artikel-Daten vor
+      // Bereite erweiterte Artikel-Daten mit SEO vor
       const article = {
         slug,
         title,
@@ -109,11 +111,12 @@ const KIBlogCreator: React.FC = () => {
         content_types: contentType.length ? contentType : ["blog"],
         audiences: audiences.length ? audiences : ["anfaenger"],
         featured_image: featuredImage || imageUrl || "",
-        og_image: featuredImage || imageUrl || "",
+        og_image: seoData?.ogImage || featuredImage || imageUrl || "",
         original_title: title,
-        seo_description: excerpt || content.slice(0, 156).replace(/<[^>]*>/g, ''),
-        seo_title: title,
-        seo_keywords: tags.length ? tags : [],
+        seo_description: seoData?.description || excerpt || content.slice(0, 156).replace(/<[^>]*>/g, ''),
+        seo_title: seoData?.title || title,
+        seo_keywords: seoData?.keywords || tags,
+        structured_data: seoData?.structuredData ? JSON.stringify(seoData.structuredData) : null,
         published: false,
         featured: quality?.score > 90,
         reading_time: Math.ceil(content.split(/\s+/).length / 160),
@@ -149,8 +152,8 @@ const KIBlogCreator: React.FC = () => {
       }
       
       toast({
-        title: "Enhanced Artikel gespeichert!",
-        description: `"${title}" wurde mit Quality Score ${quality.score} und KI-Bild gespeichert.`,
+        title: "Enhanced Artikel mit SEO gespeichert!",
+        description: `"${title}" wurde mit Quality Score ${quality.score} ${seoData ? 'und SEO-Optimierungen' : ''} gespeichert.`,
       });
       
       if (suggestion) {
