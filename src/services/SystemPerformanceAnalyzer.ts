@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 interface SystemMetrics {
@@ -110,11 +109,11 @@ class SystemPerformanceAnalyzer {
 
   private async getDatabaseLogs(): Promise<any[]> {
     try {
-      // Analysiere Database Performance
+      // Analysiere Database Performance - use published_at instead of created_at for blog_posts
       const { data: blogPosts } = await supabase
         .from('blog_posts')
-        .select('id, created_at')
-        .order('created_at', { ascending: false })
+        .select('id, published_at')
+        .order('published_at', { ascending: false })
         .limit(100);
 
       const { data: recipes } = await supabase

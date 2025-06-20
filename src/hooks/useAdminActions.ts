@@ -106,11 +106,13 @@ export const useAdminActions = () => {
       const table = type === 'recipe' ? 'recipes' : 'blog_posts';
       const versionTable = type === 'recipe' ? 'recipe_versions' : 'blog_post_versions';
 
+      // Use maybeSingle() instead of single() to handle cases where no row is found
       const { data: current, error: fetchError } = await supabase
         .from(table)
         .select('*')
         .eq('id', id)
-        .single<any>();
+        .maybeSingle();
+      
       if (fetchError) throw fetchError;
 
       if (current) {
@@ -217,11 +219,13 @@ export const useAdminActions = () => {
       const table = type === 'recipe' ? 'recipes' : 'blog_posts';
       const versionTable = type === 'recipe' ? 'recipe_versions' : 'blog_post_versions';
 
+      // Use maybeSingle() instead of single() to handle cases where no row is found
       const { data: current, error: fetchError } = await supabase
         .from(table)
         .select('*')
         .eq('id', id)
-        .single<any>();
+        .maybeSingle();
+      
       if (fetchError) throw fetchError;
 
       if (current) {

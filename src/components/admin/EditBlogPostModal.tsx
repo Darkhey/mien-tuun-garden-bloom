@@ -133,12 +133,12 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Erstelle Backup der aktuellen Version
+      // Erstelle Backup der aktuellen Version - use maybeSingle() instead of single()
       const { data: current, error: fetchError } = await supabase
         .from("blog_posts")
         .select("*")
         .eq("id", post.id)
-        .single<any>();
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
 
