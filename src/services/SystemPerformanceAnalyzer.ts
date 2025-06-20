@@ -240,10 +240,23 @@ class SystemPerformanceAnalyzer {
   private async checkEdgeFunctionHealth() {
     try {
       const start = Date.now();
-      const response = await fetch(`https://ublbxvpmoccmegtwaslh.supabase.co/functions/v1/suggest-blog-topics`, {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        return {
+          component: 'Edge Functions',
+          status: 'warning',
+          details: 'Not authenticated'
+        };
+      }
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/suggest-blog-topics`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category: 'test', count: 1 })
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ keyword: 'test' })
       });
       
       const responseTime = Date.now() - start;

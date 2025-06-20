@@ -82,15 +82,31 @@ ${allHashtags}`;
         ? `${caption}\n\n${customHashtags}` 
         : caption;
 
-      const { data, error } = await supabase.functions.invoke('instagram-post', {
-        body: {
+      // Get current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Nicht authentifiziert');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/instagram-post`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           blogPostId: post.id,
           caption: finalCaption,
           imageUrl: post.featured_image
-        }
+        }),
       });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Edge Function returned a non-2xx status code: ${errorText}`);
+      }
+
+      const data = await response.json();
 
       toast({
         title: "Erfolg!",

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { AdminUser, AdminRecipe, AdminBlogPost } from "@/types/admin";
 import type { Database } from "@/integrations/supabase/types";

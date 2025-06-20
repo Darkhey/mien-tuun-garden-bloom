@@ -91,14 +91,27 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
       const contentPreview = formData.content.slice(0, 200);
       const imagePrompt = `Hyperrealistisches, stimmungsvolles Garten- oder Küchenbild passend zum Thema "${formData.title}". Basierend auf: ${contentPreview}. Natürliches Licht, viel Atmosphäre, hochwertiger Fotografie-Stil. Ohne Text.`;
 
-      const { data, error } = await supabase.functions.invoke('generate-blog-image', {
-        body: { prompt: imagePrompt }
+      // Get current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Nicht authentifiziert');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-blog-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: imagePrompt }),
       });
 
-      if (error) {
-        console.error("Fehler bei Supabase function invoke:", error);
-        throw error;
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Edge Function returned a non-2xx status code: ${errorText}`);
       }
+
+      const data = await response.json();
 
       console.log("KI-Bildgenerierung Antwort:", data);
 
