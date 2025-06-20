@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,9 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, Sparkles, X } from "lucide-react";
+import { Loader2, Upload, Sparkles, X, Link, FileText } from "lucide-react";
 import ImageUploadField from "./ImageUploadField";
 import SEOOptimizationPanel from './SEOOptimizationPanel';
+import BlogLinkManager from './BlogLinkManager';
+import BlogContentExtender from './BlogContentExtender';
 import type { SEOMetadata } from '@/services/SEOService';
 
 interface EditBlogPostModalProps {
@@ -30,6 +31,7 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
   const [loading, setLoading] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [seoData, setSeoData] = useState<SEOMetadata | null>(null);
+  const [activeTab, setActiveTab] = useState<'content' | 'seo' | 'links'>('content');
   const { toast } = useToast();
 
   // Lade die Blog-Post Daten beim Öffnen
@@ -37,10 +39,15 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
     console.log('[EditBlogModal] Loading post data:', post);
     
     if (post) {
+      // Extrahiere ersten Absatz als Excerpt wenn nicht vorhanden
+      const firstParagraph = post.content ? 
+        post.content.split('\n\n')[0].replace(/#+\s*/g, '').substring(0, 200) : 
+        post.excerpt || "";
+      
       const postData = {
         title: post.title || "",
         content: post.content || "",
-        excerpt: post.excerpt || "",
+        excerpt: post.excerpt || firstParagraph,
         category: post.category || "",
         featured_image: post.featured_image || "",
         status: post.status || "entwurf",
@@ -53,7 +60,18 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
 
   const handleInputChange = (field: string, value: string) => {
     console.log(`[EditBlogModal] Updating ${field}:`, value);
-    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Auto-update excerpt wenn content geändert wird
+    if (field === 'content' && value && !formData.excerpt) {
+      const firstParagraph = value.split('\n\n')[0].replace(/#+\s*/g, '').substring(0, 200);
+      setFormData(prev => ({ 
+        ...prev, 
+        [field]: value,
+        excerpt: firstParagraph
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const generateImageFromContent = async () => {
@@ -70,7 +88,6 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
     try {
       console.log("Starte KI-Bildgenerierung für Blog-Artikel:", formData.title);
       
-      // Erstelle einen aussagekräftigen Prompt basierend auf Titel und Inhalt
       const contentPreview = formData.content.slice(0, 200);
       const imagePrompt = `Hyperrealistisches, stimmungsvolles Garten- oder Küchenbild passend zum Thema "${formData.title}". Basierend auf: ${contentPreview}. Natürliches Licht, viel Atmosphäre, hochwertiger Fotografie-Stil. Ohne Text.`;
 
@@ -192,120 +209,160 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Blog-Artikel bearbeiten</DialogTitle>
         </DialogHeader>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="title">Titel</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleInputChange("title", e.target.value)}
-                placeholder="Artikel-Titel"
-              />
-            </div>
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 mb-4 border-b">
+          <Button
+            variant={activeTab === 'content' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('content')}
+            className="flex items-center gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            Inhalt
+          </Button>
+          <Button
+            variant={activeTab === 'seo' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('seo')}
+            className="flex items-center gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            SEO
+          </Button>
+          <Button
+            variant={activeTab === 'links' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('links')}
+            className="flex items-center gap-2"
+          >
+            <Link className="h-4 w-4" />
+            Verlinkungen
+          </Button>
+        </div>
 
-            <div>
-              <Label htmlFor="excerpt">Kurzbeschreibung</Label>
-              <Textarea
-                id="excerpt"
-                value={formData.excerpt}
-                onChange={(e) => handleInputChange("excerpt", e.target.value)}
-                placeholder="Kurze Beschreibung des Artikels"
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="content">Inhalt</Label>
-              <Textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) => handleInputChange("content", e.target.value)}
-                placeholder="Artikel-Inhalt (Markdown möglich)"
-                rows={12}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="category">Kategorie</Label>
-              <Input
-                id="category"
-                value={formData.category}
-                onChange={(e) => handleInputChange("category", e.target.value)}
-                placeholder="Kategorie"
-              />
-            </div>
-
-            <div>
-              <Label>Artikel-Bild</Label>
-              <div className="space-y-3">
-                {/* Aktuelles Bild anzeigen */}
-                {formData.featured_image && (
-                  <div className="relative">
-                    <img
-                      src={formData.featured_image}
-                      alt="Aktuelles Artikel-Bild"
-                      className="w-full max-w-md h-48 object-cover rounded-lg border"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={removeCurrentImage}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-                
-                <ImageUploadField
-                  value={formData.featured_image}
-                  onChange={(imageUrl) => handleInputChange("featured_image", imageUrl)}
-                  bucket="blog-images"
-                  disabled={loading || generatingImage}
+        {activeTab === 'content' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="title">Titel</Label>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  placeholder="Artikel-Titel"
                 />
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">oder</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={generateImageFromContent}
-                    disabled={generatingImage || (!formData.title && !formData.content)}
-                    className="flex items-center gap-2"
-                  >
-                    {generatingImage ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-4 w-4" />
-                    )}
-                    {generatingImage ? "Generiere Bild..." : "KI-Bild generieren"}
-                  </Button>
-                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="excerpt">Kurzbeschreibung</Label>
+                <Textarea
+                  id="excerpt"
+                  value={formData.excerpt}
+                  onChange={(e) => handleInputChange("excerpt", e.target.value)}
+                  placeholder="Kurze Beschreibung des Artikels (wird automatisch aus dem ersten Absatz generiert)"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="content">Inhalt</Label>
+                <Textarea
+                  id="content"
+                  value={formData.content}
+                  onChange={(e) => handleInputChange("content", e.target.value)}
+                  placeholder="Artikel-Inhalt (Markdown möglich)"
+                  rows={12}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="category">Kategorie</Label>
+                <Input
+                  id="category"
+                  value={formData.category}
+                  onChange={(e) => handleInputChange("category", e.target.value)}
+                  placeholder="Kategorie"
+                />
+              </div>
+
+              <div>
+                <Label>Status</Label>
+                <select
+                  value={formData.status}
+                  onChange={(e) => handleInputChange("status", e.target.value)}
+                  className="w-full p-2 border rounded-md"
+                >
+                  <option value="entwurf">Entwurf</option>
+                  <option value="veröffentlicht">Veröffentlicht</option>
+                </select>
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <select
-                id="status"
-                value={formData.status}
-                onChange={(e) => handleInputChange("status", e.target.value)}
-                className="w-full p-2 border rounded-md"
-              >
-                <option value="entwurf">Entwurf</option>
-                <option value="veröffentlicht">Veröffentlicht</option>
-              </select>
+            <div className="space-y-4">
+              <div>
+                <Label>Artikel-Bild</Label>
+                <div className="space-y-3">
+                  {formData.featured_image && (
+                    <div className="relative">
+                      <img
+                        src={formData.featured_image}
+                        alt="Aktuelles Artikel-Bild"
+                        className="w-full max-w-md h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={removeCurrentImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <ImageUploadField
+                    value={formData.featured_image}
+                    onChange={(imageUrl) => handleInputChange("featured_image", imageUrl)}
+                    bucket="blog-images"
+                    disabled={loading || generatingImage}
+                  />
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">oder</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={generateImageFromContent}
+                      disabled={generatingImage || (!formData.title && !formData.content)}
+                      className="flex items-center gap-2"
+                    >
+                      {generatingImage ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
+                      {generatingImage ? "Generiere Bild..." : "KI-Bild generieren"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <BlogContentExtender
+                currentContent={formData.content}
+                title={formData.title}
+                category={formData.category}
+                onContentExtended={(extendedContent) => 
+                  handleInputChange("content", extendedContent)
+                }
+              />
             </div>
           </div>
+        )}
 
-          {/* SEO-Optimierung Spalte */}
+        {activeTab === 'seo' && (
           <div>
             {formData.title && formData.content ? (
               <SEOOptimizationPanel
@@ -325,9 +382,19 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
               </div>
             )}
           </div>
-        </div>
+        )}
 
-        <div className="flex justify-end gap-2 pt-4">
+        {activeTab === 'links' && (
+          <BlogLinkManager
+            currentContent={formData.content}
+            postId={post.id}
+            onContentUpdate={(updatedContent) => 
+              handleInputChange("content", updatedContent)
+            }
+          />
+        )}
+
+        <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={onClose}>
             Abbrechen
           </Button>
