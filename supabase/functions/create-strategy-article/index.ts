@@ -2,9 +2,9 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.5";
 import { buildMariannePrompt } from "./marianne-style.ts";
-import { generateSlug, getRandom } from "../auto-blog-post/helpers.ts";
-import { generateImage, generateArticle } from "../auto-blog-post/openai.ts";
-import { uploadImageToSupabase, saveBlogPost } from "../auto-blog-post/supabase-helpers.ts";
+import { generateSlug, getRandom } from "./helpers.ts";
+import { generateImage, generateArticle } from "./openai.ts";
+import { uploadImageToSupabase, saveBlogPost } from "./supabase-helpers.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");

@@ -149,7 +149,7 @@ FORMAT: Reines Markdown ohne Metadaten-Block, perfekt für moderne CMS-Systeme.`
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4.1-2025-04-14", // Latest model for 2025
+        model: "gpt-4o",
         messages,
         temperature: 0.7,
         max_tokens: 4000, // Increased for longer, more detailed articles
@@ -243,7 +243,7 @@ FORMAT: Reines Markdown ohne Metadaten-Block, perfekt für moderne CMS-Systeme.`
           h3Count: hasH3Headings,
           listCount: hasLists,
           hasFAQ,
-          model: "gpt-4.1-2025-04-14",
+          model: "gpt-4o",
           enhancedFeatures: true,
           aiCapabilities: "admin-level",
           timestamp: new Date().toISOString()

@@ -62,7 +62,7 @@ async function analyzeContentPerformance(contentData: any, supabase: any) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4.1-2025-04-14",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -124,7 +124,7 @@ async function generateContentInsights(supabase: any) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4.1-2025-04-14",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -173,7 +173,7 @@ async function predictContentTrends(supabase: any) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4.1-2025-04-14",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
@@ -226,7 +226,7 @@ async function optimizeContent(contentData: any, supabase: any) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4.1-2025-04-14",
+      model: "gpt-4o",
       messages: [
         {
           role: "system",
