@@ -18,7 +18,7 @@ const RecipeHeader: React.FC<RecipeHeaderProps> = ({ recipe, userId, slug }) => 
   const [imgError, setImgError] = React.useState(false);
 
   // Bild-Fallback: Zeige recipe.image_url, dann ggf. recipe.image
-  let recipeImage =
+  const recipeImage =
     !imgError && recipe.image_url
       ? getRecipeImageUrl(recipe.image_url)
       : GARDEN_FALLBACK_IMAGE;

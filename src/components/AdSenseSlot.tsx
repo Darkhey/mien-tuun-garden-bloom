@@ -21,9 +21,11 @@ const AdSenseSlot: React.FC<AdSenseSlotProps> = ({
 }) => {
   useEffect(() => {
     try {
-      // @ts-ignore
+      // @ts-expect-error adsbygoogle is injected via the AdSense script
       (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (e) {}
+    } catch (e) {
+      console.error('AdSense push failed', e);
+    }
   }, []);
 
   return (

@@ -6,7 +6,9 @@ export function parseRecipeArray(val: any): any[] {
     try {
       const arr = JSON.parse(val);
       if (Array.isArray(arr)) return arr;
-    } catch (e) { }
+    } catch (e) {
+      console.warn('Could not parse recipe array', e);
+    }
   }
   return [];
 }
@@ -24,7 +26,7 @@ export function normalizeStep(step: any, idx: number): {
     return { step: idx + 1, text: step };
   }
   // Wenn image fehlt, prüfe auf evtl. image_url oder ähnliches
-  let image = step.image || step.image_url || "";
+  const image = step.image || step.image_url || "";
   return {
     id: step.id || undefined,
     step: step.step || idx + 1,

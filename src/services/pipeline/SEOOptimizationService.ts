@@ -180,7 +180,9 @@ export class SEOOptimizationService {
     if (!keyword || !content) return 0;
     
     // Entferne HTML und Sonderzeichen, splitte exakt nach Wortgrenzen
-    const plainText = String(content).replace(/<[^>]*>/g, '').replace(/[^\wäöüßÄÖÜ\s\-]/gi, ' ');
+    const plainText = String(content)
+      .replace(/<[^>]*>/g, '')
+      .replace(/[^\wäöüßÄÖÜ\s-]/gi, ' ');
     const words = plainText.toLowerCase().split(/\s+/).filter(Boolean);
 
     // Exakter Wort-Match statt "includes"

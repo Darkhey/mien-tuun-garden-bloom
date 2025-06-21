@@ -35,7 +35,7 @@ export interface ContentAutomationStatsType {
   last_updated: string;
 }
 
-export interface ContentAutomationStats extends ContentAutomationStatsType {}
+export type ContentAutomationStats = ContentAutomationStatsType;
 
 export interface AutomationExecution {
   id: string;

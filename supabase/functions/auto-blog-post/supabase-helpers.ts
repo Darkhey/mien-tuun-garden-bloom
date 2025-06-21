@@ -45,7 +45,8 @@ function normalize(str: string) {
 
 // Einfache Levenshtein-Distanz (liefert Zahl der gleichen Zeichen am ANFANG)
 function levenshtein(a: string, b: string) {
-  let i = 0, max = Math.min(a.length, b.length);
+  let i = 0;
+  const max = Math.min(a.length, b.length);
   while (i < max && a[i] === b[i]) i++;
   return i;
 }

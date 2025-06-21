@@ -71,7 +71,10 @@ export async function generateTopicIdea(contextPrompt: string) {
     }
 
     const ideaData = await ideaResp.json();
-    return ideaData.choices?.[0]?.message?.content?.replace(/["\.]/g,"").trim() || "Neuer Blogartikel";
+      return (
+        ideaData.choices?.[0]?.message?.content?.replace(/[".]/g, "").trim() ||
+        "Neuer Blogartikel"
+      );
   } catch (error) {
     console.error("Topic-Generierung Fehler:", error);
     throw new Error(`Topic-Generierung fehlgeschlagen: ${error.message}`);

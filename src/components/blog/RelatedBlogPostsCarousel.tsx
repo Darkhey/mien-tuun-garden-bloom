@@ -17,7 +17,7 @@ const RelatedBlogPostsCarousel: React.FC<RelatedBlogPostsCarouselProps> = ({ cur
     queryKey: ["related_blog_posts", category, tags, currentSlug],
     queryFn: async () => {
       // Hole Artikel mit gleicher Kategorie ODER überlappenden Tags und nicht currentSlug
-      let query = supabase
+      const query = supabase
         .from("blog_posts")
         .select("*")
         .neq("slug", currentSlug)
