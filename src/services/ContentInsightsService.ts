@@ -2,6 +2,8 @@
 // ⚠️ PARTIALLY SIMULATED DATA SERVICE - Uses edge functions when available
 
 import { blogAnalyticsService, BlogPostInfo, TrendKeyword } from "./BlogAnalyticsService";
+import { cronJobService } from "./CronJobService";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface ContentInsight {
   id: string;
@@ -131,13 +133,16 @@ export class ContentInsightsService {
 
   async getTrendingTopics(): Promise<TrendingTopic[]> {
     try {
-      const trends = await blogAnalyticsService.fetchCurrentTrends();
+      const [trends, posts] = await Promise.all([
+        blogAnalyticsService.fetchCurrentTrends(),
+        blogAnalyticsService.fetchBlogPosts()
+      ]);
       return trends.map((t, idx) => ({
         id: `trend-${idx}`,
         topic: t.keyword,
         searchVolume: Math.round(t.relevance * 1000),
         growth: Math.round(t.relevance * 100),
-        difficulty: Math.floor(Math.random() * 5) + 1,
+        difficulty: this.calculateDifficulty(t.keyword, t.category, posts),
         relevanceScore: Math.round(t.relevance * 100)
       }));
     } catch (error) {
@@ -152,16 +157,21 @@ export class ContentInsightsService {
     scheduled: ScheduledPost[];
   }> {
     try {
-      const posts = await blogAnalyticsService.fetchBlogPosts();
-      const trends = await blogAnalyticsService.fetchCurrentTrends();
+      const [posts, recipes, trends, tasks] = await Promise.all([
+        blogAnalyticsService.fetchBlogPosts(),
+        this.fetchRecipes(),
+        blogAnalyticsService.fetchCurrentTrends(),
+        cronJobService.getScheduledTasks()
+      ]);
 
-      const categoryStats = this.computeCategoryStats(posts);
-      const suggestions = this.generateSuggestions(trends, posts, [], categoryStats);
+      const categoryStats = this.computeCategoryStats(posts, recipes);
+      const suggestions = this.generateSuggestions(trends, posts, recipes, categoryStats);
+      const scheduled = this.mapScheduledPosts(tasks);
 
       return {
         categoryStats,
         suggestions,
-        scheduled: []
+        scheduled
       };
     } catch (error) {
       console.error('[ContentInsights] Error fetching insights:', error);
@@ -216,12 +226,52 @@ export class ContentInsightsService {
           topic: trend.keyword,
           category: trend.category,
           reason: `Trendthema '${trend.keyword}' fehlt in Kategorie ${trend.category}`,
-          priority: 'high'
+          priority: trend.relevance > 0.8 ? 'high' : trend.relevance > 0.5 ? 'medium' : 'low'
         });
       }
     }
 
     return suggestions;
+  }
+
+  private async fetchRecipes(): Promise<{ category: string; tags: string[] }[]> {
+    const { data, error } = await supabase
+      .from('recipes')
+      .select('category,tags');
+    if (error) throw error;
+    return (data as { category: string; tags: string[] }[]) || [];
+  }
+
+  private mapScheduledPosts(tasks: ScheduledTask[]): ScheduledPost[] {
+    return tasks
+      .filter(t => t.function_name === 'auto-blog-post')
+      .map(t => ({
+        title: t.name,
+        date: t.scheduled_for,
+        status: t.status,
+        category: (t.function_payload as any)?.category || ''
+      }));
+  }
+
+  private calculateDifficulty(
+    keyword: string,
+    category: string,
+    posts: BlogPostInfo[]
+  ): number {
+    const matches = posts.filter(p => {
+      const inCategory = p.category === category;
+      const keywords = [...(p.tags || []), ...(p.seo_keywords || [])];
+      const keywordMatch = keywords.some(k =>
+        k.toLowerCase().includes(keyword.toLowerCase())
+      );
+      return inCategory && keywordMatch;
+    }).length;
+
+    if (matches > 20) return 5;
+    if (matches > 10) return 4;
+    if (matches > 5) return 3;
+    if (matches > 2) return 2;
+    return 1;
   }
 
   async analyzeContentPerformance(contentId: string): Promise<any> {
