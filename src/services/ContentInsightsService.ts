@@ -81,7 +81,7 @@ export class ContentInsightsService {
     return this.getCachedOrFetch('content-insights', async () => {
       const { data: posts, error } = await supabase
         .from('blog_posts')
-        .select('id, category, created_at, published, published_at, engagement_score, quality_score');
+        .select('id, category, published_at, published, engagement_score, quality_score');
       
       if (error) {
         console.error('[ContentInsights] Error loading blog posts:', error.message);
@@ -93,12 +93,12 @@ export class ContentInsightsService {
       
       const now = Date.now();
       const last30 = posts.filter(p =>
-        p.created_at && new Date(p.created_at).getTime() > now - 30 * 24 * 60 * 60 * 1000
+        p.published_at && new Date(p.published_at).getTime() > now - 30 * 24 * 60 * 60 * 1000
       );
       const prev30 = posts.filter(p =>
-        p.created_at &&
-        new Date(p.created_at).getTime() <= now - 30 * 24 * 60 * 60 * 1000 &&
-        new Date(p.created_at).getTime() > now - 60 * 24 * 60 * 60 * 1000
+        p.published_at &&
+        new Date(p.published_at).getTime() <= now - 30 * 24 * 60 * 60 * 1000 &&
+        new Date(p.published_at).getTime() > now - 60 * 24 * 60 * 60 * 1000
       );
 
       const growth = prev30.length > 0 ? ((last30.length - prev30.length) / prev30.length) * 100 : 0;
