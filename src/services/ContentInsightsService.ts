@@ -1,4 +1,4 @@
-// ⚠️ PARTIALLY SIMULATED DATA SERVICE - Uses edge functions when available
+// Content insights service that fetches and analyzes real data from Supabase
 
 import { blogAnalyticsService, BlogPostInfo, TrendKeyword } from "./BlogAnalyticsService";
 import { cronJobService, ScheduledTask } from "./CronJobService";
@@ -136,9 +136,16 @@ export class ContentInsightsService {
 
       const existing = new Set<string>();
       for (const p of posts) {
-        [...(p.tags || []), ...(p.seo_keywords || [])].forEach(t =>
-          existing.add(t.toLowerCase())
-        );
+        if (p.tags) {
+          for (const tag of p.tags) {
+            existing.add(tag.toLowerCase());
+          }
+        }
+        if (p.seo_keywords) {
+          for (const keyword of p.seo_keywords) {
+            existing.add(keyword.toLowerCase());
+          }
+        }
       }
 
       return trends
@@ -328,7 +335,9 @@ export class ContentInsightsService {
       .select('rating')
       .eq('blog_slug', post.slug);
 
-    const ratingAvg = (ratings || []).reduce((s, r) => s + r.rating, 0) / ((ratings || []).length || 1);
+    const ratingAvg = ratings && ratings.length > 0 
+      ? ratings.reduce((s, r) => s + r.rating, 0) / ratings.length 
+      : 0;
 
     return {
       views: post.engagement_score || 0,
@@ -351,8 +360,9 @@ export class ContentInsightsService {
     if (contentData.tags && contentData.tags.length > 2) score += 5;
 
     // Bewertung vorhandener Qualitäts- und Engagementdaten
-    if (typeof contentData.quality_score === 'number') score += contentData.quality_score * 0.3;
-    if (typeof contentData.engagement_score === 'number') score += contentData.engagement_score * 0.2;
+    // Scale weights to leave room for other bonuses (max 25 points from these scores)
+    if (typeof contentData.quality_score === 'number') score += contentData.quality_score * 0.15;
+    if (typeof contentData.engagement_score === 'number') score += contentData.engagement_score * 0.10;
 
     return Math.min(100, Math.max(0, Math.round(score)));
   }
