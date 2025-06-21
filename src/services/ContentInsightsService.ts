@@ -29,9 +29,30 @@ export interface TrendingTopic {
   relevanceScore: number;
 }
 
+export interface CategoryStat {
+  category: string;
+  count: number;
+  engagement: number;
+  performance: number;
+}
+
+export interface ContentSuggestion {
+  topic: string;
+  category: string;
+  reason: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export interface ScheduledPost {
+  title: string;
+  date: string;
+  status: string;
+  category: string;
+}
+
 export class ContentInsightsService {
   async getContentInsights(): Promise<ContentInsight[]> {
-    console.log('[ContentInsights] ⚠️ RETURNING SIMULATED INSIGHTS DATA');
+    console.log('[ContentInsights] ⚠️ SIMULATED: RETURNING INSIGHTS DATA');
     
     // ⚠️ SIMULATED: Hardcoded insights
     return [
@@ -75,7 +96,7 @@ export class ContentInsightsService {
   }
 
   async getContentRecommendations(): Promise<ContentRecommendation[]> {
-    console.log('[ContentInsights] ⚠️ RETURNING SIMULATED RECOMMENDATIONS');
+    console.log('[ContentInsights] ⚠️ SIMULATED: RETURNING RECOMMENDATIONS');
     
     // ⚠️ SIMULATED: Hardcoded recommendations
     return [
@@ -107,7 +128,7 @@ export class ContentInsightsService {
   }
 
   async getTrendingTopics(): Promise<TrendingTopic[]> {
-    console.log('[ContentInsights] ⚠️ RETURNING SIMULATED TRENDING TOPICS');
+    console.log('[ContentInsights] ⚠️ SIMULATED: RETURNING TRENDING TOPICS');
     
     // ⚠️ SIMULATED: Hardcoded trending topics
     return [
@@ -146,8 +167,33 @@ export class ContentInsightsService {
     ];
   }
 
+  async fetchInsights(): Promise<{
+    categoryStats: CategoryStat[];
+    suggestions: ContentSuggestion[];
+    scheduled: ScheduledPost[];
+  }> {
+    console.log('[ContentInsights] ⚠️ SIMULATED: FETCHING INSIGHTS');
+    
+    return {
+      categoryStats: [
+        { category: 'Gartentipps', count: 45, engagement: 78, performance: 85 },
+        { category: 'Pflanzen', count: 32, engagement: 65, performance: 72 },
+        { category: 'Kochen', count: 28, engagement: 82, performance: 90 }
+      ],
+      suggestions: [
+        { topic: 'Wintergemüse Anbau', category: 'Gartentipps', reason: 'Saisonaler Trend', priority: 'high' },
+        { topic: 'Indoor Kräutergarten', category: 'Kräuter', reason: 'Steigende Nachfrage', priority: 'medium' },
+        { topic: 'Nachhaltiges Gärtnern', category: 'Nachhaltigkeit', reason: 'Umweltbewusstsein', priority: 'high' }
+      ],
+      scheduled: [
+        { title: 'Herbstpflanzen Guide', date: new Date().toISOString(), status: 'geplant', category: 'Gartentipps' },
+        { title: 'Kompost-Tutorial', date: new Date(Date.now() + 86400000).toISOString(), status: 'bereit', category: 'Kompostierung' }
+      ]
+    };
+  }
+
   async analyzeContentPerformance(contentId: string): Promise<any> {
-    console.log('[ContentInsights] ⚠️ SIMULATED CONTENT PERFORMANCE ANALYSIS for:', contentId);
+    console.log('[ContentInsights] ⚠️ SIMULATED: CONTENT PERFORMANCE ANALYSIS for:', contentId);
     
     // ⚠️ SIMULATED: Hardcoded performance data
     return {
@@ -161,7 +207,7 @@ export class ContentInsightsService {
   }
 
   async predictContentSuccess(contentData: any): Promise<number> {
-    console.log('[ContentInsights] ⚠️ SIMULATED CONTENT SUCCESS PREDICTION for:', contentData.title);
+    console.log('[ContentInsights] ⚠️ SIMULATED: CONTENT SUCCESS PREDICTION for:', contentData.title);
     
     // ⚠️ SIMULATED: Einfacher Score basierend auf Titel-Länge und Kategorie
     let score = 50;

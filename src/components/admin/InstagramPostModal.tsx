@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -167,7 +168,7 @@ ${allHashtags}`;
         onClose();
       } catch (dbError) {
         console.error('Database error:', dbError);
-        throw new Error('Datenbankfehler: ' + dbError.message);
+        throw new Error('Datenbankfehler: ' + (dbError as Error).message);
       }
     } catch (error: any) {
       console.error('Instagram post error:', error);
@@ -242,27 +243,19 @@ ${allHashtags}`;
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              onClick={generateAutoCaption}
-              variant="outline"
-              className="flex-1"
-            >
-              Caption neu generieren
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={onClose}>
+              Abbrechen
             </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={loading || !caption.trim()}
-              className="flex-1"
-            >
+            <Button onClick={handleSubmit} disabled={loading}>
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Wird gepostet...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Poste...
                 </>
               ) : (
                 <>
-                  <Send className="mr-2 h-4 w-4" />
+                  <Send className="h-4 w-4 mr-2" />
                   Auf Instagram posten
                 </>
               )}
