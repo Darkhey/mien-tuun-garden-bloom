@@ -1,8 +1,7 @@
-
 // ⚠️ PARTIALLY SIMULATED DATA SERVICE - Uses edge functions when available
 
 import { blogAnalyticsService, BlogPostInfo, TrendKeyword } from "./BlogAnalyticsService";
-import { cronJobService } from "./CronJobService";
+import { cronJobService, ScheduledTask } from "./CronJobService";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ContentInsight {
@@ -52,6 +51,11 @@ export interface ScheduledPost {
   date: string;
   status: string;
   category: string;
+}
+
+interface AutoBlogPostPayload {
+  category?: string;
+  [key: string]: any;
 }
 
 export class ContentInsightsService {
@@ -245,12 +249,15 @@ export class ContentInsightsService {
   private mapScheduledPosts(tasks: ScheduledTask[]): ScheduledPost[] {
     return tasks
       .filter(t => t.function_name === 'auto-blog-post')
-      .map(t => ({
-        title: t.name,
-        date: t.scheduled_for,
-        status: t.status,
-        category: (t.function_payload as any)?.category || ''
-      }));
+      .map(t => {
+        const payload = t.function_payload as AutoBlogPostPayload;
+        return {
+          title: t.name,
+          date: t.scheduled_for,
+          status: t.status,
+          category: payload?.category || ''
+        };
+      });
   }
 
   private calculateDifficulty(
