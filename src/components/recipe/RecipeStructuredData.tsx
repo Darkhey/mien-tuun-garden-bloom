@@ -9,7 +9,9 @@ function parseArray(val: any): any[] {
     try {
       const arr = JSON.parse(val);
       if (Array.isArray(arr)) return arr;
-    } catch {}
+    } catch (err) {
+      console.warn('Could not parse JSON value', err);
+    }
   }
   return [];
 }

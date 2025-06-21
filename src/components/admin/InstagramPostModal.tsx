@@ -142,21 +142,20 @@ ${allHashtags}`;
         if (error) throw error;
 
         // Simulate posting to Instagram
-        setTimeout(() => {
-          supabase
-            .from('instagram_posts')
-            .update({ 
-              status: 'posted',
-              posted_at: new Date().toISOString(),
-              instagram_id: `sim_${Date.now()}`
-            })
-            .eq('id', data.id)
-            .then(() => {
-              console.log('Instagram post status updated to posted');
-            })
-            .catch(err => {
-              console.error('Error updating Instagram post status:', err);
-            });
+        setTimeout(async () => {
+          try {
+            await supabase
+              .from('instagram_posts')
+              .update({
+                status: 'posted',
+                posted_at: new Date().toISOString(),
+                instagram_id: `sim_${Date.now()}`
+              })
+              .eq('id', data.id);
+            console.log('Instagram post status updated to posted');
+          } catch (err) {
+            console.error('Error updating Instagram post status:', err);
+          }
         }, 2000);
 
         toast({

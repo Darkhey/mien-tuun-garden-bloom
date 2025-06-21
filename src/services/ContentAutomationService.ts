@@ -35,7 +35,7 @@ export interface ContentAutomationStatsType {
   last_updated: string;
 }
 
-export interface ContentAutomationStats extends ContentAutomationStatsType {}
+export type ContentAutomationStats = ContentAutomationStatsType;
 
 export interface AutomationExecution {
   id: string;
@@ -59,16 +59,19 @@ export class ContentAutomationService {
 
       if (error) throw error;
 
-      return (data || []).map(config => ({
-        id: config.id,
-        name: config.name,
-        schedule: (config.config as any)?.schedule || '0 9 * * *',
-        enabled: config.is_active || false,
-        contentTypes: (config.config as any)?.contentTypes || ['blog'],
-        categories: (config.config as any)?.categories || ['gartentipps'],
-        publishingRules: (config.config as any)?.publishingRules || {},
-        qualityThreshold: (config.config as any)?.qualityThreshold || 80
-      }));
+      return (data || []).map(config => {
+        const configData = config.config as Record<string, any>;
+        return {
+          id: config.id,
+          name: config.name,
+          schedule: configData?.schedule || '0 9 * * *',
+          enabled: config.is_active || false,
+          contentTypes: Array.isArray(configData?.contentTypes) ? configData.contentTypes : ['blog'],
+          categories: Array.isArray(configData?.categories) ? configData.categories : ['gartentipps'],
+          publishingRules: configData?.publishingRules || {},
+          qualityThreshold: configData?.qualityThreshold || 80
+        };
+      });
     } catch (error) {
       console.error('[ContentAutomation] ⚠️ SIMULATED: DB Error, returning simulated data:', error);
       

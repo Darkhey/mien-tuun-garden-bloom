@@ -17,7 +17,7 @@ serve(async (req) => {
       );
     }
 
-    const prompt = `Du bist ein deutschsprachiger Trend-Analyst.\nGib mir 5-10 aktuelle Keywords aus den Bereichen Garten und Küche als JSON-Array im Format [{\"keyword\":\"...\",\"relevance\":0.9,\"category\":\"garten\"}].`;
+    const prompt = `Du bist ein deutschsprachiger Trend-Analyst.\nGib mir 5-10 aktuelle Keywords aus den Bereichen Garten und Küche als JSON-Array im Format [{"keyword":"...","relevance":0.9,"category":"garten"}].`;
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",

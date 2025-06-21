@@ -17,7 +17,6 @@ async function getUniqueTopic(supabase, contextPrompt, maxTries = 3) {
   let title = "";
   let attempt = 1;
   let finalReason = "";
-  let lastErr = null;
 
   while (attempt <= maxTries) {
     // 1. Themen-Idee mit OpenAI generieren
@@ -26,7 +25,7 @@ async function getUniqueTopic(supabase, contextPrompt, maxTries = 3) {
     title = topicIdea;
 
     // 2. Blacklist-Prüfung
-    let isBlack = await checkBlacklist(supabase, topicIdea);
+    const isBlack = await checkBlacklist(supabase, topicIdea);
     if (isBlack) {
       finalReason = "blacklisted";
       await logTopicAttempt(supabase, { slug, title, reason: "blacklisted", try_count: attempt, context: { contextPrompt } });
@@ -35,7 +34,7 @@ async function getUniqueTopic(supabase, contextPrompt, maxTries = 3) {
     }
 
     // 3. Dubletten-Prüfung
-    let dupl = await isDuplicate(supabase, slug, title);
+    const dupl = await isDuplicate(supabase, slug, title);
     if (dupl) {
       finalReason = "duplicate";
       await logTopicAttempt(supabase, { slug, title, reason: "duplicate", try_count: attempt, context: { contextPrompt } });
@@ -75,8 +74,8 @@ serve(async (req) => {
     const articleContent = await generateArticle(prompt);
 
     // 4. Teaser/Excerpt extrahieren
-    let excerptMatch = articleContent.split('\n').find(line => line.trim());
-    let excerpt = excerptMatch ? excerptMatch.replace(/^#+\s*/, "").slice(0, 160) : "";
+    const excerptMatch = articleContent.split('\n').find(line => line.trim());
+    const excerpt = excerptMatch ? excerptMatch.replace(/^#+\s*/, "").slice(0, 160) : "";
 
     // 5. SEO-Metadaten generieren
     const seoTitle = topicIdea + " | Mien Tuun";
