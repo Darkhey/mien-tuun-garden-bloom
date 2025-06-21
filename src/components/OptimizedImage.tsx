@@ -17,6 +17,9 @@ interface OptimizedImageProps {
   onError?: () => void;
 }
 
+// Universal garden fallback image
+const GARDEN_FALLBACK_IMAGE = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
+
 const OptimizedImage: React.FC<OptimizedImageProps> = ({
   src,
   alt,
@@ -88,13 +91,17 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
         )}
         style={{ width, height }}
       >
-        Kein Bild verfügbar
+        <img 
+          src={GARDEN_FALLBACK_IMAGE} 
+          alt={alt || "Garden fallback"} 
+          className="w-full h-full object-cover"
+        />
       </div>
     );
   }
 
-  const optimizedSrc = imageService.getOptimizedImageUrl(src, { width, height, quality });
-  const srcSet = imageService.createResponsiveSrcSet(src);
+  const optimizedSrc = hasError ? GARDEN_FALLBACK_IMAGE : imageService.getOptimizedImageUrl(src, { width, height, quality });
+  const srcSet = hasError ? undefined : imageService.createResponsiveSrcSet(src);
   const imageSizes = sizes || imageService.getImageSizes(width);
 
   return (
@@ -113,13 +120,6 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
         </div>
       )}
 
-      {/* Error state */}
-      {hasError && (
-        <div className="absolute inset-0 bg-earth-100 flex items-center justify-center text-earth-400 text-sm">
-          Bild konnte nicht geladen werden
-        </div>
-      )}
-
       {/* Actual image */}
       {isInView && (
         <img
@@ -131,8 +131,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
           height={height}
           className={cn(
             "transition-opacity duration-300",
-            isLoaded ? "opacity-100" : "opacity-0",
-            hasError && "hidden"
+            isLoaded ? "opacity-100" : "opacity-0"
           )}
           onLoad={handleLoad}
           onError={handleError}

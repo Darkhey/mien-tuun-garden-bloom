@@ -1,124 +1,181 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import type { TrendKeyword } from "./BlogAnalyticsService";
+// ⚠️ FULLY SIMULATED DATA SERVICE - Replace with real analytics API
 
-export interface CategoryStat {
-  category: string;
-  count: number;
-}
-
-export interface ScheduledPost {
-  date: string;
+export interface ContentInsight {
+  id: string;
   title: string;
-  slug: string;
-  status: string | null;
+  description: string;
+  metric: number;
+  change: number;
+  type: 'positive' | 'negative' | 'neutral';
+  category: 'performance' | 'engagement' | 'seo' | 'content';
 }
 
-export interface ContentSuggestion {
-  topic: string;
+export interface ContentRecommendation {
+  id: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
   category: string;
-  reason: string;
+  estimatedImpact: string;
 }
 
-interface ContentInsights {
-  categoryStats: CategoryStat[];
-  suggestions: ContentSuggestion[];
-  scheduled: ScheduledPost[];
+export interface TrendingTopic {
+  id: string;
+  topic: string;
+  searchVolume: number;
+  growth: number;
+  difficulty: number;
+  relevanceScore: number;
 }
 
-class ContentInsightsService {
-  async fetchInsights(): Promise<ContentInsights> {
-    try {
-      const [blogRes, recipeRes, versionRes, trendsRes] = await Promise.all([
-        supabase.from('blog_posts').select('category,tags,seo_keywords,season'),
-        supabase.from('recipes').select('category,tags,season'),
-        supabase.from('blog_post_versions').select('title,slug,created_at,status'),
-        supabase.functions.invoke('fetch-current-trends')
-      ]);
-
-      if (blogRes.error) throw blogRes.error;
-      if (recipeRes.error) throw recipeRes.error;
-      if (versionRes.error) throw versionRes.error;
-      if (trendsRes.error) throw trendsRes.error;
-
-      const blogPosts = blogRes.data as { category: string; tags: string[]; seo_keywords: string[]; season?: string }[];
-      const recipes = recipeRes.data as { category: string; tags: string[]; season?: string }[];
-      const versions = versionRes.data as { title: string; slug: string; created_at: string; status: string | null }[];
-      const trends = (trendsRes.data?.trends || trendsRes.data) as TrendKeyword[];
-
-      const categoryStats = this.computeCategoryStats(blogPosts, recipes);
-      const suggestions = this.generateSuggestions(trends, blogPosts, recipes, categoryStats);
-      const scheduled = versions.map(v => ({
-        date: v.created_at,
-        title: v.title,
-        slug: v.slug,
-        status: v.status
-      }));
-
-      return { categoryStats, suggestions, scheduled };
-    } catch (error) {
-      console.error('Fehler beim Laden der Content-Insights:', error);
-      // Rückgabe von Standardwerten bei Fehlern
-      return {
-        categoryStats: [],
-        suggestions: [],
-        scheduled: []
-      };
-    }
-  }
-
-  private computeCategoryStats(
-    blogPosts: { category: string }[],
-    recipes: { category: string }[]
-  ): CategoryStat[] {
-    const counts: Record<string, number> = {};
+export class ContentInsightsService {
+  async getContentInsights(): Promise<ContentInsight[]> {
+    console.log('[ContentInsights] ⚠️ RETURNING SIMULATED INSIGHTS DATA');
     
-    for (const p of blogPosts) {
-      if (p.category) counts[p.category] = (counts[p.category] || 0) + 1;
-    }
-    for (const r of recipes) {
-      if (r.category) counts[r.category] = (counts[r.category] || 0) + 1;
-    }
-    
-    return Object.entries(counts)
-      .map(([category, count]) => ({ category, count }))
-      .sort((a, b) => b.count - a.count); // Sortiere nach Häufigkeit
-  }
-
-  private generateSuggestions(
-    trends: TrendKeyword[],
-    blogPosts: { tags: string[]; seo_keywords?: string[] }[],
-    recipes: { tags: string[] }[],
-    stats: CategoryStat[]
-  ): ContentSuggestion[] {
-    const existing = new Set<string>();
-    
-    // Sammle existierende Keywords
-    for (const p of blogPosts) {
-      [...(p.tags || []), ...(p.seo_keywords || [])].forEach(t => existing.add(t.toLowerCase()));
-    }
-    for (const r of recipes) {
-      (r.tags || []).forEach(t => existing.add(t.toLowerCase()));
-    }
-    
-    const lowCategories = stats.filter(s => s.count < 3).map(s => s.category);
-    const suggestions: ContentSuggestion[] = [];
-    
-    for (const trend of trends) {
-      if (!existing.has(trend.keyword.toLowerCase()) && 
-          (lowCategories.includes(trend.category) || lowCategories.length === 0)) {
-        suggestions.push({
-          topic: trend.keyword,
-          category: trend.category,
-          reason: `Trendthema '${trend.keyword}' fehlt${lowCategories.includes(trend.category) ? ` in unterrepräsentierter Kategorie ${trend.category}` : ''}`
-        });
+    // ⚠️ SIMULATED: Hardcoded insights
+    return [
+      {
+        id: '1',
+        title: 'Blog-Traffic gestiegen',
+        description: 'Organischer Traffic ist um 23% gestiegen',
+        metric: 23,
+        change: 5.2,
+        type: 'positive',
+        category: 'performance'
+      },
+      {
+        id: '2',
+        title: 'Engagement-Rate optimieren',
+        description: 'Durchschnittliche Verweildauer könnte verbessert werden',
+        metric: 2.4,
+        change: -0.3,
+        type: 'negative',
+        category: 'engagement'
+      },
+      {
+        id: '3',
+        title: 'SEO-Score verbessert',
+        description: 'Durchschnittlicher SEO-Score der letzten Artikel',
+        metric: 87,
+        change: 12,
+        type: 'positive',
+        category: 'seo'
+      },
+      {
+        id: '4',
+        title: 'Content-Produktion stabil',
+        description: 'Regelmäßige Veröffentlichung beibehalten',
+        metric: 8,
+        change: 0,
+        type: 'neutral',
+        category: 'content'
       }
-    }
+    ];
+  }
+
+  async getContentRecommendations(): Promise<ContentRecommendation[]> {
+    console.log('[ContentInsights] ⚠️ RETURNING SIMULATED RECOMMENDATIONS');
     
-    return suggestions.slice(0, 10); // Begrenze auf 10 Vorschläge
+    // ⚠️ SIMULATED: Hardcoded recommendations
+    return [
+      {
+        id: '1',
+        title: 'Saisonale Gartentipps für Winter',
+        description: 'Wintervorbereitungen sind ein beliebtes Thema im Herbst',
+        priority: 'high',
+        category: 'Gartentipps',
+        estimatedImpact: '+15% Traffic'
+      },
+      {
+        id: '2',
+        title: 'Indoor-Kräutergarten Artikel',
+        description: 'Steigende Nachfrage nach Indoor-Gardening',
+        priority: 'medium',
+        category: 'Kräuter',
+        estimatedImpact: '+8% Engagement'
+      },
+      {
+        id: '3',
+        title: 'Nachhaltigkeit im Garten',
+        description: 'Umweltthemen sind sehr gefragt',
+        priority: 'high',
+        category: 'Nachhaltigkeit',
+        estimatedImpact: '+20% Shares'
+      }
+    ];
+  }
+
+  async getTrendingTopics(): Promise<TrendingTopic[]> {
+    console.log('[ContentInsights] ⚠️ RETURNING SIMULATED TRENDING TOPICS');
+    
+    // ⚠️ SIMULATED: Hardcoded trending topics
+    return [
+      {
+        id: '1',
+        topic: 'Wintergemüse anbauen',
+        searchVolume: 1200,
+        growth: 45,
+        difficulty: 3,
+        relevanceScore: 92
+      },
+      {
+        id: '2',
+        topic: 'Kompost selber machen',
+        searchVolume: 980,
+        growth: 32,
+        difficulty: 2,
+        relevanceScore: 88
+      },
+      {
+        id: '3',
+        topic: 'Balkon Garten Winter',
+        searchVolume: 750,
+        growth: 67,
+        difficulty: 4,
+        relevanceScore: 85
+      },
+      {
+        id: '4',
+        topic: 'Kräuter konservieren',
+        searchVolume: 650,
+        growth: 28,
+        difficulty: 2,
+        relevanceScore: 81
+      }
+    ];
+  }
+
+  async analyzeContentPerformance(contentId: string): Promise<any> {
+    console.log('[ContentInsights] ⚠️ SIMULATED CONTENT PERFORMANCE ANALYSIS for:', contentId);
+    
+    // ⚠️ SIMULATED: Hardcoded performance data
+    return {
+      views: Math.floor(Math.random() * 5000) + 500,
+      engagement: Math.floor(Math.random() * 30) + 10,
+      shares: Math.floor(Math.random() * 100) + 5,
+      comments: Math.floor(Math.random() * 20) + 1,
+      timeOnPage: Math.floor(Math.random() * 300) + 120,
+      bounceRate: Math.floor(Math.random() * 30) + 20
+    };
+  }
+
+  async predictContentSuccess(contentData: any): Promise<number> {
+    console.log('[ContentInsights] ⚠️ SIMULATED CONTENT SUCCESS PREDICTION for:', contentData.title);
+    
+    // ⚠️ SIMULATED: Einfacher Score basierend auf Titel-Länge und Kategorie
+    let score = 50;
+    
+    if (contentData.title && contentData.title.length > 10) score += 10;
+    if (contentData.category === 'Gartentipps') score += 15;
+    if (contentData.category === 'Kräuter') score += 10;
+    if (contentData.tags && contentData.tags.length > 2) score += 5;
+    
+    // Zufälliger Faktor für Realismus
+    score += Math.floor(Math.random() * 20) - 10;
+    
+    return Math.min(100, Math.max(0, score));
   }
 }
 
 export const contentInsightsService = new ContentInsightsService();
-export type { ContentInsightsService };
-export type { ContentInsights };

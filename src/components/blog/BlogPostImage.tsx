@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getRandomUnsplashImage } from '@/utils/unsplashService';
 
@@ -8,8 +7,8 @@ type BlogPostImageProps = {
   category?: string;
 };
 
-// Nutze Storage-Bucket für Blogbilder!
-const SUPABASE_BLOG_IMG_URL = "https://ublbxvpmoccmegtwaslh.supabase.co/storage/v1/object/public/blog-images/";
+// Universal garden fallback image
+const GARDEN_FALLBACK_IMAGE = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
 
 const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => {
   const [imgError, setImgError] = useState(false);
@@ -33,11 +32,13 @@ const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => 
       }
     } catch (error) {
       console.warn('Error fetching fallback image:', error);
+      // Use garden fallback if Unsplash fails
+      setFallbackImage(GARDEN_FALLBACK_IMAGE);
     }
   };
 
   function getImageUrl(imagePath: string): string {
-    if (!imagePath || imagePath.trim() === '') return fallbackImage || "/placeholder.svg";
+    if (!imagePath || imagePath.trim() === '') return fallbackImage || GARDEN_FALLBACK_IMAGE;
     
     // If it's already a full URL, use it directly
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
@@ -46,22 +47,23 @@ const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => 
     
     // If it's a placeholder, use fallback
     if (imagePath === '/placeholder.svg' || imagePath === 'placeholder.svg') {
-      return fallbackImage || "/placeholder.svg";
+      return fallbackImage || GARDEN_FALLBACK_IMAGE;
     }
     
     // Otherwise, assume it's a path in the Supabase storage
+    const SUPABASE_BLOG_IMG_URL = "https://ublbxvpmoccmegtwaslh.supabase.co/storage/v1/object/public/blog-images/";
     return SUPABASE_BLOG_IMG_URL + imagePath;
   }
 
   const handleImageError = () => {
     setImgError(true);
     if (!fallbackImage) {
-      fetchFallbackImage();
+      setFallbackImage(GARDEN_FALLBACK_IMAGE);
     }
   };
 
   const imageSource = imgError 
-    ? (fallbackImage || "/placeholder.svg") 
+    ? (fallbackImage || GARDEN_FALLBACK_IMAGE) 
     : getImageUrl(src);
 
   return (

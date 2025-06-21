@@ -1,4 +1,6 @@
 
+// ⚠️ SIMULATED DATA SERVICE - Replace with real API integrations
+
 export interface ContentEnrichmentResult {
   enhancedContent: string;
   featuredImage: string;
@@ -12,9 +14,12 @@ export interface ContentEnrichmentResult {
   };
 }
 
+// Universal garden fallback image
+const GARDEN_FALLBACK_IMAGE = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
+
 export class ContentEnrichmentService {
   async enrichContent(content: any, seoData: any): Promise<ContentEnrichmentResult> {
-    console.log('[ContentEnrichment] Enriching content with additional data');
+    console.log('[ContentEnrichment] ⚠️ USING SIMULATED DATA - Enriching content with additional data');
     
     // Content mit internen Links anreichern
     const enhancedContent = await this.addInternalLinks(content.content, seoData.internalLinks);
@@ -40,6 +45,7 @@ export class ContentEnrichmentService {
   }
 
   private async addInternalLinks(content: string, internalLinks: Array<{ text: string; url: string }>): Promise<string> {
+    console.log('[ContentEnrichment] ⚠️ SIMULATED INTERNAL LINKING');
     let enhancedContent = content;
     
     // Interne Links intelligent in den Content einfügen
@@ -59,26 +65,22 @@ export class ContentEnrichmentService {
   }
 
   private async generateOrSelectFeaturedImage(content: any): Promise<string> {
-    // Simuliert die Auswahl/Generierung eines Featured Images
-    const possibleImages = [
-      'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200&h=600&fit=crop',
-      'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200&h=600&fit=crop',
-      'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=600&fit=crop',
-      'https://images.unsplash.com/photo-1586093728648-04db0bd4c827?w=1200&h=600&fit=crop'
-    ];
+    console.log('[ContentEnrichment] ⚠️ SIMULATED IMAGE SELECTION');
     
-    // Wähle basierend auf Content-Kategorie
+    // ⚠️ SIMULATED: Nutze das Garden Fallback als Standard
     if (content.category?.toLowerCase().includes('garten')) {
-      return 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200&h=600&fit=crop';
+      return GARDEN_FALLBACK_IMAGE;
     } else if (content.category?.toLowerCase().includes('koch')) {
-      return 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=600&fit=crop';
+      return GARDEN_FALLBACK_IMAGE; // Auch für Kochen, da es ein Garten-Blog ist
     }
     
-    // Fallback: zufälliges Bild
-    return possibleImages[Math.floor(Math.random() * possibleImages.length)];
+    // Fallback: Garden Image
+    return GARDEN_FALLBACK_IMAGE;
   }
 
   private createSocialMediaData(content: any, featuredImage: string): any {
+    console.log('[ContentEnrichment] ⚠️ SIMULATED SOCIAL MEDIA DATA CREATION');
+    
     return {
       twitterCard: {
         card: 'summary_large_image',
@@ -99,9 +101,9 @@ export class ContentEnrichmentService {
   }
 
   private async findRelatedContent(content: any, keywords: string[]): Promise<Array<{ title: string; url: string; excerpt: string }>> {
-    // Simuliert die Suche nach verwandten Inhalten
-    // In der Realität würde hier die Datenbank nach ähnlichen Artikeln durchsucht
+    console.log('[ContentEnrichment] ⚠️ SIMULATED RELATED CONTENT SEARCH');
     
+    // ⚠️ SIMULATED: Hardcoded verwandte Artikel
     const relatedArticles = [
       {
         title: 'Garten winterfest machen: Tipps für die kalte Jahreszeit',
@@ -130,16 +132,14 @@ export class ContentEnrichmentService {
   }
 
   async generateImageWithAI(prompt: string): Promise<string> {
-    // Placeholder für KI-Image-Generierung
-    console.log('[ContentEnrichment] Would generate image for prompt:', prompt);
+    console.log('[ContentEnrichment] ⚠️ SIMULATED AI IMAGE GENERATION for prompt:', prompt);
     
-    // Fallback zu Unsplash
-    return `https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200&h=600&fit=crop&q=80`;
+    // ⚠️ SIMULATED: Verwende Garden Fallback statt KI-Generierung
+    return GARDEN_FALLBACK_IMAGE;
   }
 
   async optimizeImages(images: string[]): Promise<string[]> {
-    // Placeholder für Bild-Optimierung
-    console.log('[ContentEnrichment] Would optimize images:', images);
+    console.log('[ContentEnrichment] ⚠️ SIMULATED IMAGE OPTIMIZATION:', images);
     
     // Füge Optimierungsparameter hinzu
     return images.map(img => {

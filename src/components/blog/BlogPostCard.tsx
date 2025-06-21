@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Tag } from "lucide-react";
@@ -19,6 +20,9 @@ type BlogPost = {
 interface BlogPostCardProps {
   post: BlogPost;
 }
+
+// Universal garden fallback image
+const GARDEN_FALLBACK_IMAGE = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   const [imgError, setImgError] = useState(false);
@@ -42,12 +46,14 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
       }
     } catch (error) {
       console.warn('Error fetching fallback image for card:', error);
+      // Use garden fallback if Unsplash fails
+      setFallbackImage(GARDEN_FALLBACK_IMAGE);
     }
   };
 
   const getImageUrl = (imagePath: string): string => {
     if (!imagePath || imagePath.trim() === '' || imagePath === '/placeholder.svg') {
-      return fallbackImage || "/placeholder.svg";
+      return fallbackImage || GARDEN_FALLBACK_IMAGE;
     }
     
     // If it's already a full URL, use it directly
@@ -62,12 +68,12 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   const handleImageError = () => {
     setImgError(true);
     if (!fallbackImage) {
-      fetchFallbackImage();
+      setFallbackImage(GARDEN_FALLBACK_IMAGE);
     }
   };
 
   const imageSource = imgError 
-    ? (fallbackImage || "/placeholder.svg") 
+    ? (fallbackImage || GARDEN_FALLBACK_IMAGE) 
     : getImageUrl(post.featuredImage);
 
   return (

@@ -1,4 +1,6 @@
 
+// ⚠️ PARTIALLY SIMULATED SERVICE - Browser compatibility limited
+
 /**
  * Image Optimization Service
  * Provides utilities for optimizing images for web performance
@@ -12,6 +14,9 @@ interface ImageOptimizationOptions {
   lazy?: boolean;
 }
 
+// Universal garden fallback image
+const GARDEN_FALLBACK_IMAGE = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
+
 class ImageOptimizationService {
   private static instance: ImageOptimizationService;
 
@@ -24,12 +29,18 @@ class ImageOptimizationService {
 
   /**
    * Check if WebP is supported by the browser
+   * ⚠️ BROWSER DEPENDENT
    */
   public isWebPSupported(): boolean {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1;
+      canvas.height = 1;
+      return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+    } catch (error) {
+      console.warn('[ImageOptimization] ⚠️ WebP detection failed:', error);
+      return false;
+    }
   }
 
   /**
@@ -39,7 +50,7 @@ class ImageOptimizationService {
     originalUrl: string, 
     options: ImageOptimizationOptions = {}
   ): string {
-    if (!originalUrl) return '';
+    if (!originalUrl) return GARDEN_FALLBACK_IMAGE;
 
     const {
       width,
@@ -50,16 +61,21 @@ class ImageOptimizationService {
 
     // If it's an Unsplash URL, optimize it using Unsplash's API
     if (originalUrl.includes('unsplash.com')) {
-      const url = new URL(originalUrl);
-      
-      if (width) url.searchParams.set('w', width.toString());
-      if (height) url.searchParams.set('h', height.toString());
-      url.searchParams.set('q', quality.toString());
-      url.searchParams.set('fm', format);
-      url.searchParams.set('fit', 'crop');
-      url.searchParams.set('auto', 'format');
+      try {
+        const url = new URL(originalUrl);
+        
+        if (width) url.searchParams.set('w', width.toString());
+        if (height) url.searchParams.set('h', height.toString());
+        url.searchParams.set('q', quality.toString());
+        url.searchParams.set('fm', format);
+        url.searchParams.set('fit', 'crop');
+        url.searchParams.set('auto', 'format');
 
-      return url.toString();
+        return url.toString();
+      } catch (error) {
+        console.warn('[ImageOptimization] ⚠️ URL optimization failed:', error);
+        return originalUrl;
+      }
     }
 
     // For other URLs, return as-is (could be extended with other CDN optimizations)
@@ -68,11 +84,17 @@ class ImageOptimizationService {
 
   /**
    * Create responsive image srcSet
+   * ⚠️ SIMULATED for non-Unsplash images
    */
   public createResponsiveSrcSet(
     originalUrl: string,
     breakpoints: number[] = [320, 640, 768, 1024, 1280, 1920]
   ): string {
+    if (!originalUrl.includes('unsplash.com')) {
+      console.log('[ImageOptimization] ⚠️ SIMULATED srcSet for non-Unsplash image');
+      return `${originalUrl} 1x`;
+    }
+
     return breakpoints
       .map(width => {
         const optimizedUrl = this.getOptimizedImageUrl(originalUrl, { width });
@@ -103,24 +125,30 @@ class ImageOptimizationService {
 
   /**
    * Preload critical images
+   * ⚠️ BROWSER DEPENDENT
    */
   public preloadImage(url: string, priority: 'high' | 'low' = 'low'): void {
-    const link = document.createElement('link');
-    link.rel = 'preload';
-    link.as = 'image';
-    link.href = url;
-    if (priority === 'high') {
-      link.setAttribute('fetchpriority', 'high');
+    try {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = url;
+      if (priority === 'high') {
+        link.setAttribute('fetchpriority', 'high');
+      }
+      document.head.appendChild(link);
+    } catch (error) {
+      console.warn('[ImageOptimization] ⚠️ Preloading failed:', error);
     }
-    document.head.appendChild(link);
   }
 
   /**
    * Lazy load image with intersection observer
+   * ⚠️ BROWSER DEPENDENT
    */
   public setupLazyLoading(): void {
     if (!('IntersectionObserver' in window)) {
-      // Fallback for browsers without IntersectionObserver
+      console.warn('[ImageOptimization] ⚠️ IntersectionObserver not supported');
       return;
     }
 

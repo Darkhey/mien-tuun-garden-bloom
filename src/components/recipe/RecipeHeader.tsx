@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { getRecipeImageUrl } from "@/utils/recipe";
@@ -10,6 +11,9 @@ interface RecipeHeaderProps {
   slug: string;
 }
 
+// Universal garden fallback image
+const GARDEN_FALLBACK_IMAGE = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
+
 const RecipeHeader: React.FC<RecipeHeaderProps> = ({ recipe, userId, slug }) => {
   const [imgError, setImgError] = React.useState(false);
 
@@ -17,7 +21,7 @@ const RecipeHeader: React.FC<RecipeHeaderProps> = ({ recipe, userId, slug }) => 
   let recipeImage =
     !imgError && recipe.image_url
       ? getRecipeImageUrl(recipe.image_url)
-      : "/placeholder.svg";
+      : GARDEN_FALLBACK_IMAGE;
 
   return (
     <Card className="p-0 overflow-hidden bg-white shadow rounded-2xl mb-8">
