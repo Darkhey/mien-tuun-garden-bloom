@@ -1,5 +1,7 @@
 
-// ⚠️ FULLY SIMULATED DATA SERVICE - Replace with real analytics API
+// ⚠️ PARTIALLY SIMULATED DATA SERVICE - Uses edge functions when available
+
+import { blogAnalyticsService, BlogPostInfo, TrendKeyword } from "./BlogAnalyticsService";
 
 export interface ContentInsight {
   id: string;
@@ -128,43 +130,20 @@ export class ContentInsightsService {
   }
 
   async getTrendingTopics(): Promise<TrendingTopic[]> {
-    console.log('[ContentInsights] ⚠️ SIMULATED: RETURNING TRENDING TOPICS');
-    
-    // ⚠️ SIMULATED: Hardcoded trending topics
-    return [
-      {
-        id: '1',
-        topic: 'Wintergemüse anbauen',
-        searchVolume: 1200,
-        growth: 45,
-        difficulty: 3,
-        relevanceScore: 92
-      },
-      {
-        id: '2',
-        topic: 'Kompost selber machen',
-        searchVolume: 980,
-        growth: 32,
-        difficulty: 2,
-        relevanceScore: 88
-      },
-      {
-        id: '3',
-        topic: 'Balkon Garten Winter',
-        searchVolume: 750,
-        growth: 67,
-        difficulty: 4,
-        relevanceScore: 85
-      },
-      {
-        id: '4',
-        topic: 'Kräuter konservieren',
-        searchVolume: 650,
-        growth: 28,
-        difficulty: 2,
-        relevanceScore: 81
-      }
-    ];
+    try {
+      const trends = await blogAnalyticsService.fetchCurrentTrends();
+      return trends.map((t, idx) => ({
+        id: `trend-${idx}`,
+        topic: t.keyword,
+        searchVolume: Math.round(t.relevance * 1000),
+        growth: Math.round(t.relevance * 100),
+        difficulty: Math.floor(Math.random() * 5) + 1,
+        relevanceScore: Math.round(t.relevance * 100)
+      }));
+    } catch (error) {
+      console.error('[ContentInsights] Error fetching trending topics:', error);
+      return [];
+    }
   }
 
   async fetchInsights(): Promise<{
@@ -172,24 +151,51 @@ export class ContentInsightsService {
     suggestions: ContentSuggestion[];
     scheduled: ScheduledPost[];
   }> {
-    console.log('[ContentInsights] ⚠️ SIMULATED: FETCHING INSIGHTS');
-    
-    return {
-      categoryStats: [
-        { category: 'Gartentipps', count: 45, engagement: 78, performance: 85 },
-        { category: 'Pflanzen', count: 32, engagement: 65, performance: 72 },
-        { category: 'Kochen', count: 28, engagement: 82, performance: 90 }
-      ],
-      suggestions: [
-        { topic: 'Wintergemüse Anbau', category: 'Gartentipps', reason: 'Saisonaler Trend', priority: 'high' },
-        { topic: 'Indoor Kräutergarten', category: 'Kräuter', reason: 'Steigende Nachfrage', priority: 'medium' },
-        { topic: 'Nachhaltiges Gärtnern', category: 'Nachhaltigkeit', reason: 'Umweltbewusstsein', priority: 'high' }
-      ],
-      scheduled: [
-        { title: 'Herbstpflanzen Guide', date: new Date().toISOString(), status: 'geplant', category: 'Gartentipps' },
-        { title: 'Kompost-Tutorial', date: new Date(Date.now() + 86400000).toISOString(), status: 'bereit', category: 'Kompostierung' }
-      ]
-    };
+    try {
+      const posts = await blogAnalyticsService.fetchBlogPosts();
+      const trends = await blogAnalyticsService.fetchCurrentTrends();
+
+      const categoryStats = this.computeCategoryStats(posts);
+      const suggestions = this.generateSuggestions(trends, posts, [], categoryStats);
+
+      return {
+        categoryStats,
+        suggestions,
+        scheduled: []
+      };
+    } catch (error) {
+      console.error('[ContentInsights] Error fetching insights:', error);
+      return { categoryStats: [], suggestions: [], scheduled: [] };
+    }
+  }
+
+  private computeCategoryStats(blogPosts: BlogPostInfo[], recipes: BlogPostInfo[] = []): CategoryStat[] {
+    const map: Record<string, CategoryStat> = {};
+    for (const post of [...blogPosts, ...recipes]) {
+      const cat = (post as any).category || 'Sonstiges';
+      if (!map[cat]) {
+        map[cat] = { category: cat, count: 0, engagement: 0, performance: 0 };
+      }
+      map[cat].count += 1;
+    }
+    return Object.values(map);
+  }
+
+  private generateSuggestions(
+    trends: TrendKeyword[],
+    blogPosts: BlogPostInfo[],
+    recipes: BlogPostInfo[] = [],
+    stats: CategoryStat[]
+  ): ContentSuggestion[] {
+    const existing = stats.map(s => s.category.toLowerCase());
+    return trends
+      .filter(t => !existing.includes(t.category.toLowerCase()))
+      .map(t => ({
+        topic: t.keyword,
+        category: t.category,
+        reason: 'Trend deckt Kategorie kaum ab',
+        priority: 'high'
+      }));
   }
 
   async analyzeContentPerformance(contentId: string): Promise<any> {
