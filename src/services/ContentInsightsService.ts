@@ -1,4 +1,4 @@
-// Content insights service that fetches and analyzes real data from Supabase
+// Content insights service that fetches and analyzes real data from Supabase and OpenAI
 
 import { blogAnalyticsService, BlogPostInfo, TrendKeyword } from "./BlogAnalyticsService";
 import { cronJobService, ScheduledTask } from "./CronJobService";
@@ -59,130 +59,236 @@ interface AutoBlogPostPayload {
 }
 
 export class ContentInsightsService {
-  async getContentInsights(): Promise<ContentInsight[]> {
-    console.log('[ContentInsights] Fetching insights from database');
+  private insightsCache: Map<string, { data: any; timestamp: number }> = new Map();
+  private readonly CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
-    const { data: posts, error } = await supabase
-      .from('blog_posts')
-      .select('id, category, created_at, published, published_at, engagement_score, quality_score');
-    if (error) {
-      console.error('[ContentInsights] Error loading blog posts:', error.message);
-      return [];
-    }
-
+  private async getCachedOrFetch<T>(key: string, fetchFn: () => Promise<T>): Promise<T> {
+    const cached = this.insightsCache.get(key);
     const now = Date.now();
-    const last30 = posts.filter(p =>
-      p.created_at && new Date(p.created_at).getTime() > now - 30 * 24 * 60 * 60 * 1000
-    );
-    const prev30 = posts.filter(p =>
-      p.created_at &&
-      new Date(p.created_at).getTime() <= now - 30 * 24 * 60 * 60 * 1000 &&
-      new Date(p.created_at).getTime() > now - 60 * 24 * 60 * 60 * 1000
-    );
+    
+    if (cached && (now - cached.timestamp) < this.CACHE_DURATION) {
+      return cached.data;
+    }
+    
+    const data = await fetchFn();
+    this.insightsCache.set(key, { data, timestamp: now });
+    return data;
+  }
 
-    const growth = prev30.length > 0 ? ((last30.length - prev30.length) / prev30.length) * 100 : 0;
-    const avgEngagement = posts.reduce((sum, p) => sum + (p.engagement_score || 0), 0) / (posts.length || 1);
-    const avgQuality = posts.reduce((sum, p) => sum + (p.quality_score || 0), 0) / (posts.length || 1);
-    const publishRate = (posts.filter(p => p.published).length / (posts.length || 1)) * 100;
+  async getContentInsights(): Promise<ContentInsight[]> {
+    console.log('[ContentInsights] Fetching AI-powered insights from database');
 
-    return [
-      {
-        id: 'traffic',
-        title: 'Neue Artikel (30 Tage)',
-        description: 'Anzahl neuer Artikel im letzten Monat',
-        metric: last30.length,
-        change: parseFloat(growth.toFixed(1)),
-        type: growth >= 0 ? 'positive' : 'negative',
-        category: 'performance'
-      },
-      {
-        id: 'engagement',
-        title: 'Durchschnittlicher Engagement-Score',
-        description: 'Gemittelter Engagement-Score aller Artikel',
-        metric: parseFloat(avgEngagement.toFixed(1)),
-        change: 0,
-        type: 'neutral',
-        category: 'engagement'
-      },
-      {
-        id: 'quality',
-        title: 'Durchschnittlicher Qualitäts-Score',
-        description: 'Qualitätsbewertung der veröffentlichten Inhalte',
-        metric: parseFloat(avgQuality.toFixed(1)),
-        change: 0,
-        type: 'neutral',
-        category: 'seo'
-      },
-      {
-        id: 'publish-rate',
-        title: 'Veröffentlichungsquote',
-        description: 'Prozentualer Anteil veröffentlichter Artikel',
-        metric: parseFloat(publishRate.toFixed(1)),
-        change: 0,
-        type: 'neutral',
-        category: 'content'
+    return this.getCachedOrFetch('content-insights', async () => {
+      const { data: posts, error } = await supabase
+        .from('blog_posts')
+        .select('id, category, created_at, published, published_at, engagement_score, quality_score');
+      
+      if (error) {
+        console.error('[ContentInsights] Error loading blog posts:', error.message);
+        return [];
       }
-    ];
+
+      // Get AI-powered insights
+      const aiInsights = await this.getAIContentInsights(posts);
+      
+      const now = Date.now();
+      const last30 = posts.filter(p =>
+        p.created_at && new Date(p.created_at).getTime() > now - 30 * 24 * 60 * 60 * 1000
+      );
+      const prev30 = posts.filter(p =>
+        p.created_at &&
+        new Date(p.created_at).getTime() <= now - 30 * 24 * 60 * 60 * 1000 &&
+        new Date(p.created_at).getTime() > now - 60 * 24 * 60 * 60 * 1000
+      );
+
+      const growth = prev30.length > 0 ? ((last30.length - prev30.length) / prev30.length) * 100 : 0;
+      const avgEngagement = posts.reduce((sum, p) => sum + (p.engagement_score || 0), 0) / (posts.length || 1);
+      const avgQuality = posts.reduce((sum, p) => sum + (p.quality_score || 0), 0) / (posts.length || 1);
+      const publishRate = (posts.filter(p => p.published).length / (posts.length || 1)) * 100;
+
+      return [
+        {
+          id: 'traffic',
+          title: 'Neue Artikel (30 Tage)',
+          description: 'Anzahl neuer Artikel im letzten Monat',
+          metric: last30.length,
+          change: parseFloat(growth.toFixed(1)),
+          type: growth >= 0 ? 'positive' : 'negative',
+          category: 'performance'
+        },
+        {
+          id: 'engagement',
+          title: 'Durchschnittlicher Engagement-Score',
+          description: 'AI-bewerteter Engagement-Score aller Artikel',
+          metric: parseFloat(avgEngagement.toFixed(1)),
+          change: aiInsights?.engagementTrend || 0,
+          type: aiInsights?.engagementTrend >= 0 ? 'positive' : 'negative',
+          category: 'engagement'
+        },
+        {
+          id: 'quality',
+          title: 'Durchschnittlicher Qualitäts-Score',
+          description: 'AI-analysierte Qualitätsbewertung der Inhalte',
+          metric: parseFloat(avgQuality.toFixed(1)),
+          change: aiInsights?.qualityTrend || 0,
+          type: aiInsights?.qualityTrend >= 0 ? 'positive' : 'negative',
+          category: 'seo'
+        },
+        {
+          id: 'publish-rate',
+          title: 'Veröffentlichungsquote',
+          description: 'Prozentualer Anteil veröffentlichter Artikel',
+          metric: parseFloat(publishRate.toFixed(1)),
+          change: 0,
+          type: 'neutral',
+          category: 'content'
+        }
+      ];
+    });
+  }
+
+  private async getAIContentInsights(posts: any[]): Promise<any> {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-content-insights', {
+        body: { 
+          action: 'generate_insights',
+          data: posts.slice(0, 10) // Send recent posts for analysis
+        }
+      });
+
+      if (error) {
+        console.warn('[ContentInsights] AI insights failed, using fallback:', error);
+        return { engagementTrend: 0, qualityTrend: 0 };
+      }
+
+      return data.insights || { engagementTrend: 0, qualityTrend: 0 };
+    } catch (error) {
+      console.warn('[ContentInsights] AI insights error:', error);
+      return { engagementTrend: 0, qualityTrend: 0 };
+    }
   }
 
   async getContentRecommendations(): Promise<ContentRecommendation[]> {
-    console.log('[ContentInsights] Generating content recommendations');
+    console.log('[ContentInsights] Generating AI-powered content recommendations');
 
-    try {
-      const [trends, posts] = await Promise.all([
-        blogAnalyticsService.fetchCurrentTrends(),
-        blogAnalyticsService.fetchBlogPosts()
-      ]);
+    return this.getCachedOrFetch('content-recommendations', async () => {
+      try {
+        // Get AI-powered trend predictions
+        const { data: trendsData, error } = await supabase.functions.invoke('ai-content-insights', {
+          body: { action: 'predict_trends' }
+        });
 
-      const existing = new Set<string>();
-      for (const p of posts) {
-        if (p.tags) {
-          for (const tag of p.tags) {
-            existing.add(tag.toLowerCase());
+        if (error) throw error;
+
+        const trends = trendsData.trends?.emergingTrends || [];
+        const posts = await blogAnalyticsService.fetchBlogPosts();
+        
+        const existing = new Set<string>();
+        for (const p of posts) {
+          if (p.tags) {
+            for (const tag of p.tags) {
+              existing.add(tag.toLowerCase());
+            }
+          }
+          if (p.seo_keywords) {
+            for (const keyword of p.seo_keywords) {
+              existing.add(keyword.toLowerCase());
+            }
           }
         }
-        if (p.seo_keywords) {
-          for (const keyword of p.seo_keywords) {
-            existing.add(keyword.toLowerCase());
+
+        return trends
+          .filter((t: any) => !existing.has(t.trend.toLowerCase()))
+          .slice(0, 6)
+          .map((t: any, idx: number) => ({
+            id: `ai-rec-${idx}`,
+            title: `Artikel über ${t.trend}`,
+            description: `AI-identifizierter Trend: "${t.description}"`,
+            priority: t.potential > 80 ? 'high' : t.potential > 60 ? 'medium' : 'low',
+            category: 'AI-Trends',
+            estimatedImpact: `${Math.round(t.potential)}% Potential`
+          }));
+      } catch (error) {
+        console.error('[ContentInsights] Error generating AI recommendations:', error);
+        
+        // Fallback to traditional method
+        const [trends, posts] = await Promise.all([
+          blogAnalyticsService.fetchCurrentTrends(),
+          blogAnalyticsService.fetchBlogPosts()
+        ]);
+
+        const existing = new Set<string>();
+        for (const p of posts) {
+          if (p.tags) {
+            for (const tag of p.tags) {
+              existing.add(tag.toLowerCase());
+            }
+          }
+          if (p.seo_keywords) {
+            for (const keyword of p.seo_keywords) {
+              existing.add(keyword.toLowerCase());
+            }
           }
         }
+
+        return trends
+          .filter(t => !existing.has(t.keyword.toLowerCase()))
+          .slice(0, 5)
+          .map((t, idx) => ({
+            id: `rec-${idx}`,
+            title: `Artikel über ${t.keyword}`,
+            description: `Trendthema "${t.keyword}" in Kategorie ${t.category}`,
+            priority: t.relevance > 0.8 ? 'high' : t.relevance > 0.5 ? 'medium' : 'low',
+            category: t.category,
+            estimatedImpact: `${Math.round(t.relevance * 100)}% Traffic`
+          }));
       }
-
-      return trends
-        .filter(t => !existing.has(t.keyword.toLowerCase()))
-        .slice(0, 5)
-        .map((t, idx) => ({
-          id: `rec-${idx}`,
-          title: `Artikel über ${t.keyword}`,
-          description: `Trendthema "${t.keyword}" in Kategorie ${t.category}`,
-          priority: t.relevance > 0.8 ? 'high' : t.relevance > 0.5 ? 'medium' : 'low',
-          category: t.category,
-          estimatedImpact: `${Math.round(t.relevance * 100)}% Traffic`
-        }));
-    } catch (error) {
-      console.error('[ContentInsights] Error generating recommendations:', error);
-      return [];
-    }
+    });
   }
 
   async getTrendingTopics(): Promise<TrendingTopic[]> {
-    try {
-      const [trends, posts] = await Promise.all([
-        blogAnalyticsService.fetchCurrentTrends(),
-        blogAnalyticsService.fetchBlogPosts()
-      ]);
-      return trends.map((t, idx) => ({
-        id: `trend-${idx}`,
-        topic: t.keyword,
-        searchVolume: Math.round(t.relevance * 1000),
-        growth: Math.round(t.relevance * 100),
-        difficulty: this.calculateDifficulty(t.keyword, t.category, posts),
-        relevanceScore: Math.round(t.relevance * 100)
-      }));
-    } catch (error) {
-      console.error('[ContentInsights] Error fetching trending topics:', error);
-      return [];
-    }
+    return this.getCachedOrFetch('trending-topics', async () => {
+      try {
+        // Get AI-powered trend analysis
+        const { data: trendsData, error } = await supabase.functions.invoke('ai-content-insights', {
+          body: { action: 'predict_trends' }
+        });
+
+        if (!error && trendsData?.trends?.emergingTrends) {
+          const posts = await blogAnalyticsService.fetchBlogPosts();
+          
+          return trendsData.trends.emergingTrends.map((t: any, idx: number) => ({
+            id: `ai-trend-${idx}`,
+            topic: t.trend,
+            searchVolume: Math.round(t.potential * 10), // Convert potential to search volume estimate
+            growth: Math.round(t.potential),
+            difficulty: this.calculateDifficulty(t.trend, 'AI-Trend', posts),
+            relevanceScore: Math.round(t.potential)
+          }));
+        }
+      } catch (error) {
+        console.warn('[ContentInsights] AI trends failed, using fallback:', error);
+      }
+
+      // Fallback to existing method
+      try {
+        const [trends, posts] = await Promise.all([
+          blogAnalyticsService.fetchCurrentTrends(),
+          blogAnalyticsService.fetchBlogPosts()
+        ]);
+        return trends.map((t, idx) => ({
+          id: `trend-${idx}`,
+          topic: t.keyword,
+          searchVolume: Math.round(t.relevance * 1000),
+          growth: Math.round(t.relevance * 100),
+          difficulty: this.calculateDifficulty(t.keyword, t.category, posts),
+          relevanceScore: Math.round(t.relevance * 100)
+        }));
+      } catch (error) {
+        console.error('[ContentInsights] Error fetching trending topics:', error);
+        return [];
+      }
+    });
   }
 
   async fetchInsights(): Promise<{
@@ -312,11 +418,11 @@ export class ContentInsightsService {
   }
 
   async analyzeContentPerformance(contentId: string): Promise<any> {
-    console.log('[ContentInsights] Analyzing performance for:', contentId);
+    console.log('[ContentInsights] AI-analyzing performance for:', contentId);
 
     const { data: post, error } = await supabase
       .from('blog_posts')
-      .select('id, slug, engagement_score, reading_time')
+      .select('*')
       .or(`id.eq.${contentId},slug.eq.${contentId}`)
       .single();
 
@@ -325,6 +431,58 @@ export class ContentInsightsService {
       return null;
     }
 
+    try {
+      // Get AI-powered performance analysis
+      const { data: analysisData, error: aiError } = await supabase.functions.invoke('ai-content-insights', {
+        body: { 
+          action: 'analyze_performance',
+          data: {
+            title: post.title,
+            content: post.content,
+            category: post.category,
+            tags: post.tags,
+            seoKeywords: post.seo_keywords
+          }
+        }
+      });
+
+      if (!aiError && analysisData?.analysis) {
+        const analysis = analysisData.analysis;
+        
+        const { count: commentCount } = await supabase
+          .from('blog_comments')
+          .select('*', { count: 'exact', head: true })
+          .eq('blog_slug', post.slug);
+
+        const { data: ratings } = await supabase
+          .from('blog_ratings')
+          .select('rating')
+          .eq('blog_slug', post.slug);
+
+        const ratingAvg = ratings && ratings.length > 0 
+          ? ratings.reduce((s, r) => s + r.rating, 0) / ratings.length 
+          : 0;
+
+        return {
+          views: analysis.estimatedViews || post.engagement_score || 0,
+          engagement: analysis.engagementPrediction || ratingAvg * 20 || 0,
+          shares: Math.round((analysis.engagementPrediction || 50) / 10),
+          comments: commentCount || 0,
+          timeOnPage: (post.reading_time || 3) * 60,
+          bounceRate: Math.max(0, 100 - (analysis.engagementPrediction || 70)),
+          aiInsights: {
+            performanceScore: analysis.performanceScore,
+            seoOptimization: analysis.seoOptimization,
+            recommendations: analysis.recommendations,
+            competitiveness: analysis.competitiveness
+          }
+        };
+      }
+    } catch (error) {
+      console.warn('[ContentInsights] AI analysis failed, using basic metrics:', error);
+    }
+
+    // Fallback to basic analysis
     const { count: commentCount } = await supabase
       .from('blog_comments')
       .select('*', { count: 'exact', head: true })
@@ -350,8 +508,25 @@ export class ContentInsightsService {
   }
 
   async predictContentSuccess(contentData: any): Promise<number> {
-    console.log('[ContentInsights] Predicting content success for:', contentData.title);
+    console.log('[ContentInsights] AI-predicting content success for:', contentData.title);
 
+    try {
+      // Use AI for prediction
+      const { data: analysisData, error } = await supabase.functions.invoke('ai-content-insights', {
+        body: { 
+          action: 'analyze_performance',
+          data: contentData
+        }
+      });
+
+      if (!error && analysisData?.analysis?.performanceScore) {
+        return Math.min(100, Math.max(0, analysisData.analysis.performanceScore));
+      }
+    } catch (error) {
+      console.warn('[ContentInsights] AI prediction failed, using heuristic:', error);
+    }
+
+    // Fallback to heuristic method
     let score = 50;
 
     if (contentData.title && contentData.title.length > 10) score += 10;
@@ -359,12 +534,35 @@ export class ContentInsightsService {
     if (contentData.category === 'Kräuter') score += 10;
     if (contentData.tags && contentData.tags.length > 2) score += 5;
 
-    // Bewertung vorhandener Qualitäts- und Engagementdaten
-    // Scale weights to leave room for other bonuses (max 25 points from these scores)
     if (typeof contentData.quality_score === 'number') score += contentData.quality_score * 0.15;
     if (typeof contentData.engagement_score === 'number') score += contentData.engagement_score * 0.10;
 
     return Math.min(100, Math.max(0, Math.round(score)));
+  }
+
+  async optimizeContent(contentData: any): Promise<any> {
+    console.log('[ContentInsights] Getting AI optimization suggestions for:', contentData.title);
+
+    try {
+      const { data: optimizationData, error } = await supabase.functions.invoke('ai-content-insights', {
+        body: { 
+          action: 'optimize_content',
+          data: contentData
+        }
+      });
+
+      if (error) throw error;
+
+      return optimizationData.optimization;
+    } catch (error) {
+      console.error('[ContentInsights] Content optimization failed:', error);
+      throw new Error(`Content-Optimierung fehlgeschlagen: ${error.message}`);
+    }
+  }
+
+  clearCache(): void {
+    this.insightsCache.clear();
+    console.log('[ContentInsights] Cache cleared');
   }
 }
 
