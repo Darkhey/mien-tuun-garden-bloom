@@ -1,10 +1,18 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Zap, Settings, Activity } from "lucide-react";
 import AutomationDashboard from "../AutomationDashboard";
+import { adminStatsService } from "@/services/AdminStatsService";
 
 const AutomatisierungView: React.FC = () => {
+  const [stats, setStats] = useState({ active: 0, today: 0, success: 0 });
+
+  useEffect(() => {
+    adminStatsService.getAutomationStats().then(res => {
+      setStats({ active: res.activeWorkflows, today: res.executionsToday, success: res.successRate });
+    });
+  }, []);
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -24,7 +32,7 @@ const AutomatisierungView: React.FC = () => {
               <Activity className="h-5 w-5 text-green-600" />
               <div>
                 <p className="text-sm text-gray-600">Aktive Workflows</p>
-                <p className="text-lg font-semibold">6</p>
+                <p className="text-lg font-semibold">{stats.active}</p>
               </div>
             </div>
           </CardContent>
@@ -36,7 +44,7 @@ const AutomatisierungView: React.FC = () => {
               <Zap className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="text-sm text-gray-600">Ausführungen heute</p>
-                <p className="text-lg font-semibold">142</p>
+                <p className="text-lg font-semibold">{stats.today}</p>
               </div>
             </div>
           </CardContent>
@@ -48,7 +56,7 @@ const AutomatisierungView: React.FC = () => {
               <Settings className="h-5 w-5 text-purple-600" />
               <div>
                 <p className="text-sm text-gray-600">Erfolgsrate</p>
-                <p className="text-lg font-semibold">98.5%</p>
+                <p className="text-lg font-semibold">{stats.success}%</p>
               </div>
             </div>
           </CardContent>

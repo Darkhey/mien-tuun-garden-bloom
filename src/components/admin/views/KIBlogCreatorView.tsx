@@ -1,10 +1,29 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bot, PenTool, Sparkles } from "lucide-react";
 import KIBlogCreator from "../KIBlogCreator";
+import { adminStatsService } from "@/services/AdminStatsService";
 
 const KIBlogCreatorView: React.FC = () => {
+  const [todayCount, setTodayCount] = useState(0);
+  const [avgScore, setAvgScore] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      setLoading(true);
+      const [count, score] = await Promise.all([
+        adminStatsService.getTodayBlogPostCount(),
+        adminStatsService.getAverageBlogQualityScore()
+      ]);
+      setTodayCount(count);
+      setAvgScore(score);
+      setLoading(false);
+    };
+
+    loadStats();
+  }, []);
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -24,7 +43,9 @@ const KIBlogCreatorView: React.FC = () => {
               <PenTool className="h-5 w-5 text-green-600" />
               <div>
                 <p className="text-sm text-gray-600">Erstellt heute</p>
-                <p className="text-lg font-semibold">8 Artikel</p>
+                <p className="text-lg font-semibold">
+                  {loading ? '...' : `${todayCount} Artikel`}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -36,7 +57,9 @@ const KIBlogCreatorView: React.FC = () => {
               <Sparkles className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="text-sm text-gray-600">SEO-Score</p>
-                <p className="text-lg font-semibold">92%</p>
+                <p className="text-lg font-semibold">
+                  {loading ? '...' : `${Math.round(avgScore)}%`}
+                </p>
               </div>
             </div>
           </CardContent>
