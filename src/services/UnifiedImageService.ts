@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { extractTagsFromText } from '@/utils/tagExtractor';
 
 export interface UnsplashImage {
   id: string;
@@ -63,9 +64,10 @@ class UnifiedImageService {
     title: string;
     content?: string;
     category?: string;
+    tags?: string[];
     preferredSource?: 'ai' | 'unsplash' | 'fallback';
   }): Promise<string> {
-    const { title, content, category, preferredSource = 'unsplash' } = options;
+    const { title, content, category, tags, preferredSource = 'unsplash' } = options;
 
     try {
       // Priority 1: Check if AI-generated image exists
@@ -77,7 +79,7 @@ class UnifiedImageService {
       // Priority 2: Get from Unsplash (secure)
       if (preferredSource === 'unsplash' || preferredSource === 'ai') {
         try {
-          const searchQuery = this.buildSearchQuery(title, content, category);
+          const searchQuery = this.buildSearchQuery(title, content, category, tags);
           const unsplashImage = await this.searchUnsplashSecure(searchQuery);
           if (unsplashImage) {
             return unsplashImage.urls.regular;
@@ -163,8 +165,12 @@ class UnifiedImageService {
   /**
    * Build search query from content
    */
-  private buildSearchQuery(title: string, content?: string, category?: string): string {
+  private buildSearchQuery(title: string, content?: string, category?: string, tags?: string[]): string {
     const keywords: string[] = [];
+
+    if (tags && tags.length) {
+      keywords.push(...tags.slice(0, 2));
+    }
     
     // Add category
     if (category) {
@@ -181,19 +187,22 @@ class UnifiedImageService {
     if (content) {
       const gardenKeywords = ['garten', 'pflanzen', 'blumen', 'gemüse', 'kräuter'];
       const kitchenKeywords = ['kochen', 'rezept', 'küche', 'essen', 'zubereitung'];
-      
+
       const contentLower = content.toLowerCase();
       const matchingGarden = gardenKeywords.find(kw => contentLower.includes(kw));
       const matchingKitchen = kitchenKeywords.find(kw => contentLower.includes(kw));
-      
+
       if (matchingGarden) {
         keywords.push('garden');
       } else if (matchingKitchen) {
         keywords.push('cooking');
+      } else if (!tags || tags.length === 0) {
+        const extracted = extractTagsFromText(content, 2);
+        keywords.push(...extracted);
       }
     }
     
-    return keywords.slice(0, 3).join(' ') || 'nature';
+    return Array.from(new Set(keywords)).slice(0, 3).join(' ') || 'nature';
   }
 
   /**

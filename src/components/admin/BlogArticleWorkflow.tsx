@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { generateUniqueSlug, sanitizeContent, validateBlogPostData } from "@/utils/slugHelpers";
 import { getBlogPostImage } from "@/utils/unsplashService";
+import { extractTagsFromText } from "@/utils/tagExtractor";
 
 interface BlogArticleWorkflowProps {
   suggestionSelections: string[];
@@ -69,6 +70,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       // Sichere Content-Sanitization
       const sanitizedContent = sanitizeContent(content);
       const sanitizedTitle = title.replace(/<[^>]*>/g, ''); // HTML-Tags aus Titel entfernen
+      const finalTags = tags.length ? tags : extractTagsFromText(sanitizedContent, 5);
 
       // Generiere einen eindeutigen Slug
       const slug = await generateUniqueSlug(sanitizedTitle || suggestion);
@@ -87,7 +89,12 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
       if (!featuredImageUrl) {
         try {
           setDebugLogs(prev => [...prev, `[SAVE] Suche passendes Bild für "${sanitizedTitle}"`]);
-          const unsplashImage = await getBlogPostImage(sanitizedTitle, sanitizedContent, category);
+          const unsplashImage = await getBlogPostImage(
+            sanitizedTitle,
+            sanitizedContent,
+            category,
+            finalTags
+          );
           if (unsplashImage) {
             featuredImageUrl = unsplashImage.urls.regular;
             setDebugLogs(prev => [...prev, `[SAVE] Passendes Bild gefunden: ${featuredImageUrl}`]);
@@ -107,7 +114,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
         description: excerpt || sanitizedContent.slice(0, 300).replace(/<[^>]*>/g, ''),
         category: category || "Allgemein",
         season: season || "ganzjährig",
-        tags: tags.length ? tags : [],
+        tags: finalTags,
         content_types: contentType.length ? contentType : ["blog"],
         audiences: audiences.length ? audiences : ["anfaenger"],
         featured_image: featuredImageUrl || "",
@@ -115,7 +122,7 @@ const BlogArticleWorkflow: React.FC<BlogArticleWorkflowProps> = ({
         original_title: sanitizedTitle || suggestion,
         seo_description: excerpt || sanitizedContent.slice(0, 156).replace(/<[^>]*>/g, ''),
         seo_title: sanitizedTitle || suggestion,
-        seo_keywords: tags.length ? tags : [],
+        seo_keywords: finalTags,
         published: false,
         featured: quality?.score > 90,
         reading_time: Math.ceil(sanitizedContent.split(/\s+/).length / 160),
