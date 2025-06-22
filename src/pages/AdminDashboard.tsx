@@ -87,13 +87,13 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex gap-6 py-6">
-          <div className="w-64 flex-shrink-0">
+        <div className="flex flex-col md:flex-row gap-6 py-6">
+          <div className="w-full md:w-64 flex-shrink-0">
             <AdminSidebar activeView={activeView} setActiveView={setActiveView} />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 overflow-x-auto md:overflow-visible">
             {renderView()}
           </div>
         </div>
