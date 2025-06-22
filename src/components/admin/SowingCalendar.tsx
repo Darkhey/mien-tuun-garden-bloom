@@ -23,7 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Enhanced sowing data with more plants and detailed information
-const SOWING_DATA = [
+export const SOWING_DATA = [
   {
     plant: "Radieschen",
     type: "Gemüse",
