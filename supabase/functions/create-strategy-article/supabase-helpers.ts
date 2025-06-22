@@ -1,10 +1,15 @@
-
 // Helper für Supabase-Operationen beim Auto-Blog-Post
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.5";
 
 /**
- * Stellt fest, ob ein Slug oder Titel bereits in der kompletten History vorhanden ist.
- * Optionale fuzzy Logik: auch Titel-Ähnlichkeit ab 85% als Duplikat zählen.
+ * Determines whether a given slug or title already exists in the blog topic history.
+ *
+ * Checks for duplicates by comparing the base slug (without numeric suffixes) and performing exact and fuzzy (≥85% similarity) title matching.
+ *
+ * @param slug - The slug to check for duplication
+ * @param title - The title to check for duplication
+ * @returns `true` if a duplicate slug or title is found; otherwise, `false`
+ * @throws If there is an error fetching the topic history from the database
  */
 export async function isDuplicate(supabase: SupabaseClient, slug: string, title: string) {
   // Prüfe Slug
@@ -39,14 +44,27 @@ export async function isDuplicate(supabase: SupabaseClient, slug: string, title:
   return found;
 }
 
-// Normalisiert Zeichen für Fuzzy-Vergleich
+/**
+ * Normalizes a string for fuzzy comparison by converting to lowercase, replacing German umlauts and ß with ASCII equivalents, removing non-alphanumeric characters, and trimming whitespace.
+ *
+ * @param str - The input string to normalize
+ * @returns The normalized string suitable for fuzzy matching
+ */
 function normalize(str: string) {
   return str.toLowerCase().replace(/[äöüß]/g, c =>
     ({'ä':'ae','ö':'oe','ü':'ue','ß':'ss'}[c]||c)
   ).replace(/[^a-z0-9]/g,'').trim();
 }
 
-// Vollständige Levenshtein-Distanz
+/**
+ * Calculates the Levenshtein distance between two strings.
+ *
+ * The Levenshtein distance is the minimum number of single-character edits (insertions, deletions, or substitutions) required to change one string into the other.
+ *
+ * @param a - The first string to compare
+ * @param b - The second string to compare
+ * @returns The Levenshtein distance between `a` and `b`
+ */
 function levenshtein(a: string, b: string) {
   const matrix: number[][] = [];
   const alen = a.length;
@@ -75,6 +93,13 @@ function levenshtein(a: string, b: string) {
   return matrix[blen][alen];
 }
 
+/**
+ * Checks if a topic idea contains any blacklisted terms from the blog topic blacklist.
+ *
+ * @param topicIdea - The topic idea to check against the blacklist
+ * @returns True if the topic idea contains a blacklisted term; otherwise, false
+ * @throws If there is an error loading the blacklist from the database
+ */
 export async function checkBlacklist(supabase: SupabaseClient, topicIdea: string) {
     const { data: blacklist, error: blacklistError } = await supabase
       .from("blog_topic_blacklist")
@@ -100,6 +125,14 @@ export async function saveBlogPost(supabase: SupabaseClient, postData: any) {
     }
 }
 
+/**
+ * Uploads a base64-encoded PNG image to the Supabase storage bucket and returns its public URL.
+ *
+ * @param imageB64 - The base64-encoded PNG image data
+ * @param fileName - The desired file name for the uploaded image
+ * @returns The public URL of the uploaded image
+ * @throws If the upload fails or the public URL cannot be retrieved
+ */
 export async function uploadImageToSupabase({ supabase, imageB64, fileName }: { supabase: SupabaseClient, imageB64: string, fileName: string }) {
   const binary = Uint8Array.from(atob(imageB64), c => c.charCodeAt(0));
   const { error } = await supabase

@@ -1,4 +1,3 @@
-
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 const OPENAI_ADMIN_KEY = Deno.env.get("OPENAI_ADMIN_KEY");
 
@@ -13,6 +12,17 @@ const getOpenAIKey = (requireAdmin = false) => {
   return OPENAI_ADMIN_KEY || OPENAI_API_KEY;
 };
 
+/**
+ * Generates a hyperrealistic garden or kitchen image based on the specified theme, category, season, and trend.
+ *
+ * @param theme - The central theme for the image
+ * @param category - The category context (e.g., garden, kitchen)
+ * @param season - The relevant season for the image
+ * @param trend - The current trend to incorporate
+ * @returns The base64-encoded PNG image data
+ *
+ * @throws If the OpenAI API key is missing or if the image generation request fails
+ */
 export async function generateImage({ theme, category, season, trend }: { theme: string, category: string, season: string, trend: string }) {
   const apiKey = getOpenAIKey(true); // Use admin key for image generation
   
