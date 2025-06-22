@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Tag } from "lucide-react";
-import { getRandomUnsplashImage } from '@/utils/unsplashService';
+import { unifiedImageService } from '@/services/UnifiedImageService';
 
 type BlogPost = {
   id: string;
@@ -29,7 +28,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   const [fallbackImage, setFallbackImage] = useState<string | null>(null);
 
   useEffect(() => {
-    // If the image source is empty or invalid, try to get a fallback from Unsplash
+    // If the image source is empty or invalid, try to get a fallback from the unified service
     if (!post.featuredImage || post.featuredImage === '/placeholder.svg' || post.featuredImage.trim() === '') {
       fetchFallbackImage();
     }
@@ -37,23 +36,21 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
 
   const fetchFallbackImage = async () => {
     try {
-      // Use the category and title to find a relevant image
-      const searchQuery = post.category || post.title || 'garden nature';
-      const image = await getRandomUnsplashImage(searchQuery);
-      
-      if (image) {
-        setFallbackImage(image.urls.regular);
-      }
+      const imageUrl = await unifiedImageService.getImageForContent({
+        title: post.title,
+        category: post.category,
+        preferredSource: 'unsplash'
+      });
+      setFallbackImage(imageUrl);
     } catch (error) {
       console.warn('Error fetching fallback image for card:', error);
-      // Use garden fallback if Unsplash fails
-      setFallbackImage(GARDEN_FALLBACK_IMAGE);
+      setFallbackImage(unifiedImageService.getFallbackImage(post.category));
     }
   };
 
   const getImageUrl = (imagePath: string): string => {
     if (!imagePath || imagePath.trim() === '' || imagePath === '/placeholder.svg') {
-      return fallbackImage || GARDEN_FALLBACK_IMAGE;
+      return fallbackImage || unifiedImageService.getFallbackImage(post.category);
     }
     
     // If it's already a full URL, use it directly
@@ -68,22 +65,30 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   const handleImageError = () => {
     setImgError(true);
     if (!fallbackImage) {
-      setFallbackImage(GARDEN_FALLBACK_IMAGE);
+      setFallbackImage(unifiedImageService.getFallbackImage(post.category));
     }
   };
 
   const imageSource = imgError 
-    ? (fallbackImage || GARDEN_FALLBACK_IMAGE) 
+    ? (fallbackImage || unifiedImageService.getFallbackImage(post.category))
     : getImageUrl(post.featuredImage);
+
+  // Optimize the image URL
+  const optimizedImageSource = unifiedImageService.optimizeUnsplashUrl(imageSource, {
+    width: 800,
+    height: 400,
+    quality: 80
+  });
 
   return (
     <article className="bg-white rounded-2xl shadow group hover:shadow-lg transition-all duration-200 overflow-hidden h-full flex flex-col">
       <Link to={`/blog/${post.slug}`} className="block overflow-hidden">
         <img 
-          src={imageSource} 
+          src={optimizedImageSource} 
           alt={post.title} 
           className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105" 
           onError={handleImageError}
+          loading="lazy"
         />
       </Link>
       <div className="p-5 flex-1 flex flex-col">

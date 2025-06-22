@@ -1,3 +1,5 @@
+
+// Updated to use unified fallback system
 export function getUnsplashFallback(category: string): string {
   const images: Record<string, string[]> = {
     garden: [
@@ -10,6 +12,10 @@ export function getUnsplashFallback(category: string): string {
       "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=600&fit=crop",
       "https://images.unsplash.com/photo-1586093728648-04db0bd4c827?w=1200&h=600&fit=crop"
     ],
+    food: [
+      "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&h=600&fit=crop",
+      "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200&h=600&fit=crop"
+    ],
     default: [
       "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200&h=600&fit=crop",
       "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&h=600&fit=crop"
@@ -17,6 +23,16 @@ export function getUnsplashFallback(category: string): string {
   };
 
   const key = category?.toLowerCase() || "default";
-  const list = images[key] || images.default;
+  
+  // Map German categories to English keys
+  const categoryMap: Record<string, string> = {
+    'garten': 'garden',
+    'kochen': 'kitchen',
+    'küche': 'kitchen',
+    'essen': 'food'
+  };
+  
+  const mappedKey = categoryMap[key] || key;
+  const list = images[mappedKey] || images.default;
   return list[Math.floor(Math.random() * list.length)];
 }

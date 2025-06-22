@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getRandomUnsplashImage } from '@/utils/unsplashService';
+import { unifiedImageService } from '@/services/UnifiedImageService';
 
 type BlogPostImageProps = {
   src: string;
@@ -7,38 +7,39 @@ type BlogPostImageProps = {
   category?: string;
 };
 
-// Universal garden fallback image
-const GARDEN_FALLBACK_IMAGE = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
-
 const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => {
   const [imgError, setImgError] = useState(false);
   const [fallbackImage, setFallbackImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // If the image source is empty or invalid, try to get a fallback from Unsplash
+    // If the image source is empty or invalid, try to get a better image
     if (!src || src === '/placeholder.svg' || src.trim() === '') {
-      fetchFallbackImage();
+      fetchBetterImage();
     }
-  }, [src, category]);
+  }, [src, category, alt]);
 
-  const fetchFallbackImage = async () => {
+  const fetchBetterImage = async () => {
+    setIsLoading(true);
     try {
-      // Use the category and alt text to find a relevant image
-      const searchQuery = category || alt || 'garden nature';
-      const image = await getRandomUnsplashImage(searchQuery);
-      
-      if (image) {
-        setFallbackImage(image.urls.regular);
-      }
+      const imageUrl = await unifiedImageService.getImageForContent({
+        title: alt,
+        category,
+        preferredSource: 'unsplash'
+      });
+      setFallbackImage(imageUrl);
     } catch (error) {
-      console.warn('Error fetching fallback image:', error);
-      // Use garden fallback if Unsplash fails
-      setFallbackImage(GARDEN_FALLBACK_IMAGE);
+      console.warn('Error fetching better image:', error);
+      setFallbackImage(unifiedImageService.getFallbackImage(category));
+    } finally {
+      setIsLoading(false);
     }
   };
 
   function getImageUrl(imagePath: string): string {
-    if (!imagePath || imagePath.trim() === '') return fallbackImage || GARDEN_FALLBACK_IMAGE;
+    if (!imagePath || imagePath.trim() === '') {
+      return fallbackImage || unifiedImageService.getFallbackImage(category);
+    }
     
     // If it's already a full URL, use it directly
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
@@ -47,7 +48,7 @@ const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => 
     
     // If it's a placeholder, use fallback
     if (imagePath === '/placeholder.svg' || imagePath === 'placeholder.svg') {
-      return fallbackImage || GARDEN_FALLBACK_IMAGE;
+      return fallbackImage || unifiedImageService.getFallbackImage(category);
     }
     
     // Otherwise, assume it's a path in the Supabase storage
@@ -58,23 +59,36 @@ const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => 
   const handleImageError = () => {
     setImgError(true);
     if (!fallbackImage) {
-      setFallbackImage(GARDEN_FALLBACK_IMAGE);
+      setFallbackImage(unifiedImageService.getFallbackImage(category));
     }
   };
 
   const imageSource = imgError 
-    ? (fallbackImage || GARDEN_FALLBACK_IMAGE) 
+    ? (fallbackImage || unifiedImageService.getFallbackImage(category))
     : getImageUrl(src);
+
+  // Optimize Unsplash URLs
+  const optimizedImageSource = unifiedImageService.optimizeUnsplashUrl(imageSource, {
+    width: 1200,
+    height: 400,
+    quality: 85
+  });
 
   return (
     <div className="mb-12 relative">
+      {isLoading && (
+        <div className="absolute inset-0 bg-earth-100 animate-pulse flex items-center justify-center rounded-xl">
+          <div className="w-8 h-8 border-2 border-sage-200 border-t-sage-600 rounded-full animate-spin"></div>
+        </div>
+      )}
       <img
-        src={imageSource}
+        src={optimizedImageSource}
         alt={alt}
         className="w-full h-96 object-cover rounded-xl shadow-lg"
         onError={handleImageError}
+        loading="lazy"
       />
-      {imageSource.includes('unsplash.com') && (
+      {optimizedImageSource.includes('unsplash.com') && (
         <div className="absolute bottom-2 right-2 text-xs text-white bg-black/50 px-2 py-1 rounded">
           Photo by Unsplash
         </div>
