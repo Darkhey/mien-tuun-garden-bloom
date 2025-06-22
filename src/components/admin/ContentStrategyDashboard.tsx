@@ -11,6 +11,13 @@ import { contentInsightsService, CategoryStat, ContentSuggestion, ScheduledPost 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface StrategyArticleResponse {
+  success: boolean;
+  error?: string;
+  missingEnv?: string[];
+  slug?: string;
+}
+
 const ContentStrategyDashboard: React.FC = () => {
   const [strategies, setStrategies] = useState<ContentStrategy[]>([]);
   const [calendar, setCalendar] = useState<ContentCalendarEntry[]>([]);
@@ -64,9 +71,10 @@ const ContentStrategyDashboard: React.FC = () => {
     try {
       console.log(`[StrategyDashboard] Erstelle Artikel für: ${topic}`);
       
-      const { data, error } = await supabase.functions.invoke('create-strategy-article', {
-        body: { topic, category, season, urgency }
-      });
+      const { data, error } = await supabase.functions
+        .invoke<StrategyArticleResponse>('create-strategy-article', {
+          body: { topic, category, season, urgency },
+        });
 
       if (error) {
         console.error("[StrategyDashboard] Supabase function error:", error);
@@ -78,6 +86,11 @@ const ContentStrategyDashboard: React.FC = () => {
       }
 
       if (!data.success) {
+        if (Array.isArray(data.missingEnv)) {
+          throw new Error(
+            `Server-Konfiguration fehlt: ${data.missingEnv.join(', ')}`
+          );
+        }
         throw new Error(data.error || "Artikel konnte nicht erstellt werden");
       }
 
@@ -101,6 +114,8 @@ const ContentStrategyDashboard: React.FC = () => {
         errorMessage = "OpenAI API-Schlüssel nicht konfiguriert. Bitte kontaktieren Sie den Administrator.";
       } else if (error.message?.includes("Edge Function")) {
         errorMessage = "Edge Function Fehler. Bitte versuchen Sie es später erneut.";
+      } else if (error.message?.includes("Server-Konfiguration fehlt")) {
+        errorMessage = error.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
