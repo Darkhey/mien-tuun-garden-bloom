@@ -39,6 +39,7 @@ Alle benötigten Variablen werden über eine `.env`-Datei bereitgestellt. Eine V
 
 ```
 VITE_SUPABASE_URL=<Deine Supabase URL>
+UNSPLASH_ACCESS=<Dein Unsplash Access Key>
 VITE_SUPABASE_ANON_KEY=<Dein Supabase Anon Key>
 ```
 
