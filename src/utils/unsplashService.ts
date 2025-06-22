@@ -1,4 +1,3 @@
-
 import { unifiedImageService, type UnsplashImage } from '@/services/UnifiedImageService';
 
 // Re-export types for backward compatibility
@@ -27,8 +26,14 @@ export async function getRandomUnsplashImage(query: string): Promise<UnsplashIma
 }
 
 /**
- * @deprecated Use unifiedImageService.getImageForContent() instead
- * Get a relevant image for a blog post based on its content
+ * Retrieves a relevant Unsplash image for a blog post based on its title, content, optional category, and tags.
+ *
+ * @deprecated Use unifiedImageService.getImageForContent() instead.
+ * @param title - The blog post title used to determine image relevance.
+ * @param content - The blog post content used for image selection.
+ * @param category - Optional category to refine image selection.
+ * @param tags - Optional list of tags to further guide image retrieval.
+ * @returns A mock UnsplashImage object containing the selected image URL and metadata, or null if no image is found.
  */
 export async function getBlogPostImage(
   title: string,
