@@ -7,14 +7,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const UNSPLASH_ACCESS_KEY = Deno.env.get("UNSPLASH_ACCESS");
+const UNSPLASH_ACCESS =
+  Deno.env.get("UNSPLASH_ACCESS") || Deno.env.get("UNSPLASH_ACCESS_KEY");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  if (!UNSPLASH_ACCESS_KEY) {
+  if (!UNSPLASH_ACCESS) {
     return new Response(
       JSON.stringify({ error: "Unsplash API key not configured" }),
       { 
@@ -46,7 +47,7 @@ serve(async (req) => {
 
     const response = await fetch(searchUrl.toString(), {
       headers: {
-        "Authorization": `Client-ID ${UNSPLASH_ACCESS_KEY}`,
+        "Authorization": `Client-ID ${UNSPLASH_ACCESS}`,
         "Accept-Version": "v1",
       },
     });

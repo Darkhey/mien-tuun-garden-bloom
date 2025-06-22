@@ -33,7 +33,8 @@ export async function getRandomUnsplashImage(query: string): Promise<UnsplashIma
 export async function getBlogPostImage(
   title: string,
   content: string,
-  category?: string
+  category?: string,
+  tags?: string[]
 ): Promise<UnsplashImage | null> {
   console.warn('getBlogPostImage is deprecated. Use unifiedImageService.getImageForContent() instead.');
   
@@ -42,6 +43,7 @@ export async function getBlogPostImage(
       title,
       content,
       category,
+      tags,
       preferredSource: 'unsplash'
     });
     

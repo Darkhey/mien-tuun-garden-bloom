@@ -154,10 +154,11 @@ const BlogPostPage = () => {
           readingTime={post.readingTime}
           tags={post.tags}
         />
-        <BlogPostImage 
-          src={post.featuredImage} 
-          alt={post.title} 
+        <BlogPostImage
+          src={post.featuredImage}
+          alt={post.title}
           category={post.category}
+          tags={post.tags}
         />
         <BlogPostContent content={post.content} />
         <BlogPostToRecipeSection post={{
