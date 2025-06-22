@@ -39,6 +39,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
       const imageUrl = await unifiedImageService.getImageForContent({
         title: post.title,
         category: post.category,
+        tags: post.tags,
         preferredSource: 'unsplash'
       });
       setFallbackImage(imageUrl);

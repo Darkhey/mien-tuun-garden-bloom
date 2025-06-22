@@ -5,9 +5,10 @@ type BlogPostImageProps = {
   src: string;
   alt: string;
   category?: string;
+  tags?: string[];
 };
 
-const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => {
+const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category, tags }) => {
   const [imgError, setImgError] = useState(false);
   const [fallbackImage, setFallbackImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +18,7 @@ const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => 
     if (!src || src === '/placeholder.svg' || src.trim() === '') {
       fetchBetterImage();
     }
-  }, [src, category, alt]);
+  }, [src, category, alt, tags]);
 
   const fetchBetterImage = async () => {
     setIsLoading(true);
@@ -25,6 +26,7 @@ const BlogPostImage: React.FC<BlogPostImageProps> = ({ src, alt, category }) => 
       const imageUrl = await unifiedImageService.getImageForContent({
         title: alt,
         category,
+        tags,
         preferredSource: 'unsplash'
       });
       setFallbackImage(imageUrl);
