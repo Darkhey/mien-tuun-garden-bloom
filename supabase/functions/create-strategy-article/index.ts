@@ -5,6 +5,7 @@ import { buildMariannePrompt } from "./marianne-style.ts";
 import { generateSlug, getRandom } from "./helpers.ts";
 import { generateImage, generateArticle } from "./openai.ts";
 import { uploadImageToSupabase, saveBlogPost } from "./supabase-helpers.ts";
+import { getUnsplashFallback } from "../_shared/unsplash_fallbacks.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -88,7 +89,7 @@ serve(async (req) => {
     }
 
     // KI-Bild generieren (mit Fallback)
-    let featured_image = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&h=600&fit=crop";
+    let featured_image = getUnsplashFallback(category || "");
     try {
       const imageB64 = await generateImage({ 
         theme: topic, 
