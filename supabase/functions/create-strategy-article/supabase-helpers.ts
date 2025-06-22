@@ -25,11 +25,14 @@ export async function isDuplicate(supabase: SupabaseClient, slug: string, title:
   if (!found && title) {
     found = histSlugs?.some((t: any) => t.title.trim().toLowerCase() === title.trim().toLowerCase());
   }
-  // Fuzzy Title Check (min 85% Ähnlichkeit, einfachster Ansatz: Levenshtein)
+  // Fuzzy Title Check (min 85% Ähnlichkeit)
   if (!found && title) {
     found = histSlugs?.some((t: any) => {
       const a = normalize(title), b = normalize(t.title || "");
-      return a.length > 4 && b.length > 4 && levenshtein(a, b) / Math.max(a.length, b.length) > 0.85;
+      if (a.length <= 4 || b.length <= 4) return false;
+      const distance = levenshtein(a, b);
+      const similarity = 1 - distance / Math.max(a.length, b.length);
+      return similarity > 0.85;
     });
   }
 
@@ -43,12 +46,33 @@ function normalize(str: string) {
   ).replace(/[^a-z0-9]/g,'').trim();
 }
 
-// Einfache Levenshtein-Distanz (liefert Zahl der gleichen Zeichen am ANFANG)
+// Vollständige Levenshtein-Distanz
 function levenshtein(a: string, b: string) {
-  let i = 0;
-  const max = Math.min(a.length, b.length);
-  while (i < max && a[i] === b[i]) i++;
-  return i;
+  const matrix: number[][] = [];
+  const alen = a.length;
+  const blen = b.length;
+
+  for (let i = 0; i <= blen; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 1; j <= alen; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= blen; i++) {
+    for (let j = 1; j <= alen; j++) {
+      if (b[i - 1] === a[j - 1]) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + 1
+        );
+      }
+    }
+  }
+  return matrix[blen][alen];
 }
 
 export async function checkBlacklist(supabase: SupabaseClient, topicIdea: string) {
@@ -57,7 +81,7 @@ export async function checkBlacklist(supabase: SupabaseClient, topicIdea: string
       .select("topic");
     if (blacklistError) {
       console.error("Fehler beim Laden der Blacklist:", blacklistError.message);
-      return false;
+      throw new Error(`Fehler beim Laden der Blacklist: ${blacklistError.message}`);
     }
     if (blacklist?.length) {
       const isBlacklisted = blacklist.some((item: any) =>
@@ -92,6 +116,9 @@ export async function uploadImageToSupabase({ supabase, imageB64, fileName }: { 
     .from("blog-images")
     .getPublicUrl(fileName);
 
+  if (!data || !data.publicUrl) {
+    throw new Error("Fehler beim Abrufen der Bild-URL");
+  }
   return data.publicUrl;
 }
 
