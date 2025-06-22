@@ -156,6 +156,7 @@ export async function analyzeContentPerformance(content: string, metadata: any) 
       },
       body: JSON.stringify({
         model: "gpt-4o",
+        response_format: { type: "json_object" },
         messages: [
           { 
             role: "system", 
