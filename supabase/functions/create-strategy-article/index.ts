@@ -10,6 +10,22 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
+function validateEnv() {
+  const missing: string[] = [];
+  if (!SUPABASE_URL) missing.push("SUPABASE_URL");
+  if (!SERVICE_ROLE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+  if (!OPENAI_API_KEY) missing.push("OPENAI_API_KEY");
+  if (missing.length) {
+    const msg = `Fehlende Umgebungsvariablen: ${missing.join(", ")}`;
+    console.error("[create-strategy-article] " + msg);
+    return new Response(
+      JSON.stringify({ success: false, error: msg, missingEnv: missing }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+  return null;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -23,16 +39,10 @@ serve(async (req) => {
   try {
     console.log("[create-strategy-article] Function started");
 
-    // Check environment variables
-    if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
-      throw new Error("Supabase Konfiguration fehlt (URL oder Service Role Key)");
-    }
+    const envErrResponse = validateEnv();
+    if (envErrResponse) return envErrResponse;
 
-    if (!OPENAI_API_KEY) {
-      throw new Error("OpenAI API-Schlüssel nicht konfiguriert. Bitte kontaktieren Sie den Administrator.");
-    }
-
-    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const supabase = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
     
     let requestBody;
     try {
