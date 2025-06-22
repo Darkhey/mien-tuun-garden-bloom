@@ -6,6 +6,7 @@ import { CATEGORIES, SEASONS, AUTHORS, TAGS, corsHeaders } from "./constants.ts"
 import { generateSlug, getRandom } from "./helpers.ts";
 import { generateImage, generateTopicIdea, generateArticle } from "./openai.ts";
 import { uploadImageToSupabase, checkBlacklist, isDuplicate, saveBlogPost, logTopicAttempt } from "./supabase-helpers.ts";
+import { getUnsplashFallback } from "../_shared/unsplash_fallbacks.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -83,7 +84,7 @@ serve(async (req) => {
     const seoKeywords = [topicIdea, category, season, trend];
 
     // 6. KI-generiertes Bild erzeugen & hochladen
-    let featured_image = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&h=600&fit=crop"; // Fallback
+    let featured_image = getUnsplashFallback(category || "");
     try {
       const imageB64 = await generateImage({ theme: topicIdea, category, season, trend });
       const fileName = `${slug}-${now.getTime()}.png`;
