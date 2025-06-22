@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const UNSPLASH_ACCESS_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY");
+const UNSPLASH_ACCESS_KEY = Deno.env.get("UNSPLASH_ACCESS");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
