@@ -2,9 +2,12 @@
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 const OPENAI_ADMIN_KEY = Deno.env.get("OPENAI_ADMIN_KEY");
 
-// Use admin key for enhanced capabilities, fallback to regular key
+// Use admin key for enhanced capabilities, enforce when required
 const getOpenAIKey = (requireAdmin = false) => {
-  if (requireAdmin && OPENAI_ADMIN_KEY) {
+  if (requireAdmin) {
+    if (!OPENAI_ADMIN_KEY) {
+      throw new Error("OPENAI_ADMIN_KEY not configured");
+    }
     return OPENAI_ADMIN_KEY;
   }
   return OPENAI_ADMIN_KEY || OPENAI_API_KEY;
@@ -27,13 +30,12 @@ export async function generateImage({ theme, category, season, trend }: { theme:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-image-1", // Use the latest image model
+        model: "dall-e-3",
         prompt: basePrompt,
         n: 1,
         size: "1024x1024",
         response_format: "b64_json",
         quality: "high", // Enhanced quality with admin key
-        output_format: "png",
       }),
     });
 

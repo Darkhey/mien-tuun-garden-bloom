@@ -12,6 +12,9 @@ export function generateSlug(title: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-export function getRandom(arr: any[]) {
+export function getRandom<T>(arr: T[]): T {
+  if (!Array.isArray(arr) || arr.length === 0) {
+    throw new Error("getRandom requires a non-empty array");
+  }
   return arr[Math.floor(Math.random() * arr.length)];
 }
