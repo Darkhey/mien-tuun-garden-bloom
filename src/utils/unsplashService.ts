@@ -174,88 +174,146 @@ function extractKeywords(title: string, content: string, category?: string): str
  * Fallback images when Unsplash API is not available
  */
 function getFallbackImages(query: string): UnsplashImage[] {
-  // Map of categories to fallback images
-  const fallbackImageMap: Record<string, UnsplashImage> = {
-    garden: {
-      id: 'garden-fallback',
-      urls: {
-        raw: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b',
-        full: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200',
-        regular: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800',
-        small: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400',
-        thumb: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200',
+  // Map of categories to arrays of fallback images
+  const fallbackImageMap: Record<string, UnsplashImage[]> = {
+    garden: [
+      {
+        id: 'garden-1',
+        urls: {
+          raw: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
+          full: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200',
+          regular: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800',
+          small: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400',
+          thumb: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=200',
+        },
+        alt_description: 'Lush garden scenery',
+        description: 'Blooming garden with flowers',
+        user: { name: 'Unsplash', username: 'unsplash' },
       },
-      alt_description: 'Garden with flowers and plants',
-      description: 'Beautiful garden with various plants and flowers',
-      user: {
-        name: 'Unsplash',
-        username: 'unsplash',
+      {
+        id: 'garden-2',
+        urls: {
+          raw: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b',
+          full: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1200',
+          regular: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800',
+          small: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400',
+          thumb: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=200',
+        },
+        alt_description: 'Garden with flowers and plants',
+        description: 'Beautiful garden with various plants and flowers',
+        user: { name: 'Unsplash', username: 'unsplash' },
       },
-    },
-    kitchen: {
-      id: 'kitchen-fallback',
-      urls: {
-        raw: 'https://images.unsplash.com/photo-1556911220-bff31c812dba',
-        full: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=1200',
-        regular: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800',
-        small: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=400',
-        thumb: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=200',
+      {
+        id: 'garden-3',
+        urls: {
+          raw: 'https://images.unsplash.com/photo-1501854140801-50d01698950b',
+          full: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200',
+          regular: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800',
+          small: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400',
+          thumb: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=200',
+        },
+        alt_description: 'Nature landscape with mountains and forest',
+        description: 'Beautiful nature landscape with mountains and forest',
+        user: { name: 'Unsplash', username: 'unsplash' },
       },
-      alt_description: 'Kitchen with cooking ingredients',
-      description: 'Modern kitchen with fresh cooking ingredients',
-      user: {
-        name: 'Unsplash',
-        username: 'unsplash',
+    ],
+    kitchen: [
+      {
+        id: 'kitchen-1',
+        urls: {
+          raw: 'https://images.unsplash.com/photo-1556911220-bff31c812dba',
+          full: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=1200',
+          regular: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=800',
+          small: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=400',
+          thumb: 'https://images.unsplash.com/photo-1556911220-bff31c812dba?w=200',
+        },
+        alt_description: 'Kitchen with cooking ingredients',
+        description: 'Modern kitchen with fresh cooking ingredients',
+        user: { name: 'Unsplash', username: 'unsplash' },
       },
-    },
-    nature: {
-      id: 'nature-fallback',
-      urls: {
-        raw: 'https://images.unsplash.com/photo-1501854140801-50d01698950b',
-        full: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1200',
-        regular: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800',
-        small: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=400',
-        thumb: 'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=200',
+      {
+        id: 'kitchen-2',
+        urls: {
+          raw: 'https://images.unsplash.com/photo-1542838132-92c53300491e',
+          full: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200',
+          regular: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800',
+          small: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400',
+          thumb: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200',
+        },
+        alt_description: 'Fresh food ingredients',
+        description: 'Fresh and healthy food ingredients',
+        user: { name: 'Unsplash', username: 'unsplash' },
       },
-      alt_description: 'Nature landscape with mountains and forest',
-      description: 'Beautiful nature landscape with mountains and forest',
-      user: {
-        name: 'Unsplash',
-        username: 'unsplash',
+      {
+        id: 'kitchen-3',
+        urls: {
+          raw: 'https://images.unsplash.com/photo-1586093728648-04db0bd4c827',
+          full: 'https://images.unsplash.com/photo-1586093728648-04db0bd4c827?w=1200',
+          regular: 'https://images.unsplash.com/photo-1586093728648-04db0bd4c827?w=800',
+          small: 'https://images.unsplash.com/photo-1586093728648-04db0bd4c827?w=400',
+          thumb: 'https://images.unsplash.com/photo-1586093728648-04db0bd4c827?w=200',
+        },
+        alt_description: 'Cooking preparation scene',
+        description: 'Ingredients being prepared in the kitchen',
+        user: { name: 'Unsplash', username: 'unsplash' },
       },
-    },
-    food: {
-      id: 'food-fallback',
-      urls: {
-        raw: 'https://images.unsplash.com/photo-1542838132-92c53300491e',
-        full: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200',
-        regular: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800',
-        small: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400',
-        thumb: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200',
+    ],
+    food: [
+      {
+        id: 'food-1',
+        urls: {
+          raw: 'https://images.unsplash.com/photo-1542838132-92c53300491e',
+          full: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200',
+          regular: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800',
+          small: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400',
+          thumb: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200',
+        },
+        alt_description: 'Fresh food ingredients',
+        description: 'Fresh and healthy food ingredients',
+        user: { name: 'Unsplash', username: 'unsplash' },
       },
-      alt_description: 'Fresh food ingredients',
-      description: 'Fresh and healthy food ingredients',
-      user: {
-        name: 'Unsplash',
-        username: 'unsplash',
+      {
+        id: 'food-2',
+        urls: {
+          raw: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43',
+          full: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200',
+          regular: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800',
+          small: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400',
+          thumb: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200',
+        },
+        alt_description: 'Assorted vegetables on table',
+        description: 'Variety of fresh vegetables ready to cook',
+        user: { name: 'Unsplash', username: 'unsplash' },
       },
-    },
-    default: {
-      id: 'default-fallback',
-      urls: {
-        raw: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43',
-        full: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200',
-        regular: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800',
-        small: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400',
-        thumb: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200',
+    ],
+    default: [
+      {
+        id: 'default-1',
+        urls: {
+          raw: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43',
+          full: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200',
+          regular: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800',
+          small: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400',
+          thumb: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=200',
+        },
+        alt_description: 'Generic nature scene',
+        description: 'Generic nature scene',
+        user: { name: 'Unsplash', username: 'unsplash' },
       },
-      alt_description: 'Generic nature scene',
-      description: 'Generic nature scene',
-      user: {
-        name: 'Unsplash',
-        username: 'unsplash',
+      {
+        id: 'default-2',
+        urls: {
+          raw: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
+          full: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200',
+          regular: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800',
+          small: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400',
+          thumb: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=200',
+        },
+        alt_description: 'Lush garden scenery',
+        description: 'Blooming garden with flowers',
+        user: { name: 'Unsplash', username: 'unsplash' },
       },
-    },
+    ],
   };
 
   // Determine which fallback to use based on query
@@ -272,7 +330,9 @@ function getFallbackImages(query: string): UnsplashImage[] {
     fallbackKey = 'food';
   }
 
-  return [fallbackImageMap[fallbackKey]];
+  const list = fallbackImageMap[fallbackKey] || fallbackImageMap['default'];
+  const image = list[Math.floor(Math.random() * list.length)];
+  return [image];
 }
 
 export default {
