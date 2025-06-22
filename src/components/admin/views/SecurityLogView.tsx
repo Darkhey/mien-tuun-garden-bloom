@@ -1,10 +1,16 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, AlertTriangle, CheckCircle } from "lucide-react";
 import SecurityAuditLog from "../SecurityAuditLog";
+import { adminStatsService } from "@/services/AdminStatsService";
 
 const SecurityLogView: React.FC = () => {
+  const [warningsToday, setWarningsToday] = useState(0);
+
+  useEffect(() => {
+    adminStatsService.getTodaySecurityWarningCount().then(setWarningsToday);
+  }, []);
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -36,7 +42,7 @@ const SecurityLogView: React.FC = () => {
               <AlertTriangle className="h-5 w-5 text-yellow-600" />
               <div>
                 <p className="text-sm text-gray-600">Warnungen heute</p>
-                <p className="text-lg font-semibold">0</p>
+                <p className="text-lg font-semibold">{warningsToday}</p>
               </div>
             </div>
           </CardContent>

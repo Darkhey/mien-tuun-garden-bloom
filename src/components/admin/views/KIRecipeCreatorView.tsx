@@ -1,10 +1,29 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bot, ChefHat, Sparkles } from "lucide-react";
 import KIRecipeCreator from "../KIRecipeCreator";
+import { adminStatsService } from "@/services/AdminStatsService";
 
 const KIRecipeCreatorView: React.FC = () => {
+  const [todayCount, setTodayCount] = useState(0);
+  const [avgRating, setAvgRating] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      setLoading(true);
+      const [count, rating] = await Promise.all([
+        adminStatsService.getTodayRecipeCount(),
+        adminStatsService.getAverageRecipeRating()
+      ]);
+      setTodayCount(count);
+      setAvgRating(rating);
+      setLoading(false);
+    };
+
+    loadStats();
+  }, []);
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -24,7 +43,9 @@ const KIRecipeCreatorView: React.FC = () => {
               <ChefHat className="h-5 w-5 text-green-600" />
               <div>
                 <p className="text-sm text-gray-600">Erstellt heute</p>
-                <p className="text-lg font-semibold">12 Rezepte</p>
+                <p className="text-lg font-semibold">
+                  {loading ? '...' : `${todayCount} Rezepte`}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -36,7 +57,9 @@ const KIRecipeCreatorView: React.FC = () => {
               <Sparkles className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="text-sm text-gray-600">Qualitätsscore</p>
-                <p className="text-lg font-semibold">94%</p>
+                <p className="text-lg font-semibold">
+                  {loading ? '...' : `${Math.round(avgRating * 20)}%`}
+                </p>
               </div>
             </div>
           </CardContent>
