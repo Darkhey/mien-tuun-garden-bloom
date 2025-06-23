@@ -77,32 +77,63 @@ serve(async (req) => {
 
     console.log('Starting Instagram Business API calls...');
 
-    // Get Instagram Business Account ID
-    console.log('Fetching Instagram Business Account ID...');
-    const accountResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?fields=instagram_business_account&access_token=${instagramAccessToken}`
+    // Step 1: Debug - Test token validity first
+    console.log('Testing token validity...');
+    const tokenTestResponse = await fetch(
+      `https://graph.facebook.com/v18.0/me?access_token=${instagramAccessToken}`
+    );
+    
+    if (!tokenTestResponse.ok) {
+      const errorText = await tokenTestResponse.text();
+      console.error('Token test failed:', tokenTestResponse.status, errorText);
+      throw new Error(`Token ist ungültig: ${tokenTestResponse.status} - ${errorText}`);
+    }
+    
+    const tokenData = await tokenTestResponse.json();
+    console.log('Token test successful. User/Page:', tokenData);
+
+    // Step 2: Get all pages managed by this token
+    console.log('Fetching all managed pages...');
+    const pagesResponse = await fetch(
+      `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,instagram_business_account&access_token=${instagramAccessToken}`
     );
 
-    if (!accountResponse.ok) {
-      const errorText = await accountResponse.text();
-      console.error('Account fetch error:', accountResponse.status, errorText);
-      throw new Error(`Fehler beim Abrufen des Instagram Business Accounts: ${accountResponse.status} - ${errorText}`);
+    if (!pagesResponse.ok) {
+      const errorText = await pagesResponse.text();
+      console.error('Pages fetch error:', pagesResponse.status, errorText);
+      throw new Error(`Fehler beim Abrufen der Facebook Pages: ${pagesResponse.status} - ${errorText}`);
     }
 
-    const accountData = await accountResponse.json();
-    console.log('Account response:', accountData);
+    const pagesData = await pagesResponse.json();
+    console.log('Pages response:', JSON.stringify(pagesData, null, 2));
 
     // Find the Instagram Business Account
-    const instagramAccount = accountData.data?.find((page: any) => page.instagram_business_account)?.instagram_business_account;
+    if (!pagesData.data || pagesData.data.length === 0) {
+      throw new Error('Keine Facebook Pages gefunden. Stelle sicher, dass der Token für eine Facebook Page generiert wurde.');
+    }
+
+    let instagramAccount = null;
+    let pageName = '';
+    
+    for (const page of pagesData.data) {
+      console.log(`Checking page: ${page.name} (ID: ${page.id})`);
+      if (page.instagram_business_account) {
+        instagramAccount = page.instagram_business_account;
+        pageName = page.name;
+        console.log(`Found Instagram Business Account on page "${pageName}":`, instagramAccount);
+        break;
+      }
+    }
     
     if (!instagramAccount) {
-      throw new Error('Kein Instagram Business Account gefunden. Stelle sicher, dass dein Instagram Account mit einer Facebook Page verknüpft ist.');
+      const availablePages = pagesData.data.map(p => `"${p.name}" (${p.id})`).join(', ');
+      throw new Error(`Kein Instagram Business Account gefunden. Verfügbare Facebook Pages: ${availablePages}. Stelle sicher, dass mindestens eine Page mit einem Instagram Business Account verknüpft ist.`);
     }
 
     const instagramAccountId = instagramAccount.id;
-    console.log('Instagram Business Account ID:', instagramAccountId);
+    console.log(`Using Instagram Business Account ID: ${instagramAccountId} from page: ${pageName}`);
 
-    // Step 1: Create media container (for single image post)
+    // Step 3: Create media container (for single image post)
     const mediaUrl = imageUrl || blogPost.featured_image;
     
     if (!mediaUrl) {
@@ -137,7 +168,7 @@ serve(async (req) => {
     const creationId = containerData.id;
     console.log('Media container created:', creationId);
 
-    // Step 2: Publish the media container
+    // Step 4: Publish the media container
     console.log('Publishing media container...');
     const publishResponse = await fetch(
       `https://graph.facebook.com/v18.0/${instagramAccountId}/media_publish`,
