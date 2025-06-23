@@ -41,6 +41,10 @@ Alle benötigten Variablen werden über eine `.env`-Datei bereitgestellt. Eine V
 VITE_SUPABASE_URL=<Deine Supabase URL>
 UNSPLASH_ACCESS=<Dein Unsplash Access Key>
 VITE_SUPABASE_ANON_KEY=<Dein Supabase Anon Key>
+VITE_WEATHER_API_URL=https://api.open-meteo.com/v1/forecast
+VITE_WEATHER_LATITUDE=53.5
+VITE_WEATHER_LONGITUDE=7.1
+VITE_WEATHER_TIMEZONE=Europe/Berlin
 ```
 
 ## Tests
