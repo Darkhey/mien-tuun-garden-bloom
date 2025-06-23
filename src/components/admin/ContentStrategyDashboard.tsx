@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,9 +68,10 @@ const ContentStrategyDashboard: React.FC = () => {
 
   const handleCreateArticle = async (topic: string, category: string, season?: string, urgency?: string) => {
     setCreatingArticle(topic);
+    console.log(`[StrategyDashboard] Starting article creation for: ${topic}`);
     
     try {
-      console.log(`[StrategyDashboard] Erstelle Artikel für: ${topic}`);
+      console.log(`[StrategyDashboard] Calling Supabase function with params:`, { topic, category, season, urgency });
       
       const { data, error } = await supabase.functions
         .invoke<StrategyArticleResponse>('create-strategy-article', {
@@ -82,28 +84,36 @@ const ContentStrategyDashboard: React.FC = () => {
       }
 
       if (!data) {
+        console.error("[StrategyDashboard] No response data received");
         throw new Error("Keine Antwort von der Edge Function erhalten");
       }
 
+      console.log("[StrategyDashboard] Function response:", data);
+
       if (!data.success) {
         if (Array.isArray(data.missingEnv)) {
+          console.error("[StrategyDashboard] Missing environment variables:", data.missingEnv);
           throw new Error(
             `Server-Konfiguration fehlt: ${data.missingEnv.join(', ')}`
           );
         }
+        console.error("[StrategyDashboard] Function returned error:", data.error);
         throw new Error(data.error || "Artikel konnte nicht erstellt werden");
       }
 
+      console.log("[StrategyDashboard] Article created successfully:", data.slug);
+      
       toast({
         title: "Artikel erstellt! 🎉",
         description: `"${topic}" wurde erfolgreich veröffentlicht`,
       });
 
       // Daten neu laden
+      console.log("[StrategyDashboard] Reloading data after article creation");
       await loadStrategicData();
       
     } catch (error: any) {
-      console.error("[StrategyDashboard] Fehler beim Erstellen:", error);
+      console.error("[StrategyDashboard] Error creating article:", error);
       
       // Better error handling with specific messages
       let errorMessage = "Artikel konnte nicht erstellt werden";
@@ -120,12 +130,15 @@ const ContentStrategyDashboard: React.FC = () => {
         errorMessage = error.message;
       }
       
+      console.error("[StrategyDashboard] Final error message:", errorMessage);
+      
       toast({
         title: "Fehler beim Erstellen",
         description: errorMessage,
         variant: "destructive",
       });
     } finally {
+      console.log("[StrategyDashboard] Article creation process finished");
       setCreatingArticle(null);
     }
   };
