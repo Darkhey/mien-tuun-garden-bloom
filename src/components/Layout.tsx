@@ -6,6 +6,7 @@ import Footer from './Footer';
 import GoogleAnalytics from './GoogleAnalytics';
 import AdSenseSlot from "./AdSenseSlot";
 import AdPlaceholder from "./AdPlaceholder";
+import LoggingOverlay from './LoggingOverlay';
 
 // Monetarisierung aus siteConfig
 const analyticsId = "G-ABCDE123456"; // <--- DEINE Google Analytics-ID hier eintragen!
@@ -62,6 +63,7 @@ const Layout: React.FC<LayoutProps> = ({
         </div>
       </main>
       <Footer />
+      <LoggingOverlay />
     </div>
   );
 };
