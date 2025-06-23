@@ -3,12 +3,14 @@ import React from 'react';
 import { useIsMobile } from "@/hooks/use-mobile";
 import MobileLandingPage from "./MobileLandingPage";
 import HeroSection from "@/components/landing/HeroSection";
-import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import PromisesSection from "@/components/landing/PromisesSection";
 import SeasonalTipsSection from "@/components/landing/SeasonalTipsSection";
 import AboutMarianneSection from "@/components/landing/AboutMarianneSection";
 import RecipeSpotlightSection from "@/components/landing/RecipeSpotlightSection";
 import CommunitySection from "@/components/landing/CommunitySection";
+import LatestPostsSection from "@/components/landing/LatestPostsSection";
+import LatestCommentsSection from "@/components/landing/LatestCommentsSection";
+import WeatherForecastSection from "@/components/landing/WeatherForecastSection";
 
 const Index = () => {
   const isMobile = useIsMobile();
@@ -20,7 +22,9 @@ const Index = () => {
   return (
     <div>
       <HeroSection />
-      <TestimonialsSection />
+      <WeatherForecastSection />
+      <LatestPostsSection />
+      <LatestCommentsSection />
       <PromisesSection />
       <SeasonalTipsSection />
       <AboutMarianneSection />
