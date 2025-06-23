@@ -1,31 +1,213 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { fetchRainForecast } from '@/queries/content';
 
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { CloudRain, Sun, CloudDrizzle, MapPin, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { fetchRainForecastWithCoords, fetchRainForecast } from '@/queries/content';
+import { WEATHER_LATITUDE, WEATHER_LONGITUDE, WEATHER_TIMEZONE } from '@/config/weather.config';
 
 const WeatherForecastSection: React.FC = () => {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['rain-forecast'],
-    queryFn: fetchRainForecast,
+  const [locationData, setLocationData] = useState<{
+    lat: number;
+    lon: number;
+    granted: boolean;
+    city?: string;
+  } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+
+  // Query mit dynamischen Koordinaten oder Fallback
+  const { data: precipitation, isLoading, error } = useQuery({
+    queryKey: ['weather-forecast', locationData?.lat, locationData?.lon],
+    queryFn: () => {
+      if (locationData?.granted && locationData.lat && locationData.lon) {
+        return fetchRainForecastWithCoords(locationData.lat, locationData.lon, WEATHER_TIMEZONE);
+      }
+      return fetchRainForecast();
+    },
+    enabled: true,
   });
 
+  const requestLocation = () => {
+    setIsRequestingLocation(true);
+    setLocationError(null);
+
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation wird von diesem Browser nicht unterstützt');
+      setIsRequestingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        
+        // Versuche Stadt zu ermitteln (vereinfacht)
+        try {
+          setLocationData({
+            lat: latitude,
+            lon: longitude,
+            granted: true,
+            city: 'Dein Standort'
+          });
+        } catch {
+          setLocationData({
+            lat: latitude,
+            lon: longitude,
+            granted: true
+          });
+        }
+        setIsRequestingLocation(false);
+      },
+      (error) => {
+        let errorMessage = 'Standort konnte nicht ermittelt werden';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Standortzugriff wurde verweigert';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Standort nicht verfügbar';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Standortabfrage hat zu lange gedauert';
+            break;
+        }
+        setLocationError(errorMessage);
+        setIsRequestingLocation(false);
+      },
+      {
+        timeout: 10000,
+        enableHighAccuracy: false,
+        maximumAge: 300000
+      }
+    );
+  };
+
+  const getWeatherIcon = (precipitation: number | null) => {
+    if (precipitation === null) return <Sun className="w-12 h-12 text-yellow-500" />;
+    if (precipitation > 5) return <CloudRain className="w-12 h-12 text-blue-600" />;
+    if (precipitation > 0) return <CloudDrizzle className="w-12 h-12 text-gray-500" />;
+    return <Sun className="w-12 h-12 text-yellow-500" />;
+  };
+
+  const getWeatherDescription = (precipitation: number | null) => {
+    if (precipitation === null) return 'Wetterdaten werden geladen...';
+    if (precipitation > 5) return 'Regnerisch - perfekt für Zimmerpflanzen!';
+    if (precipitation > 0) return 'Leichter Regen - ideal zum Gießen sparen';
+    return 'Sonnig - Zeit für Gartenarbeit im Freien!';
+  };
+
+  const getActivitySuggestion = (precipitation: number | null) => {
+    if (precipitation === null) return '';
+    if (precipitation > 5) return 'Heute ist ein guter Tag für Zimmerpflanzen-Pflege und Planung des nächsten Gartenprojekts.';
+    if (precipitation > 0) return 'Leichter Regen bedeutet weniger gießen - nutze die Zeit für andere Gartenarbeiten.';
+    return 'Perfektes Wetter für Aussaat, Unkraut jäten oder Ernten im Garten!';
+  };
+
   return (
-    <section className="py-16 px-4 bg-accent-50">
-      <div className="max-w-xl mx-auto text-center">
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-earth-800 mb-4">
-          Wettervorschau
-        </h2>
-        {isLoading ? (
-          <p className="text-sage-600">Lade Wetterdaten...</p>
-        ) : error ? (
-          <p className="text-sage-600">Wetterdaten momentan nicht verfügbar.</p>
-        ) : data !== null ? (
-          <p className="text-earth-700 text-lg">
-            Voraussichtlicher Niederschlag heute: <strong>{data.toFixed(1)} mm</strong>
-          </p>
-        ) : (
-          <p className="text-sage-600">Keine Wetterdaten verfügbar.</p>
-        )}
+    <section className="py-12 px-4 bg-gradient-to-br from-sky-50 to-blue-50">
+      <div className="max-w-4xl mx-auto">
+        <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-2xl md:text-3xl font-serif font-bold text-earth-800 mb-2">
+              🌤️ Dein Gartenwetter heute
+            </CardTitle>
+            <p className="text-sage-600 text-sm">
+              Lass uns wissen, wo du bist, und erhalte passende Gartentipps für dein Wetter
+            </p>
+          </CardHeader>
+          
+          <CardContent className="space-y-6">
+            {/* Standort-Bereich */}
+            {!locationData?.granted && (
+              <div className="text-center space-y-4">
+                <Alert className="border-sage-200 bg-sage-50">
+                  <MapPin className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Möchtest du wissen, was du heute bei diesem Wetter machen kannst?</strong>
+                    <br />
+                    Erlaube uns den Standort und kriege nützliche Tipps und Artikel vorgeschlagen!
+                  </AlertDescription>
+                </Alert>
+                
+                <Button 
+                  onClick={requestLocation}
+                  disabled={isRequestingLocation}
+                  className="bg-sage-600 hover:bg-sage-700 text-white px-6 py-3 rounded-full text-lg font-medium shadow-lg hover:shadow-xl transition-all"
+                >
+                  <MapPin className="w-5 h-5 mr-2" />
+                  {isRequestingLocation ? 'Ermittle Standort...' : 'Standort für lokales Wetter teilen'}
+                </Button>
+                
+                {locationError && (
+                  <Alert className="border-red-200 bg-red-50">
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-700">
+                      {locationError}. Wir zeigen dir das Wetter für Ostfriesland.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+
+            {/* Wetter-Anzeige */}
+            <div className="text-center space-y-4">
+              {locationData?.granted && (
+                <div className="flex items-center justify-center gap-2 text-sage-600 mb-4">
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-sm">{locationData.city || 'Dein Standort'}</span>
+                </div>
+              )}
+
+              <div className="flex justify-center mb-4">
+                {isLoading ? (
+                  <div className="w-12 h-12 border-4 border-sage-200 border-t-sage-600 rounded-full animate-spin" />
+                ) : error ? (
+                  <AlertCircle className="w-12 h-12 text-orange-500" />
+                ) : (
+                  getWeatherIcon(precipitation)
+                )}
+              </div>
+
+              {isLoading ? (
+                <p className="text-sage-600">Lade Wetterdaten...</p>
+              ) : error ? (
+                <div className="space-y-2">
+                  <p className="text-orange-600 font-medium">Wetterdaten momentan nicht verfügbar</p>
+                  <p className="text-sage-600 text-sm">Aber Marianne hat trotzdem tolle Gartentipps für dich!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="bg-gradient-to-r from-sage-100 to-blue-100 rounded-lg p-4">
+                    <p className="text-earth-700 text-lg font-medium mb-1">
+                      {getWeatherDescription(precipitation)}
+                    </p>
+                    {precipitation !== null && (
+                      <p className="text-sage-600 text-sm">
+                        Niederschlag heute: <strong>{precipitation.toFixed(1)} mm</strong>
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="bg-accent-50 rounded-lg p-4 border border-accent-100">
+                    <p className="text-earth-700 font-medium mb-2">🌱 Mariannes Tipp für heute:</p>
+                    <p className="text-sage-700 text-sm">
+                      {getActivitySuggestion(precipitation)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!locationData?.granted && (
+                <p className="text-xs text-sage-500 mt-4">
+                  ✨ Mit deinem Standort können wir dir noch passendere Empfehlungen geben!
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </section>
   );
