@@ -36,14 +36,25 @@ const CATEGORY_MAPPING = {
   'Sonstiges': 'Sonstiges'
 };
 
-// Blog-Posts aus Supabase laden
+// Blog-Posts aus Supabase laden - mit content Feld
 const fetchBlogPosts = async () => {
+  console.log('[BlogOverview] Fetching blog posts with full content...');
   const { data, error } = await supabase
     .from('blog_posts')
-    .select('*')
+    .select('*') // Alle Felder inklusive content
     .eq('published', true) // Nur veröffentlichte Artikel zeigen
     .order('published_at', { ascending: false });
-  if (error) throw error;
+    
+  if (error) {
+    console.error('[BlogOverview] Error fetching blog posts:', error);
+    throw error;
+  }
+  
+  console.log(`[BlogOverview] Fetched ${data?.length || 0} blog posts`);
+  if (data && data.length > 0) {
+    console.log('[BlogOverview] Sample post content length:', data[0].content?.length || 0);
+  }
+  
   return data;
 };
 
@@ -93,10 +104,11 @@ const BlogOverview: React.FC = () => {
         const titleMatch = post.title?.toLowerCase().includes(searchLower);
         const excerptMatch = post.excerpt?.toLowerCase().includes(searchLower);
         const descriptionMatch = post.description?.toLowerCase().includes(searchLower);
+        const contentMatch = post.content?.toLowerCase().includes(searchLower);
         const tagMatch = post.tags?.some(tag => tag.toLowerCase().includes(searchLower));
         const categoryMatch = post.category?.toLowerCase().includes(searchLower);
         
-        if (!titleMatch && !excerptMatch && !descriptionMatch && !tagMatch && !categoryMatch) {
+        if (!titleMatch && !excerptMatch && !descriptionMatch && !contentMatch && !tagMatch && !categoryMatch) {
           return false;
         }
       }
@@ -149,7 +161,7 @@ const BlogOverview: React.FC = () => {
                   slug: post.slug,
                   title: post.title,
                   excerpt: post.excerpt,
-                  content: post.content,
+                  content: post.content || '', // Stelle sicher dass content verfügbar ist
                   author: post.author,
                   userId: post.user_id ?? undefined,
                   publishedAt: post.published_at,

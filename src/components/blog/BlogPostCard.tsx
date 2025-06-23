@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Tag } from "lucide-react";
@@ -8,6 +9,7 @@ type BlogPost = {
   slug: string;
   title: string;
   excerpt: string;
+  content: string;
   featuredImage: string;
   category: string;
   publishedAt: string;
@@ -81,6 +83,30 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
     quality: 80
   });
 
+  // Extract meaningful content preview from the full content
+  const getContentPreview = (content: string, maxLength: number = 150): string => {
+    if (!content || content.trim() === '') {
+      return post.excerpt || 'Inhalt wird geladen...';
+    }
+    
+    // Remove markdown formatting and HTML tags
+    const cleanContent = content
+      .replace(/#{1,6}\s+/g, '') // Remove markdown headers
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+      .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown
+      .replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove markdown links
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/\n\s*\n/g, ' ') // Replace multiple newlines with space
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .trim();
+    
+    if (cleanContent.length <= maxLength) {
+      return cleanContent;
+    }
+    
+    return cleanContent.substring(0, maxLength).trim() + '...';
+  };
+
   return (
     <article className="bg-white rounded-2xl shadow group hover:shadow-lg transition-all duration-200 overflow-hidden h-full flex flex-col">
       <Link to={`/blog/${post.slug}`} className="block overflow-hidden">
@@ -103,15 +129,17 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
         <h3 className="text-xl font-bold mb-2 font-serif">
           <Link to={`/blog/${post.slug}`} className="hover:text-sage-700">{post.title}</Link>
         </h3>
-        <p className="text-earth-600 mb-4 line-clamp-2 flex-grow">{post.excerpt}</p>
-        <div className="flex gap-1 flex-wrap">
+        <p className="text-earth-600 mb-4 line-clamp-3 flex-grow">
+          {getContentPreview(post.content)}
+        </p>
+        <div className="flex gap-1 flex-wrap mb-3">
           {post.tags.slice(0, 3).map((tag) => (
             <span key={tag} className="bg-sage-50 text-sage-700 px-2 py-1 rounded text-xs flex items-center gap-1">
               <Tag className="h-3 w-3" /> {tag}
             </span>
           ))}
         </div>
-        <div className="text-xs text-sage-600 mt-2">von {post.author} · {post.readingTime} min</div>
+        <div className="text-xs text-sage-600 mt-auto">von {post.author} · {post.readingTime} min</div>
       </div>
     </article>
   );
