@@ -26,7 +26,9 @@ const EditableBlogPreview: React.FC<EditableBlogPreviewProps> = ({
     setTempContent(content);
   }, [content]);
 
-  const sections = content.split('\n\n').filter(section => section.trim() !== '');
+  // Wenn Content leer ist, zeige einen Platzhalter
+  const hasContent = content && content.trim() !== '';
+  const sections = hasContent ? content.split('\n\n').filter(section => section.trim() !== '') : [];
 
   const handleSectionEdit = (index: number, newContent: string) => {
     const newSections = [...sections];
@@ -160,7 +162,21 @@ const EditableBlogPreview: React.FC<EditableBlogPreviewProps> = ({
           <p className="text-sm text-gray-600 mb-4">
             Klicken Sie auf einen Abschnitt, um ihn direkt zu bearbeiten, oder verwenden Sie den "Markdown bearbeiten" Button für den vollständigen Editor.
           </p>
-          {sections.map((section, index) => renderEditableSection(section, index))}
+          
+          {!hasContent ? (
+            <div className="p-8 border rounded-lg bg-gray-50 text-center">
+              <p className="text-gray-500 mb-4">Noch kein Inhalt vorhanden</p>
+              <Button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Inhalt hinzufügen
+              </Button>
+            </div>
+          ) : (
+            sections.map((section, index) => renderEditableSection(section, index))
+          )}
         </div>
       </CardContent>
     </Card>

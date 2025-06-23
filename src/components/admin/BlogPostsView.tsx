@@ -157,8 +157,27 @@ const BlogPostsView: React.FC = () => {
     }
   };
 
-  const handleEdit = (post: AdminBlogPost) => {
-    setEditingPost(post);
+  const handleEdit = async (post: AdminBlogPost) => {
+    // Lade den vollständigen Blog-Post mit Content
+    try {
+      const { data: fullPost, error } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('id', post.id)
+        .single();
+
+      if (error) throw error;
+
+      console.log('[BlogPostsView] Loaded full post for editing:', fullPost);
+      setEditingPost(fullPost);
+    } catch (error: any) {
+      console.error('[BlogPostsView] Error loading full post:', error);
+      toast({
+        title: "Fehler",
+        description: "Artikel konnte nicht vollständig geladen werden",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleInstagramPost = (post: AdminBlogPost) => {
