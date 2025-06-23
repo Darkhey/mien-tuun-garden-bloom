@@ -1,9 +1,12 @@
 
 import React from "react";
-import { ArrowRight, Instagram, Star, Calendar, User } from "lucide-react";
+import { ArrowRight, Instagram, Calendar, User } from "lucide-react";
 import { Link } from 'react-router-dom';
 import NewsletterSignup from "@/components/NewsletterSignup";
 import { siteConfig } from '@/config/site.config';
+import LatestPostsSection from "@/components/landing/LatestPostsSection";
+import LatestCommentsSection from "@/components/landing/LatestCommentsSection";
+import WeatherForecastSection from "@/components/landing/WeatherForecastSection";
 
 const mariannePortrait =
   'https://images.unsplash.com/photo-1594736797933-d0401ba4e7ba?auto=format&fit=crop&w=400&q=80';
@@ -18,35 +21,18 @@ const seasonTips = [
   "🦋 Blumenwiese anlegen: Kornblumen und Mohn - so wird dein Garten zum Paradies für Insekten"
 ];
 
-const testimonials = [
-  {
-    text: "Mariannes Tipps haben meinen Garten verwandelt! Ihre ostfriesische Art ist so herzlich und ehrlich.",
-    author: "Petra aus Hamburg",
-    rating: 5
-  },
-  {
-    text: "Endlich jemand, der wirklich weiß wovon sie spricht. Die Rezepte sind köstlich und die Gartentipps funktionieren!",
-    author: "Klaus aus Bremen",
-    rating: 5
-  }
-];
 
 const MobileLandingPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-sage-50">
       {/* HERO */}
       <section className="pt-8 px-4 text-center flex flex-col gap-4">
-        <div className="flex items-center gap-3 justify-center mb-2">
+        <div className="flex items-center justify-center mb-2">
           <img
             src={mariannePortrait}
             alt="Marianne, Gärtnerin aus Ostfriesland"
             className="w-12 h-12 rounded-full border-2 border-sage-200 shadow-lg"
           />
-          <div className="flex text-yellow-400">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-4 h-4 fill-current" />
-            ))}
-          </div>
         </div>
         <img
           src={mainHeroImage}
@@ -95,28 +81,10 @@ const MobileLandingPage = () => {
         </Link>
       </div>
 
-      {/* Testimonials */}
-      <section className="mt-8 px-4">
-        <h2 className="text-lg font-semibold text-earth-700 mb-3 text-center">
-          Was meine Garten-Freunde sagen:
-        </h2>
-        <div className="space-y-3">
-          {testimonials.map((testimonial, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded-xl p-4 border border-sage-100 shadow-sm"
-            >
-              <div className="flex text-yellow-400 mb-2">
-                {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star key={i} className="w-3 h-3 fill-current" />
-                ))}
-              </div>
-              <p className="text-earth-700 mb-2 italic text-sm">"{testimonial.text}"</p>
-              <p className="text-sage-600 font-medium text-xs">- {testimonial.author}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <WeatherForecastSection />
+      <LatestPostsSection />
+      <LatestCommentsSection />
+
 
       {/* Saisonale Highlights */}
       <section className="mt-8 px-4">
