@@ -1,28 +1,10 @@
-
 export const CATEGORIES = [
+  "Allgemein",
+  "Gartentipps", 
+  "Garten",
   "Gartenplanung",
-  "Aussaat & Pflanzung", 
-  "Pflanzenpflege",
-  "Schädlingsbekämpfung",
-  "Kompostierung",
-  "Saisonale Küche",
-  "Konservieren & Haltbarmachen",
-  "Kräuter & Heilpflanzen",
-  "Nachhaltigkeit",
-  "Wassersparen & Bewässerung",
-  "DIY Projekte",
-  "Gartengeräte & Werkzeuge",
-  "Ernte",
-  "Lagerung & Vorratshaltung",
-  "Selbstversorgung",
-  "Permakultur",
-  "Urban Gardening",
-  "Balkon & Terrasse",
-  "Indoor Gardening",
-  "Tipps & Tricks",
-  "Jahreszeitliche Arbeiten",
-  "Bodenpflege",
-  "Sonstiges"
+  "Küche",
+  "Nachhaltigkeit"
 ];
 
 export const SEASONS = [

@@ -1,4 +1,3 @@
-
 import React from "react";
 import TagSelector from "./TagSelector";
 
@@ -22,14 +21,12 @@ interface BlogMetaSectionProps {
 }
 
 const BLOG_CATEGORIES = [
+  { value: "allgemein", label: "Allgemein" },
+  { value: "gartentipps", label: "Gartentipps" },
+  { value: "garten", label: "Garten" },
   { value: "gartenplanung", label: "Gartenplanung" },
-  { value: "saisonale-kueche", label: "Saisonale Küche" },
+  { value: "küche", label: "Küche" },
   { value: "nachhaltigkeit", label: "Nachhaltigkeit" },
-  { value: "diY-projekte", label: "DIY Projekte" },
-  { value: "ernte", label: "Ernte" },
-  { value: "selbstversorgung", label: "Selbstversorgung" },
-  { value: "tipps-tricks", label: "Tipps & Tricks" },
-  { value: "sonstiges", label: "Sonstiges" },
 ];
 
 const SEASONS = [

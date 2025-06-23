@@ -1,31 +1,13 @@
-
 import React from "react";
 import TagSelector from "./TagSelector";
 
 const CATEGORY_OPTIONS = [
+  { value: "allgemein", label: "Allgemein" },
+  { value: "gartentipps", label: "Gartentipps" },
+  { value: "garten", label: "Garten" },
   { value: "gartenplanung", label: "Gartenplanung" },
-  { value: "aussaat-pflanzung", label: "Aussaat & Pflanzung" },
-  { value: "pflanzenpflege", label: "Pflanzenpflege" },
-  { value: "schaedlingsbekaempfung", label: "Schädlingsbekämpfung" },
-  { value: "kompostierung", label: "Kompostierung" },
-  { value: "saisonale-kueche", label: "Saisonale Küche" },
-  { value: "konservieren-haltbarmachen", label: "Konservieren & Haltbarmachen" },
-  { value: "kraeuter-heilpflanzen", label: "Kräuter & Heilpflanzen" },
+  { value: "küche", label: "Küche" },
   { value: "nachhaltigkeit", label: "Nachhaltigkeit" },
-  { value: "wassersparen-bewaesserung", label: "Wassersparen & Bewässerung" },
-  { value: "diY-projekte", label: "DIY Projekte" },
-  { value: "gartengeraete-werkzeuge", label: "Gartengeräte & Werkzeuge" },
-  { value: "ernte", label: "Ernte" },
-  { value: "lagerung-vorratshaltung", label: "Lagerung & Vorratshaltung" },
-  { value: "selbstversorgung", label: "Selbstversorgung" },
-  { value: "permakultur", label: "Permakultur" },
-  { value: "urban-gardening", label: "Urban Gardening" },
-  { value: "balkon-terrasse", label: "Balkon & Terrasse" },
-  { value: "indoor-gardening", label: "Indoor Gardening" },
-  { value: "tipps-tricks", label: "Tipps & Tricks" },
-  { value: "jahreszeitliche-arbeiten", label: "Jahreszeitliche Arbeiten" },
-  { value: "bodenpflege", label: "Bodenpflege" },
-  { value: "sonstiges", label: "Sonstiges" },
 ];
 
 const DIFFICULTY = [

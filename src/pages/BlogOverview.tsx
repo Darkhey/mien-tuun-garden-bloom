@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from "react-helmet";
 import { useQuery } from '@tanstack/react-query';
@@ -9,31 +8,14 @@ import type { Tables } from '@/integrations/supabase/types';
 import type { BlogPost } from '@/types/content';
 import { useSearchParams } from 'react-router-dom';
 
-// Mapping der Kategorie-Values zu den Labels für das Frontend
+// Aktualisierte Kategorie-Mappings
 const CATEGORY_MAPPING = {
+  'Allgemein': 'Allgemein',
+  'Gartentipps': 'Gartentipps',
+  'Garten': 'Garten',
   'Gartenplanung': 'Gartenplanung',
-  'Aussaat & Pflanzung': 'Aussaat & Pflanzung', 
-  'Pflanzenpflege': 'Pflanzenpflege',
-  'Schädlingsbekämpfung': 'Schädlingsbekämpfung',
-  'Kompostierung': 'Kompostierung',
-  'Saisonale Küche': 'Saisonale Küche',
-  'Konservieren & Haltbarmachen': 'Konservieren & Haltbarmachen',
-  'Kräuter & Heilpflanzen': 'Kräuter & Heilpflanzen',
-  'Nachhaltigkeit': 'Nachhaltigkeit',
-  'Wassersparen & Bewässerung': 'Wassersparen & Bewässerung',
-  'DIY Projekte': 'DIY Projekte',
-  'Gartengeräte & Werkzeuge': 'Gartengeräte & Werkzeuge',
-  'Ernte': 'Ernte',
-  'Lagerung & Vorratshaltung': 'Lagerung & Vorratshaltung',
-  'Selbstversorgung': 'Selbstversorgung',
-  'Permakultur': 'Permakultur',
-  'Urban Gardening': 'Urban Gardening',
-  'Balkon & Terrasse': 'Balkon & Terrasse',
-  'Indoor Gardening': 'Indoor Gardening',
-  'Tipps & Tricks': 'Tipps & Tricks',
-  'Jahreszeitliche Arbeiten': 'Jahreszeitliche Arbeiten',
-  'Bodenpflege': 'Bodenpflege',
-  'Sonstiges': 'Sonstiges'
+  'Küche': 'Küche',
+  'Nachhaltigkeit': 'Nachhaltigkeit'
 };
 
 // Blog-Posts aus Supabase laden - mit content Feld
@@ -85,6 +67,7 @@ const BlogOverview: React.FC = () => {
       blogRows
         .map((post: Tables<'blog_posts'>) => post.category)
         .filter(Boolean)
+        .filter(category => Object.keys(CATEGORY_MAPPING).includes(category))
     ));
     
     // Verwende die tatsächlich vorhandenen Kategorien

@@ -1,32 +1,14 @@
-
 /**
  * Hilfsfunktionen für KI Blog Creator Workflows
  */
 
 export const BLOG_CATEGORIES = [
+  { value: "Allgemein", label: "Allgemein" },
+  { value: "Gartentipps", label: "Gartentipps" },
+  { value: "Garten", label: "Garten" },
   { value: "Gartenplanung", label: "Gartenplanung" },
-  { value: "Aussaat & Pflanzung", label: "Aussaat & Pflanzung" },
-  { value: "Pflanzenpflege", label: "Pflanzenpflege" },
-  { value: "Schädlingsbekämpfung", label: "Schädlingsbekämpfung" },
-  { value: "Kompostierung", label: "Kompostierung" },
-  { value: "Saisonale Küche", label: "Saisonale Küche" },
-  { value: "Konservieren & Haltbarmachen", label: "Konservieren & Haltbarmachen" },
-  { value: "Kräuter & Heilpflanzen", label: "Kräuter & Heilpflanzen" },
+  { value: "Küche", label: "Küche" },
   { value: "Nachhaltigkeit", label: "Nachhaltigkeit" },
-  { value: "Wassersparen & Bewässerung", label: "Wassersparen & Bewässerung" },
-  { value: "DIY Projekte", label: "DIY Projekte" },
-  { value: "Gartengeräte & Werkzeuge", label: "Gartengeräte & Werkzeuge" },
-  { value: "Ernte", label: "Ernte" },
-  { value: "Lagerung & Vorratshaltung", label: "Lagerung & Vorratshaltung" },
-  { value: "Selbstversorgung", label: "Selbstversorgung" },
-  { value: "Permakultur", label: "Permakultur" },
-  { value: "Urban Gardening", label: "Urban Gardening" },
-  { value: "Balkon & Terrasse", label: "Balkon & Terrasse" },
-  { value: "Indoor Gardening", label: "Indoor Gardening" },
-  { value: "Tipps & Tricks", label: "Tipps & Tricks" },
-  { value: "Jahreszeitliche Arbeiten", label: "Jahreszeitliche Arbeiten" },
-  { value: "Bodenpflege", label: "Bodenpflege" },
-  { value: "Sonstiges", label: "Sonstiges" },
 ];
 
 export const SEASONS = [
@@ -37,31 +19,14 @@ export const SEASONS = [
   { value: "Ganzjährig", label: "Ganzjährig" },
 ];
 
-// Erweiterte Trend-Tags passend zu den neuen Kategorien
+// Aktualisierte Trend-Tags passend zu den neuen Kategorien
 const TREND_TAGS = {
+  "Allgemein": ["Tipps", "Inspiration", "Ratgeber", "Wissen", "Grundlagen"],
+  "Gartentipps": ["Pflanzenpflege", "Gießen", "Düngen", "Schneiden", "Schädlinge"],
+  "Garten": ["Beetplanung", "Aussaat", "Ernte", "Kompost", "Werkzeuge"],
   "Gartenplanung": ["Permakultur", "No-Dig", "Biogarten", "Hochbeet", "Mischkultur"],
-  "Aussaat & Pflanzung": ["Direktsaat", "Vorkultur", "Jungpflanzen", "Saatgut", "Mondkalender"],
-  "Pflanzenpflege": ["Biologisch", "Naturdünger", "Mulchen", "Schnitt", "Pflanzenstärkung"],
-  "Schädlingsbekämpfung": ["Nützlinge", "Hausmittel", "Biologisch", "Präventiv", "Natürlich"],
-  "Kompostierung": ["Wurmkompost", "Bokashi", "Thermokomposter", "Gründüngung"],
-  "Saisonale Küche": ["Meal Prep", "Zero Waste", "Fermentieren", "One Pot", "Regional"],
-  "Konservieren & Haltbarmachen": ["Einkochen", "Fermentieren", "Trocknen", "Einfrieren", "Einlegen"],
-  "Kräuter & Heilpflanzen": ["Heilkräuter", "Tee", "Naturmedizin", "Aromatherapie", "Kräutergarten"],
+  "Küche": ["Saisonal", "Regional", "Rezepte", "Kochen", "Zubereitung"],
   "Nachhaltigkeit": ["Plastikfrei", "Regenerativ", "Naturgarten", "Kreislaufwirtschaft", "Upcycling"],
-  "Wassersparen & Bewässerung": ["Regenwasser", "Tröpfchenbewässerung", "Mulchen", "Wasserspeicher"],
-  "DIY Projekte": ["Upcycling", "Balkonideen", "Selbstgebaut", "Recycling", "Kreativ"],
-  "Gartengeräte & Werkzeuge": ["Pflege", "Auswahl", "Selbstbau", "Reparatur", "Ergonomisch"],
-  "Ernte": ["Haltbarmachen", "Kräutergarten", "Vorrat", "Timing", "Lagerung"],
-  "Lagerung & Vorratshaltung": ["Kellerlagerung", "Mieten", "Konservierung", "Haltbarkeit"],
-  "Selbstversorgung": ["Unabhängigkeit", "Microgreens", "Wildkräuter", "Autarkie", "Planung"],
-  "Permakultur": ["Nachhaltigkeit", "Kreisläufe", "Zonierung", "Mischkultur", "Wassermanagement"],
-  "Urban Gardening": ["Stadtgarten", "Gemeinschaftsgarten", "Guerilla Gardening", "Kleinfläche"],
-  "Balkon & Terrasse": ["Topfgarten", "Platzsparend", "Mobilität", "Windschutz", "Bewässerung"],
-  "Indoor Gardening": ["Hydroponik", "LED-Beleuchtung", "Microgreens", "Zimmerpflanzen"],
-  "Tipps & Tricks": ["Tool Hacks", "Schädlingskontrolle", "Lifehacks", "Profi-Tipps"],
-  "Jahreszeitliche Arbeiten": ["Saisonkalender", "Gartenarbeiten", "Timing", "Planung"],
-  "Bodenpflege": ["Bodenanalyse", "Humusaufbau", "Gründüngung", "Lebendigkeit", "pH-Wert"],
-  "Sonstiges": ["Inspiration", "Allgemein", "Verschiedenes"],
   default: ["Nachhaltig", "DIY", "Tipps", "Garten", "Natürlich"]
 };
 
