@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -189,6 +188,10 @@ ${allHashtags}`;
             <Send className="h-5 w-5" />
             Instagram Post erstellen
           </DialogTitle>
+          <DialogDescription>
+            Erstelle einen Instagram-Post für den Blog-Artikel "{post.title}". 
+            Du kannst die Caption anpassen und zusätzliche Hashtags hinzufügen.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
