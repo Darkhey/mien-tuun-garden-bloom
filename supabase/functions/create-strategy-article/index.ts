@@ -7,6 +7,7 @@ import { generateSlug, getRandom } from "./helpers.ts";
 import { generateImage, generateArticle } from "./openai.ts";
 import { uploadImageToSupabase, saveBlogPost } from "./supabase-helpers.ts";
 import { getUnsplashFallback } from "../_shared/unsplash_fallbacks.ts";
+import { enhanceTitle, validateAndFixCategory, generateComprehensiveSEO } from "./seo-enhancer.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -56,23 +57,29 @@ serve(async (req) => {
       throw new Error("Ungültiger Request Body");
     }
 
-    const { topic, category, season, urgency } = requestBody;
-    console.log(`[create-strategy-article] Processing request:`, { topic, category, season, urgency });
+    const { topic, category: rawCategory, season, urgency } = requestBody;
+    console.log(`[create-strategy-article] Processing request:`, { topic, rawCategory, season, urgency });
 
-    if (!topic || !category) {
-      console.error("[create-strategy-article] Missing required fields:", { topic, category });
+    if (!topic || !rawCategory) {
+      console.error("[create-strategy-article] Missing required fields:", { topic, rawCategory });
       throw new Error("Topic und Category sind erforderlich");
     }
 
-    console.log(`[create-strategy-article] Erstelle Artikel für: "${topic}"`);
+    // Kategorie validieren und korrigieren
+    const validatedCategory = validateAndFixCategory(topic, rawCategory);
+    console.log(`[create-strategy-article] Category validation: ${rawCategory} -> ${validatedCategory}`);
+
+    // Titel verbessern
+    const enhancedTitle = enhanceTitle(topic, validatedCategory, season || '');
+    console.log(`[create-strategy-article] Title enhancement: "${topic}" -> "${enhancedTitle}"`);
 
     const now = new Date();
-    const slug = generateSlug(topic) + "-" + now.getTime();
+    const slug = generateSlug(enhancedTitle) + "-" + now.getTime();
     console.log(`[create-strategy-article] Generated slug: ${slug}`);
     
-    // Marianne-Stil Prompt generieren
+    // Marianne-Stil Prompt generieren mit verbessertem Titel
     console.log("[create-strategy-article] Generating Marianne-style prompt...");
-    const prompt = buildMariannePrompt(topic, category, season);
+    const prompt = buildMariannePrompt(enhancedTitle, validatedCategory, season);
     console.log(`[create-strategy-article] Prompt length: ${prompt.length} characters`);
     
     // Artikel mit KI generieren (OpenAI/Gemini Fallback)
@@ -118,6 +125,11 @@ serve(async (req) => {
     const wordCount = articleContent.split(/\s+/).length;
     console.log(`[create-strategy-article] Article statistics: ${wordCount} words, ${articleContent.length} characters`);
     
+    // Umfangreichere SEO-Daten generieren
+    console.log("[create-strategy-article] Generating comprehensive SEO data...");
+    const seoData = generateComprehensiveSEO(enhancedTitle, articleContent, validatedCategory, season || '');
+    console.log(`[create-strategy-article] SEO data generated: ${seoData.seoKeywords.length} keywords, structured data included`);
+    
     // Teaser/Excerpt extrahieren (erste aussagekräftige Zeile nach der Überschrift)
     console.log("[create-strategy-article] Extracting excerpt...");
     const contentLines = articleContent.split('\n').filter(line => line.trim());
@@ -141,19 +153,19 @@ serve(async (req) => {
     }
     
     if (!excerpt) {
-      excerpt = `${topic} - Praktische Tipps und Erfahrungen von Marianne für euren Garten und die Küche.`;
+      excerpt = seoData.seoDescription.slice(0, 160);
     }
     console.log(`[create-strategy-article] Extracted excerpt (${excerpt.length} chars): ${excerpt.substring(0, 100)}...`);
 
     // KI-Bild generieren (mit Fallback)
     console.log("[create-strategy-article] Starting image generation...");
-    let featured_image = getUnsplashFallback(category || "");
+    let featured_image = getUnsplashFallback(validatedCategory || "");
     const imageStartTime = Date.now();
     
     try {
       const imageB64 = await generateImage({ 
-        theme: topic, 
-        category, 
+        theme: enhancedTitle, 
+        category: validatedCategory, 
         season: season || 'ganzjährig',
         trend: 'aktuell'
       });
@@ -167,28 +179,23 @@ serve(async (req) => {
       // Continue with fallback image
     }
 
-    // SEO-Metadaten
-    console.log("[create-strategy-article] Generating SEO metadata...");
-    const seoTitle = `${topic} | Mariannes Gartentipps`;
-    const seoDescription = excerpt || `${topic} - Praktische Tipps und Erfahrungen von Marianne für euren Garten und die Küche.`;
-    const seoKeywords = [topic, category, season, "Marianne", "Garten", "Küche"].filter(Boolean);
-
-    // Artikel-Objekt zusammenstellen
-    console.log("[create-strategy-article] Assembling blog post data...");
+    // Artikel-Objekt zusammenstellen mit verbesserter SEO
+    console.log("[create-strategy-article] Assembling blog post data with enhanced SEO...");
     const postData = {
       slug,
-      title: topic,
+      title: enhancedTitle,
       excerpt,
       content: articleContent,
       author: "Marianne",
       published: true,
       featured: urgency === 'critical' || urgency === 'high',
       featured_image,
-      seo_title: seoTitle,
-      seo_description: seoDescription,
-      seo_keywords: seoKeywords,
-      tags: [category, season].filter(Boolean),
-      category,
+      seo_title: seoData.seoTitle,
+      seo_description: seoData.seoDescription,
+      seo_keywords: seoData.seoKeywords,
+      structured_data: JSON.stringify(seoData.structuredData),
+      tags: seoData.tags,
+      category: validatedCategory,
       published_at: now.toISOString().slice(0,10),
       reading_time: Math.ceil(wordCount / 160), // Realistische Lesezeit
       season: season || null,
@@ -200,9 +207,10 @@ serve(async (req) => {
     console.log(`[create-strategy-article] Post data prepared: ${JSON.stringify({
       slug: postData.slug,
       title: postData.title,
+      category: postData.category,
       wordCount,
       reading_time: postData.reading_time,
-      category: postData.category,
+      seoKeywordCount: postData.seo_keywords.length,
       usedProvider
     })}`);
 
@@ -219,7 +227,7 @@ serve(async (req) => {
       console.log("[create-strategy-article] Verifying database save...");
       const { data: verification, error: verifyError } = await supabase
         .from('blog_posts')
-        .select('id, slug, title, content, word_count:content')
+        .select('id, slug, title, content, category, seo_keywords')
         .eq('slug', slug)
         .single();
         
@@ -229,7 +237,7 @@ serve(async (req) => {
       }
       
       const savedWordCount = verification.content ? verification.content.split(/\s+/).length : 0;
-      console.log(`[create-strategy-article] Verification successful: Article saved with ${savedWordCount} words`);
+      console.log(`[create-strategy-article] Verification successful: Article saved with ${savedWordCount} words, category: ${verification.category}, SEO keywords: ${verification.seo_keywords?.length || 0}`);
       
     } catch (dbError) {
       console.error("[create-strategy-article] Database error:", dbError);
@@ -239,21 +247,26 @@ serve(async (req) => {
     const totalDuration = Date.now() - startTime;
     console.log(`[create-strategy-article] Article creation completed successfully in ${totalDuration}ms`);
     console.log(`[create-strategy-article] Performance breakdown: Article=${articleDuration}ms, Image=${Date.now() - imageStartTime}ms, DB=${Date.now() - dbStartTime}ms`);
-    console.log(`[create-strategy-article] Final result: ${slug} (${wordCount} words, ${usedProvider})`);
+    console.log(`[create-strategy-article] Final result: ${slug} (${wordCount} words, ${usedProvider}, category: ${validatedCategory})`);
 
     return new Response(JSON.stringify({
       success: true,
       slug,
-      title: topic,
+      title: enhancedTitle,
+      originalTitle: topic,
+      category: validatedCategory,
       excerpt,
       featured_image,
+      seoKeywords: seoData.seoKeywords.length,
       message: "Artikel wurde erfolgreich erstellt und veröffentlicht",
       metadata: {
         wordCount,
         readingTime: Math.ceil(wordCount / 160),
         usedProvider,
         totalDuration,
-        articleGenerationTime: articleDuration
+        articleGenerationTime: articleDuration,
+        categoryValidated: rawCategory !== validatedCategory,
+        titleEnhanced: topic !== enhancedTitle
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
