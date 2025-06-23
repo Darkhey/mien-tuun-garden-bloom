@@ -1,9 +1,10 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import EventLogger from '@/services/EventLogger';
-import { Copy, Trash2 } from 'lucide-react';
+import { Copy, Trash2, FileText } from 'lucide-react';
 
 const logger = EventLogger.getInstance();
 
@@ -35,15 +36,16 @@ const LoggingOverlay: React.FC = () => {
       <SheetTrigger asChild>
         <Button
           variant="secondary"
-          size="icon"
-          className="fixed bottom-4 right-4 z-50 shadow"
+          size="sm"
+          className="fixed bottom-4 right-4 z-50 shadow-lg bg-blue-600 hover:bg-blue-700 text-white border-2 border-blue-400"
         >
-          Log
+          <FileText className="w-4 h-4 mr-2" />
+          Debug Logs
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="flex flex-col w-full sm:max-w-md p-0">
         <SheetHeader className="flex justify-between items-center px-4 py-2 border-b">
-          <SheetTitle>Logs</SheetTitle>
+          <SheetTitle>Debug Logs</SheetTitle>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={copyLogs}>
               <Copy className="w-4 h-4 mr-1" /> Kopieren
@@ -55,7 +57,7 @@ const LoggingOverlay: React.FC = () => {
         </SheetHeader>
         <ScrollArea className="flex-1 p-4">
           <pre className="text-xs whitespace-pre-wrap font-mono">
-            {logs.join('\n')}
+            {logs.length > 0 ? logs.join('\n') : 'Keine Logs vorhanden.'}
           </pre>
         </ScrollArea>
       </SheetContent>
