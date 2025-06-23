@@ -66,7 +66,7 @@ export class WeatherContentService {
         .from('blog_posts')
         .select('*')
         .eq('published', true)
-        .contains('weather_tags', [currentWeather])
+        .contains('tags', [currentWeather])
         .order('published_at', { ascending: false })
         .limit(limit);
 
@@ -115,7 +115,7 @@ export class WeatherContentService {
       featuredImage: row.featured_image || '/placeholder.svg',
       category: row.category || '',
       tags: row.tags || [],
-      weatherTags: row.weather_tags || [],
+      weatherTags: row.tags || [], // Use tags field as fallback for weather tags
       readingTime: row.reading_time || 5,
       seo: {
         title: row.seo_title || row.title,
@@ -135,7 +135,7 @@ export class WeatherContentService {
     try {
       const { data: article, error } = await supabase
         .from('blog_posts')
-        .select('title, content, category')
+        .select('title, content, category, tags')
         .eq('id', articleId)
         .single();
 
@@ -149,10 +149,13 @@ export class WeatherContentService {
         article.category
       );
 
-      // Speichere die generierten Tags (korrigierter Datenbankname)
+      // Speichere die generierten Tags in das tags-Feld (erweitert die bestehenden Tags)
+      const existingTags = article.tags || [];
+      const updatedTags = [...new Set([...existingTags, ...weatherTags])];
+      
       await supabase
         .from('blog_posts')
-        .update({ weather_tags: weatherTags })
+        .update({ tags: updatedTags })
         .eq('id', articleId);
 
       return weatherTags;

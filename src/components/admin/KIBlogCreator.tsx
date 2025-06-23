@@ -105,6 +105,9 @@ const KIBlogCreator: React.FC = () => {
       
       const currentUserId = user?.id || null;
       
+      // Kombiniere normale Tags mit Wetter-Tags
+      const allTags = [...new Set([...(tags || []), ...(weatherTags || [])])];
+      
       // Bereite erweiterte Artikel-Daten mit SEO und Wetter-Tags vor
       const article = {
         slug,
@@ -114,8 +117,7 @@ const KIBlogCreator: React.FC = () => {
         description: excerpt || content.slice(0, 300).replace(/<[^>]*>/g, ''),
         category: category || "Allgemein",
         season: season || "ganzjährig",
-        tags: tags.length ? tags : [],
-        weather_tags: weatherTags || [], // Neue Wetter-Tags
+        tags: allTags, // Kombinierte Tags mit Wetter-Tags
         content_types: contentType.length ? contentType : ["blog"],
         audiences: audiences.length ? audiences : ["anfaenger"],
         featured_image: featuredImage || imageUrl || "",

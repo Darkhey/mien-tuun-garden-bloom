@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -53,7 +54,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
   contentType,
   tags,
   excerpt,
-  imageUrl,
+  imageUrl: propImageUrl,
   toast
 }) => {
   const [prompt, setPrompt] = useState(initialPrompt);
@@ -95,31 +96,33 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
         <p>Zielgruppe: ${audiences?.join(', ') || 'Alle'}, Inhaltstyp: ${contentType?.join(', ') || 'Blog'}</p>
         <p>Tags: ${tags?.join(', ') || 'Keine'}</p>
         <p>Auszug: ${excerpt}</p>
-        <img src="${imageUrl}" alt="Featured Image" />
+        <img src="${propImageUrl}" alt="Featured Image" />
       `;
 
       setGeneratedContent(newContent);
       setGeneratedTitle(newTitle);
 
-      // Simulate SEO metadata generation
-      const seoData = await SEOService.generateSEOMetadata({
+      // Use the correct SEO service method
+      const seoService = SEOService.getInstance();
+      const seoData = await seoService.generateBlogPostSEO({
         title: newTitle,
         content: newContent,
         category: category || '',
         tags: tags || [],
+        excerpt: excerpt,
       });
 
       setSeoMetadata(seoData);
 
       // Simulate image selection
-      const imageUrl = await unifiedImageService.getImageForContent({
+      const selectedImageUrl = await unifiedImageService.getImageForContent({
         title: newTitle,
         content: newContent,
         category: category || '',
         tags: tags || [],
       });
 
-      setFeaturedImage(imageUrl);
+      setFeaturedImage(selectedImageUrl);
 
       // Generate weather tags from content
       const weatherTags = WeatherContentService.extractWeatherTags(
@@ -134,7 +137,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
         wordCount: newContent.split(/\s+/).length,
         readingTime: Math.ceil(newContent.split(/\s+/).length / 160),
         qualityScore: calculateQualityScore(newContent, newTitle),
-        seoScore: seoData?.score || 0,
+        seoScore: seoService.analyzeSEO({ title: newTitle, content: newContent, excerpt }).score,
         weatherTags
       };
 
