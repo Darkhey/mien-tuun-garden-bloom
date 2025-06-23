@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import BlogPostCard from '@/components/blog/BlogPostCard';
 import { fetchSuggestedPostsByWeather } from '@/services/WeatherPostService';
@@ -18,7 +19,8 @@ const SuggestedPostsSection: React.FC = () => {
     }
     navigator.geolocation.getCurrentPosition(
       (pos) => loadPosts(pos.coords.latitude, pos.coords.longitude),
-      fallback
+      fallback,
+      { timeout: 10000, enableHighAccuracy: false, maximumAge: 300000 }
     );
   }, []);
 

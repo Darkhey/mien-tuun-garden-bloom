@@ -20,9 +20,9 @@ const Index = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    queryClient.prefetchQuery({ queryKey: ['rain-forecast'], queryFn: fetchRainForecast });
-    queryClient.prefetchQuery({ queryKey: ['latest-posts'], queryFn: fetchLatestPosts });
-    queryClient.prefetchQuery({ queryKey: ['latest-comments'], queryFn: fetchLatestComments });
+    queryClient.prefetchQuery({ queryKey: ['rain-forecast'], queryFn: fetchRainForecast }).catch(console.warn);
+    queryClient.prefetchQuery({ queryKey: ['latest-posts'], queryFn: fetchLatestPosts }).catch(console.warn);
+    queryClient.prefetchQuery({ queryKey: ['latest-comments'], queryFn: fetchLatestComments }).catch(console.warn);
   }, [queryClient]);
 
   if (isMobile) {

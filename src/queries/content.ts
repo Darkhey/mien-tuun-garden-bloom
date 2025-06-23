@@ -1,13 +1,15 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { BlogPost } from '@/types/content';
+import { WEATHER_BASE_URL, WEATHER_LATITUDE, WEATHER_LONGITUDE, WEATHER_TIMEZONE } from '@/config/weather.config';
+import { isBlogPost, isWeatherResponse } from '@/utils/typeguards';
+
 export interface CommentRow {
   id: string;
   blog_slug: string;
   content: string;
   created_at: string;
 }
-import { WEATHER_BASE_URL, WEATHER_LATITUDE, WEATHER_LONGITUDE, WEATHER_TIMEZONE } from '@/config/weather.config';
-import { isBlogPost, isWeatherResponse } from '@/utils/typeguards';
 
 export const fetchLatestPosts = async (): Promise<BlogPost[]> => {
   const { data, error } = await supabase
@@ -17,7 +19,8 @@ export const fetchLatestPosts = async (): Promise<BlogPost[]> => {
     .order('published_at', { ascending: false })
     .limit(3);
   if (error) throw error;
-  const rows = Array.isArray(data) ? data.filter(isBlogPost) : [];
+  
+  const rows = Array.isArray(data) ? data : [];
   const posts = rows.map((row) => ({
     id: row.id,
     slug: row.slug,
@@ -55,7 +58,28 @@ export const fetchLatestComments = async (): Promise<CommentRow[]> => {
   return data || [];
 };
 
-export const fetchRainForecast = async (
+export const fetchRainForecast = async (): Promise<number | null> => {
+  const latitude = WEATHER_LATITUDE;
+  const longitude = WEATHER_LONGITUDE;
+  const timezone = WEATHER_TIMEZONE;
+  
+  const url = `${WEATHER_BASE_URL}?latitude=${encodeURIComponent(String(latitude))}&longitude=${encodeURIComponent(String(longitude))}&daily=precipitation_sum&timezone=${encodeURIComponent(timezone)}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Weather request failed with status ${res.status}`);
+    }
+    const data = await res.json();
+    if (!isWeatherResponse(data)) {
+      throw new Error('Invalid weather API response');
+    }
+    return data.daily.precipitation_sum[0] ?? null;
+  } catch (err) {
+    throw new Error(`Error fetching weather data: ${err instanceof Error ? err.message : String(err)}`);
+  }
+};
+
+export const fetchRainForecastWithCoords = async (
   latitude: number | string = WEATHER_LATITUDE,
   longitude: number | string = WEATHER_LONGITUDE,
   timezone: string = WEATHER_TIMEZONE

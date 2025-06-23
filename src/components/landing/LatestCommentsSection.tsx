@@ -1,9 +1,9 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import { fetchLatestComments, type CommentRow } from '@/queries/content';
-
 
 const LatestCommentsSection: React.FC = () => {
   const { data = [], isLoading, error } = useQuery({
@@ -22,7 +22,14 @@ const LatestCommentsSection: React.FC = () => {
   if (error) {
     return (
       <section className="py-16 px-4 text-center">
-        <p className="text-sage-600">Kommentare konnten nicht geladen werden.</p>
+        <p className="text-sage-600">
+          Kommentare konnten nicht geladen werden.
+          {process.env.NODE_ENV === 'development' && (
+            <span className="block text-xs text-red-500 mt-1">
+              {error instanceof Error ? error.message : 'Unknown error'}
+            </span>
+          )}
+        </p>
       </section>
     );
   }
