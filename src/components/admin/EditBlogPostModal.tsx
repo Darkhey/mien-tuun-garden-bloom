@@ -11,6 +11,7 @@ import ImageUploadField from "./ImageUploadField";
 import SEOOptimizationPanel from './SEOOptimizationPanel';
 import BlogLinkManager from './BlogLinkManager';
 import BlogContentExtender from './BlogContentExtender';
+import EditableBlogPreview from './EditableBlogPreview';
 import type { SEOMetadata } from '@/services/SEOService';
 
 interface EditBlogPostModalProps {
@@ -31,7 +32,7 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
   const [loading, setLoading] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [seoData, setSeoData] = useState<SEOMetadata | null>(null);
-  const [activeTab, setActiveTab] = useState<'content' | 'seo' | 'links'>('content');
+  const [activeTab, setActiveTab] = useState<'content' | 'preview' | 'seo' | 'links'>('content');
   const { toast } = useToast();
 
   // Lade die Blog-Post Daten beim Öffnen
@@ -238,6 +239,14 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
             Inhalt
           </Button>
           <Button
+            variant={activeTab === 'preview' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('preview')}
+            className="flex items-center gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            Bearbeitbare Vorschau
+          </Button>
+          <Button
             variant={activeTab === 'seo' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('seo')}
             className="flex items-center gap-2"
@@ -372,6 +381,16 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
                 }
               />
             </div>
+          </div>
+        )}
+
+        {activeTab === 'preview' && (
+          <div>
+            <EditableBlogPreview
+              content={formData.content}
+              onContentChange={(content) => handleInputChange("content", content)}
+              title={formData.title}
+            />
           </div>
         )}
 
