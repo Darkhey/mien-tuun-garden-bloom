@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -82,92 +83,31 @@ ${allHashtags}`;
         ? `${caption}\n\n${customHashtags}` 
         : caption;
 
-      // Get current session for authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Nicht authentifiziert');
-      }
-
-      // First check if the instagram_posts table exists
-      const { data: tableExists, error: tableCheckError } = await supabase.rpc(
-        'check_table_exists',
-        { p_table_name: 'instagram_posts' }
-      );
-
-      if (tableCheckError) {
-        console.warn('Error checking if table exists:', tableCheckError);
-        // Continue anyway, as the table might exist despite the error
-      }
-
-      // If table doesn't exist, create it
-      if (tableCheckError || tableExists === false) {
-        // Create a placeholder record in the database
-        const { error: insertError } = await supabase
-          .from('blog_posts')
-          .update({ 
-            status: post.status,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', post.id);
-
-        if (insertError) {
-          console.error('Error updating blog post:', insertError);
+      // Call the Instagram posting edge function
+      const { data, error } = await supabase.functions.invoke('instagram-post', {
+        body: {
+          blogPostId: post.id,
+          caption: finalCaption,
+          imageUrl: post.featured_image
         }
+      });
 
-        toast({
-          title: "Hinweis",
-          description: "Instagram-Funktion ist noch nicht vollständig konfiguriert. Der Post wurde simuliert.",
-          variant: "default"
-        });
-
-        onSuccess();
-        onClose();
-        return;
+      if (error) {
+        console.error('Instagram post error:', error);
+        throw new Error(error.message || 'Fehler beim Posten auf Instagram');
       }
 
-      // If table exists, proceed with normal flow
-      try {
-        const { data, error } = await supabase
-          .from('instagram_posts')
-          .insert({
-            blog_post_id: post.id,
-            caption: finalCaption,
-            image_url: post.featured_image,
-            status: 'pending'
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        // Simulate posting to Instagram
-        setTimeout(async () => {
-          try {
-            await supabase
-              .from('instagram_posts')
-              .update({
-                status: 'posted',
-                posted_at: new Date().toISOString(),
-                instagram_id: `sim_${Date.now()}`
-              })
-              .eq('id', data.id);
-            console.log('Instagram post status updated to posted');
-          } catch (err) {
-            console.error('Error updating Instagram post status:', err);
-          }
-        }, 2000);
-
-        toast({
-          title: "Erfolg!",
-          description: "Post wurde erfolgreich auf Instagram geteilt"
-        });
-
-        onSuccess();
-        onClose();
-      } catch (dbError) {
-        console.error('Database error:', dbError);
-        throw new Error('Datenbankfehler: ' + (dbError as Error).message);
+      if (!data.success) {
+        throw new Error(data.error || 'Fehler beim Posten auf Instagram');
       }
+
+      toast({
+        title: "Erfolg!",
+        description: data.message || "Post wurde erfolgreich auf Instagram geteilt"
+      });
+
+      onSuccess();
+      onClose();
     } catch (error: any) {
       console.error('Instagram post error:', error);
       toast({
