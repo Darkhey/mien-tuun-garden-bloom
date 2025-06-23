@@ -6,10 +6,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import EventLogger from '@/services/EventLogger';
 import { Copy, Trash2, FileText, Play, Pause } from 'lucide-react';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 const logger = EventLogger.getInstance();
 
 const LoggingOverlay: React.FC = () => {
+  const isAdmin = useIsAdmin();
   const [open, setOpen] = useState(false);
   const [logs, setLogs] = useState<string[]>(logger.getLogs());
   const [autoScroll, setAutoScroll] = useState(true);
@@ -27,6 +29,10 @@ const LoggingOverlay: React.FC = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [logs, autoScroll]);
+
+  if (!isAdmin) {
+    return null;
+  }
 
   const copyLogs = async () => {
     try {
