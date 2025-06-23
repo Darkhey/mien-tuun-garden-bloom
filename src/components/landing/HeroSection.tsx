@@ -54,7 +54,7 @@ const HeroSection: React.FC = () => {
               </p>
               <NewsletterSignup />
               <p className="text-xs text-sage-500 mt-2">
-                ✅ Bereits über 2.500 Garten-Freunde dabei!
+                ✨ Schließ dich meiner wachsenden Garten-Gemeinschaft an!
               </p>
             </div>
             
