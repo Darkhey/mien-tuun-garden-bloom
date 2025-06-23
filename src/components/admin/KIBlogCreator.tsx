@@ -71,10 +71,17 @@ const KIBlogCreator: React.FC = () => {
     quality: any,
     featuredImage?: string,
     seoData?: SEOMetadata,
-    suggestion?: string
+    suggestion?: string,
+    weatherTags?: string[]
   ) => {
     try {
-      console.log("Speichere Enhanced Artikel mit SEO:", { title, quality: quality.score, featuredImage, hasSEO: !!seoData });
+      console.log("Speichere Enhanced Artikel mit SEO und Wetter-Tags:", { 
+        title, 
+        quality: quality.score, 
+        featuredImage, 
+        hasSEO: !!seoData,
+        weatherTags 
+      });
       
       // Generiere einen eindeutigen Slug
       const baseSlug = title
@@ -98,7 +105,7 @@ const KIBlogCreator: React.FC = () => {
       
       const currentUserId = user?.id || null;
       
-      // Bereite erweiterte Artikel-Daten mit SEO vor
+      // Bereite erweiterte Artikel-Daten mit SEO und Wetter-Tags vor
       const article = {
         slug,
         title,
@@ -108,6 +115,7 @@ const KIBlogCreator: React.FC = () => {
         category: category || "Allgemein",
         season: season || "ganzjährig",
         tags: tags.length ? tags : [],
+        weather_tags: weatherTags || [], // Neue Wetter-Tags
         content_types: contentType.length ? contentType : ["blog"],
         audiences: audiences.length ? audiences : ["anfaenger"],
         featured_image: featuredImage || imageUrl || "",
@@ -152,8 +160,8 @@ const KIBlogCreator: React.FC = () => {
       }
       
       toast({
-        title: "Enhanced Artikel mit SEO gespeichert!",
-        description: `"${title}" wurde mit Quality Score ${quality.score} ${seoData ? 'und SEO-Optimierungen' : ''} gespeichert.`,
+        title: "Enhanced Artikel mit SEO und Wetter-Tags gespeichert!",
+        description: `"${title}" wurde mit Quality Score ${quality.score} ${seoData ? 'und SEO-Optimierungen' : ''} ${weatherTags?.length ? `und ${weatherTags.length} Wetter-Tags` : ''} gespeichert.`,
       });
       
       if (suggestion) {
@@ -273,8 +281,8 @@ const KIBlogCreator: React.FC = () => {
                       ) : (
                         <EnhancedBlogArticleEditor
                           initialPrompt={suggestion}
-                          onSave={(content, title, quality) =>
-                            handleSaveArticle(content, title, quality, suggestion)
+                          onSave={(content, title, quality, featuredImage, seoData, weatherTags) =>
+                            handleSaveArticle(content, title, quality, featuredImage, seoData, suggestion, weatherTags)
                           }
                           category={category}
                           season={season}
@@ -302,8 +310,8 @@ const KIBlogCreator: React.FC = () => {
               <CardContent>
                 <EnhancedBlogArticleEditor
                   initialPrompt={selectedPrompt}
-                  onSave={(content, title, quality) =>
-                    handleSaveArticle(content, title, quality, selectedPrompt)
+                  onSave={(content, title, quality, featuredImage, seoData, weatherTags) =>
+                    handleSaveArticle(content, title, quality, featuredImage, seoData, selectedPrompt, weatherTags)
                   }
                   category={category}
                   season={season}

@@ -3,7 +3,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, RefreshCw, Save, Eye, TrendingUp, Target, Zap, Clock } from "lucide-react";
+import { Loader2, RefreshCw, Save, Eye, TrendingUp, Target, Zap, Clock, CloudRain } from "lucide-react";
 import ContentQualityIndicator from "./ContentQualityIndicator";
 import { contentGenerationService, GeneratedContent } from "@/services/ContentGenerationService";
 import { contextAnalyzer, TrendData } from "@/services/ContextAnalyzer";
@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import SEOOptimizationPanel from './SEOOptimizationPanel';
 import type { SEOMetadata } from '@/services/SEOService';
+import WeatherContentService from '@/services/WeatherContentService';
 
 interface EnhancedBlogArticleEditorProps {
   initialPrompt: string;
@@ -88,14 +89,28 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
         imageUrl: "" // Leer lassen, damit KI-Bild generiert wird
       });
 
+      // Generiere automatisch Wetter-Tags
+      const weatherTags = WeatherContentService.extractWeatherTags(
+        result.title,
+        result.content,
+        category || ''
+      );
+
+      // Füge Wetter-Tags zu den Metadaten hinzu
+      result.metadata = {
+        ...result.metadata,
+        weatherTags
+      };
+
       setGeneratedContent(result);
       setEditingContent(result.content);
       
-      console.log("[EnhancedEditor] Content and image generated successfully:", {
+      console.log("[EnhancedEditor] Content generated with weather tags:", {
         title: result.title,
         quality: result.quality.score,
         wordCount: result.quality.wordCount,
-        featuredImage: result.featuredImage
+        featuredImage: result.featuredImage,
+        weatherTags
       });
     } catch (error: any) {
       console.error("[EnhancedEditor] Generation failed:", error);
@@ -130,6 +145,19 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
         imageUrl: "" // Leer lassen, damit KI-Bild generiert wird
       });
 
+      // Generiere automatisch Wetter-Tags
+      const weatherTags = WeatherContentService.extractWeatherTags(
+        result.title,
+        result.content,
+        category || ''
+      );
+
+      // Füge Wetter-Tags zu den Metadaten hinzu
+      result.metadata = {
+        ...result.metadata,
+        weatherTags
+      };
+
       setGeneratedContent(result);
       setEditingContent(result.content);
     } catch (error: any) {
@@ -145,7 +173,17 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
 
   const handleSave = () => {
     if (generatedContent) {
-      onSave(editingContent, generatedContent.title, generatedContent.quality, generatedContent.featuredImage, seoData || undefined);
+      // Extrahiere Wetter-Tags aus den Metadaten
+      const weatherTags = generatedContent.metadata?.weatherTags || [];
+      
+      onSave(
+        editingContent, 
+        generatedContent.title, 
+        generatedContent.quality, 
+        generatedContent.featuredImage, 
+        seoData || undefined,
+        weatherTags
+      );
     }
   };
 
@@ -258,6 +296,25 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
               </span>
             </div>
           </div>
+
+          {/* Wetter-Tags Anzeige */}
+          {generatedContent.metadata?.weatherTags && generatedContent.metadata.weatherTags.length > 0 && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CloudRain className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium text-blue-800">Automatisch erkannte Wetter-Tags</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {generatedContent.metadata.weatherTags.map((tag, idx) => (
+                    <Badge key={idx} className="text-xs bg-blue-100 text-blue-700">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* KI-generiertes Bild anzeigen */}
           {generatedContent.featuredImage && (

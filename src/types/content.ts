@@ -10,8 +10,9 @@ export interface BlogPost {
   updatedAt?: string;
   featuredImage: string;
   category: string;
-  season?: string; // Jetzt auch in der Haupttabelle verfügbar
+  season?: string;
   tags: string[];
+  weatherTags?: string[];
   readingTime: number;
   seo: {
     title: string;
@@ -20,21 +21,9 @@ export interface BlogPost {
   };
   featured?: boolean;
   published: boolean;
-  /**
-   * Optionales Feld für automatisch generierte strukturierte Daten (JSON-LD) für Rich Snippets.
-   */
-  structuredData?: string; // JSON-LD als string (z.B. für HowTo/FAQ/Recipe)
-  /**
-   * Original-Titel (z.B. für interne Zwecke)
-   */
+  structuredData?: string;
   originalTitle?: string;
-  /**
-   * Optional: alternatives Social Media Bild (OpenGraph override)
-   */
   ogImage?: string;
-  /**
-   * Erweiterte Beschreibung für bessere SEO
-   */
   description?: string;
 }
 

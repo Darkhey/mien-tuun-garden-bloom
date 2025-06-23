@@ -1,12 +1,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CloudRain, Sun, CloudDrizzle, MapPin, AlertCircle } from 'lucide-react';
+import { CloudRain, Sun, CloudDrizzle, MapPin, AlertCircle, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
 import { fetchRainForecastWithCoords, fetchRainForecast } from '@/queries/content';
+import { WeatherContentService, WeatherCondition } from '@/services/WeatherContentService';
 import { WEATHER_LATITUDE, WEATHER_LONGITUDE, WEATHER_TIMEZONE } from '@/config/weather.config';
+import type { BlogPost } from '@/types/content';
 
 const WeatherForecastSection: React.FC = () => {
   const [locationData, setLocationData] = useState<{
@@ -17,6 +21,7 @@ const WeatherForecastSection: React.FC = () => {
   } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+  const [weatherArticles, setWeatherArticles] = useState<BlogPost[]>([]);
 
   // Query mit dynamischen Koordinaten oder Fallback
   const { data: precipitation, isLoading, error } = useQuery({
@@ -29,6 +34,16 @@ const WeatherForecastSection: React.FC = () => {
     },
     enabled: true,
   });
+
+  // Lade passende Artikel basierend auf dem Wetter
+  useEffect(() => {
+    if (precipitation !== undefined) {
+      const currentWeather = WeatherContentService.getWeatherCondition(precipitation);
+      WeatherContentService.getWeatherBasedArticles(currentWeather, 3)
+        .then(setWeatherArticles)
+        .catch(console.error);
+    }
+  }, [precipitation]);
 
   const requestLocation = () => {
     setIsRequestingLocation(true);
@@ -44,7 +59,6 @@ const WeatherForecastSection: React.FC = () => {
       async (position) => {
         const { latitude, longitude } = position.coords;
         
-        // Versuche Stadt zu ermitteln (vereinfacht)
         try {
           setLocationData({
             lat: latitude,
@@ -106,6 +120,13 @@ const WeatherForecastSection: React.FC = () => {
     return 'Perfektes Wetter für Aussaat, Unkraut jäten oder Ernten im Garten!';
   };
 
+  const getWeatherBadgeColor = (precipitation: number | null) => {
+    if (precipitation === null) return 'bg-gray-100 text-gray-700';
+    if (precipitation > 5) return 'bg-blue-100 text-blue-700';
+    if (precipitation > 0) return 'bg-gray-100 text-gray-700';
+    return 'bg-yellow-100 text-yellow-700';
+  };
+
   return (
     <section className="py-12 px-4 bg-gradient-to-br from-sky-50 to-blue-50">
       <div className="max-w-4xl mx-auto">
@@ -115,7 +136,8 @@ const WeatherForecastSection: React.FC = () => {
               🌤️ Dein Gartenwetter heute
             </CardTitle>
             <p className="text-sage-600 text-sm">
-              Lass uns wissen, wo du bist, und erhalte passende Gartentipps für dein Wetter
+              Möchtest du wissen, was du heute bei diesem Wetter machen kannst? 
+              Erlaube uns den Standort und kriege nützliche Tipps und Artikel vorgeschlagen!
             </p>
           </CardHeader>
           
@@ -123,15 +145,6 @@ const WeatherForecastSection: React.FC = () => {
             {/* Standort-Bereich */}
             {!locationData?.granted && (
               <div className="text-center space-y-4">
-                <Alert className="border-sage-200 bg-sage-50">
-                  <MapPin className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Möchtest du wissen, was du heute bei diesem Wetter machen kannst?</strong>
-                    <br />
-                    Erlaube uns den Standort und kriege nützliche Tipps und Artikel vorgeschlagen!
-                  </AlertDescription>
-                </Alert>
-                
                 <Button 
                   onClick={requestLocation}
                   disabled={isRequestingLocation}
@@ -185,9 +198,14 @@ const WeatherForecastSection: React.FC = () => {
                       {getWeatherDescription(precipitation)}
                     </p>
                     {precipitation !== null && (
-                      <p className="text-sage-600 text-sm">
-                        Niederschlag heute: <strong>{precipitation.toFixed(1)} mm</strong>
-                      </p>
+                      <div className="flex items-center justify-center gap-2 mt-2">
+                        <p className="text-sage-600 text-sm">
+                          Niederschlag heute: <strong>{precipitation.toFixed(1)} mm</strong>
+                        </p>
+                        <Badge className={getWeatherBadgeColor(precipitation)}>
+                          {WeatherContentService.getWeatherCondition(precipitation)}
+                        </Badge>
+                      </div>
                     )}
                   </div>
                   
@@ -199,13 +217,63 @@ const WeatherForecastSection: React.FC = () => {
                   </div>
                 </div>
               )}
-
-              {!locationData?.granted && (
-                <p className="text-xs text-sage-500 mt-4">
-                  ✨ Mit deinem Standort können wir dir noch passendere Empfehlungen geben!
-                </p>
-              )}
             </div>
+
+            {/* Wetter-basierte Artikel-Empfehlungen */}
+            {weatherArticles.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 justify-center">
+                  <BookOpen className="w-5 h-5 text-sage-600" />
+                  <h3 className="text-lg font-semibold text-earth-700">
+                    Passende Artikel für heute
+                  </h3>
+                </div>
+                
+                <div className="grid gap-3">
+                  {weatherArticles.map((article) => (
+                    <Link
+                      key={article.id}
+                      to={`/blog/${article.slug}`}
+                      className="group block bg-white rounded-lg p-4 border border-sage-100 hover:border-sage-300 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-start gap-3">
+                        {article.featuredImage && (
+                          <img
+                            src={article.featuredImage}
+                            alt={article.title}
+                            className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-earth-800 group-hover:text-sage-700 transition-colors line-clamp-2">
+                            {article.title}
+                          </h4>
+                          <p className="text-sm text-sage-600 mt-1 line-clamp-2">
+                            {article.excerpt}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge variant="outline" className="text-xs">
+                              {article.category}
+                            </Badge>
+                            {article.weatherTags && article.weatherTags.length > 0 && (
+                              <Badge className="text-xs bg-blue-100 text-blue-700">
+                                {article.weatherTags[0]}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!locationData?.granted && (
+              <p className="text-xs text-sage-500 mt-4 text-center">
+                ✨ Mit deinem Standort können wir dir noch passendere Empfehlungen geben!
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
