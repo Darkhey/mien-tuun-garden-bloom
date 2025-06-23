@@ -1,3 +1,4 @@
+
 import type { BlogPost } from '@/types/content';
 
 export const isBlogPost = (obj: any): obj is BlogPost => {
@@ -10,11 +11,11 @@ export const isBlogPost = (obj: any): obj is BlogPost => {
     typeof obj.excerpt === 'string' &&
     typeof obj.content === 'string' &&
     typeof obj.author === 'string' &&
-    typeof obj.published_at === 'string' &&
-    typeof obj.featured_image === 'string' &&
+    typeof obj.publishedAt === 'string' &&
+    typeof obj.featuredImage === 'string' &&
     typeof obj.category === 'string' &&
     Array.isArray(obj.tags) &&
-    typeof obj.reading_time === 'number' &&
+    typeof obj.readingTime === 'number' &&
     typeof obj.published === 'boolean'
   );
 };
