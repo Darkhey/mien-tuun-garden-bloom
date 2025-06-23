@@ -22,14 +22,15 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { blogPostId, caption, imageUrl } = await req.json();
 
-    console.log('Instagram post request:', { blogPostId, imageUrl: !!imageUrl });
+    console.log('Instagram post request:', { blogPostId, imageUrl: !!imageUrl, hasToken: !!instagramAccessToken });
 
     if (!blogPostId || !caption) {
       throw new Error('Blog Post ID und Caption sind erforderlich');
     }
 
     if (!instagramAccessToken) {
-      throw new Error('Instagram Access Token nicht konfiguriert');
+      console.error('Instagram Access Token nicht konfiguriert');
+      throw new Error('Instagram Access Token nicht konfiguriert. Bitte konfiguriere den Token in den Supabase Secrets.');
     }
 
     // Get blog post details
@@ -40,6 +41,7 @@ serve(async (req) => {
       .single();
 
     if (blogError || !blogPost) {
+      console.error('Blog post not found:', blogError);
       throw new Error('Blog Post nicht gefunden');
     }
 
@@ -72,13 +74,18 @@ serve(async (req) => {
       throw new Error('Fehler beim Erstellen des Instagram-Eintrags');
     }
 
+    console.log('Starting Instagram API calls...');
+
     // Get Instagram User ID first
+    console.log('Fetching Instagram user ID...');
     const userResponse = await fetch(
       `https://graph.facebook.com/v18.0/me?fields=id&access_token=${instagramAccessToken}`
     );
 
     if (!userResponse.ok) {
-      throw new Error('Fehler beim Abrufen der Instagram User ID');
+      const errorText = await userResponse.text();
+      console.error('User ID fetch error:', userResponse.status, errorText);
+      throw new Error(`Fehler beim Abrufen der Instagram User ID: ${userResponse.status} - ${errorText}`);
     }
 
     const userData = await userResponse.json();
@@ -110,18 +117,19 @@ serve(async (req) => {
       }
     );
 
+    const containerData = await containerResponse.json();
+    console.log('Container response:', containerResponse.status, containerData);
+
     if (!containerResponse.ok) {
-      const errorData = await containerResponse.json();
-      console.error('Container creation error:', errorData);
-      throw new Error(`Fehler beim Erstellen des Media Containers: ${errorData.error?.message || 'Unbekannter Fehler'}`);
+      console.error('Container creation error:', containerData);
+      throw new Error(`Fehler beim Erstellen des Media Containers: ${containerData.error?.message || 'Unbekannter Fehler'}`);
     }
 
-    const containerData = await containerResponse.json();
     const creationId = containerData.id;
-
     console.log('Media container created:', creationId);
 
     // Step 2: Publish the media container
+    console.log('Publishing media container...');
     const publishResponse = await fetch(
       `https://graph.facebook.com/v18.0/${instagramUserId}/media_publish`,
       {
@@ -136,15 +144,15 @@ serve(async (req) => {
       }
     );
 
+    const publishData = await publishResponse.json();
+    console.log('Publish response:', publishResponse.status, publishData);
+
     if (!publishResponse.ok) {
-      const errorData = await publishResponse.json();
-      console.error('Publish error:', errorData);
-      throw new Error(`Fehler beim Veröffentlichen: ${errorData.error?.message || 'Unbekannter Fehler'}`);
+      console.error('Publish error:', publishData);
+      throw new Error(`Fehler beim Veröffentlichen: ${publishData.error?.message || 'Unbekannter Fehler'}`);
     }
 
-    const publishData = await publishResponse.json();
     const mediaId = publishData.id;
-
     console.log('Instagram post published successfully:', mediaId);
 
     // Update record as posted
