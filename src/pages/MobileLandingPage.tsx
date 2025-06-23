@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { ArrowRight, Instagram, Calendar, User } from "lucide-react";
 import { Link } from 'react-router-dom';
@@ -13,8 +12,7 @@ import { fetchLatestPosts, fetchLatestComments, fetchRainForecast } from '@/quer
 
 const mariannePortrait =
   'https://images.unsplash.com/photo-1594736797933-d0401ba4e7ba?auto=format&fit=crop&w=400&q=80';
-const mainHeroImage =
-  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=480&fit=crop";
+const mainHeroImage = "/lovable-uploads/74b7922c-0eef-4cb4-9f0f-f21774dc9768.png";
 
 const seasonTips = [
   "🌱 Jetzt aussäen: Radieschen und Spinat vertragen noch Kälte - mein Geheimtipp für frühe Ernte!",
@@ -47,7 +45,7 @@ const MobileLandingPage = () => {
         </div>
         <img
           src={mainHeroImage}
-          alt="Mariannes Garten in Ostfriesland"
+          alt="Mariannes idyllischer Garten in Ostfriesland mit Teeservice und altem Reetdachhaus"
           className="w-full max-w-[360px] aspect-[4/3] rounded-2xl shadow-lg mx-auto object-cover border-2 border-sage-100"
         />
         <h1 className="text-2xl font-bold font-serif text-earth-800">

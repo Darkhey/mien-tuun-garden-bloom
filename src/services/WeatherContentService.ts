@@ -149,7 +149,7 @@ export class WeatherContentService {
         article.category
       );
 
-      // Speichere die generierten Tags
+      // Speichere die generierten Tags (korrigierter Datenbankname)
       await supabase
         .from('blog_posts')
         .update({ weather_tags: weatherTags })

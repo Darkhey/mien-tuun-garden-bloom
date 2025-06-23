@@ -7,8 +7,7 @@ import NewsletterSignup from "@/components/NewsletterSignup";
 
 const mariannePortrait =
   'https://images.unsplash.com/photo-1594736797933-d0401ba4e7ba?auto=format&fit=crop&w=400&q=80';
-const mainHeroImage =
-  'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1280&h=720&fit=crop';
+const mainHeroImage = '/lovable-uploads/74b7922c-0eef-4cb4-9f0f-f21774dc9768.png';
 
 const welcome = {
   headline: 'Moin! Ich bin Marianne aus Ostfriesland.',
@@ -80,7 +79,7 @@ const HeroSection: React.FC = () => {
           <div className="flex items-center justify-center">
             <img
               src={mainHeroImage}
-              alt="Mariannes Garten in Ostfriesland"
+              alt="Mariannes idyllischer Garten in Ostfriesland mit Teeservice und altem Reetdachhaus"
               className="rounded-xl shadow-2xl w-full max-w-md h-80 object-cover border-4 border-sage-100"
             />
           </div>
