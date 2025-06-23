@@ -1,4 +1,3 @@
-
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 const OPENAI_ADMIN_KEY = Deno.env.get("OPENAI_ADMIN_KEY");
 
@@ -61,7 +60,9 @@ export async function generateTopicIdea(contextPrompt: string) {
   const apiKey = getOpenAIKey();
   
   if (!apiKey) {
-    throw new Error("OpenAI API-Schlüssel nicht konfiguriert");
+    console.log("OpenAI API Key nicht verfügbar, verwende Gemini Fallback");
+    const { generateTopicWithGemini } = await import('./gemini.ts');
+    return await generateTopicWithGemini(contextPrompt);
   }
 
   try {
@@ -83,6 +84,11 @@ export async function generateTopicIdea(contextPrompt: string) {
     });
 
     if (!ideaResp.ok) {
+      if (ideaResp.status === 401 || ideaResp.status === 403) {
+        console.log("OpenAI API Berechtigungsfehler, verwende Gemini Fallback");
+        const { generateTopicWithGemini } = await import('./gemini.ts');
+        return await generateTopicWithGemini(contextPrompt);
+      }
       const errorText = await ideaResp.text();
       throw new Error(`OpenAI API Fehler (${ideaResp.status}): ${errorText}`);
     }
@@ -93,16 +99,19 @@ export async function generateTopicIdea(contextPrompt: string) {
       "Neuer Blogartikel"
     );
   } catch (error) {
-    console.error("Topic-Generierung Fehler:", error);
-    throw new Error(`Topic-Generierung fehlgeschlagen: ${error.message}`);
+    console.error("OpenAI Topic-Generierung Fehler, verwende Gemini Fallback:", error);
+    const { generateTopicWithGemini } = await import('./gemini.ts');
+    return await generateTopicWithGemini(contextPrompt);
   }
 }
 
 export async function generateArticle(prompt: string) {
-  const apiKey = getOpenAIKey(true); // Use admin key for enhanced article generation
+  const apiKey = getOpenAIKey(true);
   
   if (!apiKey) {
-    throw new Error("OpenAI API-Schlüssel nicht konfiguriert");
+    console.log("OpenAI API Key nicht verfügbar, verwende Gemini Fallback");
+    const { generateArticleWithGemini } = await import('./gemini.ts');
+    return await generateArticleWithGemini(prompt);
   }
 
   try {
@@ -119,11 +128,16 @@ export async function generateArticle(prompt: string) {
           { role: "user", content: prompt }
         ],
         temperature: 0.75,
-        max_tokens: 2500, // Increased for better content
+        max_tokens: 2500,
       }),
     });
 
     if (!artResp.ok) {
+      if (artResp.status === 401 || artResp.status === 403) {
+        console.log("OpenAI API Berechtigungsfehler, verwende Gemini Fallback");
+        const { generateArticleWithGemini } = await import('./gemini.ts');
+        return await generateArticleWithGemini(prompt);
+      }
       const errorText = await artResp.text();
       throw new Error(`OpenAI API Fehler (${artResp.status}): ${errorText}`);
     }
@@ -136,8 +150,9 @@ export async function generateArticle(prompt: string) {
     
     return artData.choices[0].message.content.trim();
   } catch (error) {
-    console.error("Artikel-Generierung Fehler:", error);
-    throw new Error(`Artikel-Generierung fehlgeschlagen: ${error.message}`);
+    console.error("OpenAI Artikel-Generierung Fehler, verwende Gemini Fallback:", error);
+    const { generateArticleWithGemini } = await import('./gemini.ts');
+    return await generateArticleWithGemini(prompt);
   }
 }
 

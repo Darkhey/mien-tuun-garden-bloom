@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -39,6 +38,46 @@ const corsHeaders = {
 
 // Use admin key for enhanced content generation, fallback to regular key
 const openAIApiKey = Deno.env.get("OPENAI_ADMIN_KEY") || Deno.env.get("OPENAI_API_KEY");
+const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+
+async function generateWithGemini(systemPrompt: string, userPrompt: string) {
+  if (!geminiApiKey) {
+    throw new Error("Gemini API Key nicht konfiguriert");
+  }
+
+  const fullPrompt = `${systemPrompt}\n\nUser: ${userPrompt}`;
+  
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{
+          text: fullPrompt
+        }]
+      }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4000,
+      }
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API Fehler (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+  
+  if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+    throw new Error("Keine Antwort von Gemini erhalten");
+  }
+  
+  return data.candidates[0].content.parts[0].text.trim();
+}
 
 serve(async (req) => {
   console.log(`[generate-blog-post] Request method: ${req.method}`);
@@ -81,12 +120,12 @@ serve(async (req) => {
       );
     }
 
-    if (!openAIApiKey) {
-      console.error("[generate-blog-post] OpenAI API Key fehlt");
+    if (!openAIApiKey && !geminiApiKey) {
+      console.error("[generate-blog-post] Keine API Keys verfügbar");
       return new Response(
         JSON.stringify({ 
-          error: "OpenAI API Key nicht konfiguriert",
-          details: "Der Server ist nicht korrekt konfiguriert" 
+          error: "Keine KI-API konfiguriert",
+          details: "Weder OpenAI noch Gemini API Key ist verfügbar" 
         }),
         {
           status: 500,
@@ -142,52 +181,66 @@ FORMAT: Reines Markdown ohne Metadaten-Block, perfekt für moderne CMS-Systeme.`
 
     console.log("[generate-blog-post] Sende Request an OpenAI API mit verbessertem Modell...");
 
-    const openAIResponse = await fetchWithBackoff("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${openAIApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages,
-        temperature: 0.7,
-        max_tokens: 4000, // Increased for longer, more detailed articles
-        presence_penalty: 0.1,
-        frequency_penalty: 0.1,
-      })
-    });
+    let content;
+    let usedModel = "gpt-4o";
+    let usedProvider = "OpenAI";
 
-    console.log(`[generate-blog-post] OpenAI Response Status: ${openAIResponse.status}`);
+    // Try OpenAI first
+    if (openAIApiKey) {
+      try {
+        const openAIResponse = await fetchWithBackoff("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openAIApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages,
+            temperature: 0.7,
+            max_tokens: 4000, // Increased for longer, more detailed articles
+            presence_penalty: 0.1,
+            frequency_penalty: 0.1,
+          })
+        });
 
-    if (!openAIResponse.ok) {
-      const errorText = await openAIResponse.text();
-      console.error(`[generate-blog-post] OpenAI API Fehler (${openAIResponse.status}):`, errorText);
-
-      return new Response(
-        JSON.stringify({
-          error: `OpenAI API Fehler nach mehreren Versuchen`,
-          status: openAIResponse.status,
-          details: errorText.substring(0, 500)
-        }),
-        {
-          status: openAIResponse.status >= 500 ? 502 : openAIResponse.status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        if (openAIResponse.ok) {
+          const data = await openAIResponse.json();
+          content = data.choices?.[0]?.message?.content;
+          
+          if (content) {
+            console.log("[generate-blog-post] OpenAI erfolgreich verwendet");
+          }
+        } else if (openAIResponse.status === 401 || openAIResponse.status === 403) {
+          console.log("[generate-blog-post] OpenAI Berechtigungsfehler, verwende Gemini Fallback");
+        } else {
+          const errorText = await openAIResponse.text();
+          console.warn(`[generate-blog-post] OpenAI Fehler ${openAIResponse.status}: ${errorText.substring(0, 200)}`);
         }
-      );
+      } catch (error) {
+        console.warn("[generate-blog-post] OpenAI Request Fehler:", error.message);
+      }
     }
 
-    const data = await openAIResponse.json();
-    console.log("[generate-blog-post] Enhanced OpenAI Response erhalten");
-
-    const content = data.choices?.[0]?.message?.content;
+    // Fallback to Gemini if OpenAI failed
+    if (!content && geminiApiKey) {
+      try {
+        console.log("[generate-blog-post] Verwende Gemini Fallback...");
+        content = await generateWithGemini(systemPrompt, prompt.trim());
+        usedModel = "gemini-1.5-flash";
+        usedProvider = "Gemini";
+        console.log("[generate-blog-post] Gemini erfolgreich verwendet");
+      } catch (error) {
+        console.error("[generate-blog-post] Gemini Fallback Fehler:", error);
+      }
+    }
 
     if (!content) {
-      console.error("[generate-blog-post] Kein Content in OpenAI Response:", data);
+      console.error("[generate-blog-post] Alle KI-APIs fehlgeschlagen");
       return new Response(
         JSON.stringify({ 
-          error: "Keine Antwort von OpenAI erhalten",
-          details: "Die KI hat keinen verwertbaren Content generiert" 
+          error: "Alle KI-Services nicht verfügbar",
+          details: "Sowohl OpenAI als auch Gemini sind momentan nicht erreichbar" 
         }),
         {
           status: 500,
@@ -196,7 +249,8 @@ FORMAT: Reines Markdown ohne Metadaten-Block, perfekt für moderne CMS-Systeme.`
       );
     }
 
-    // Enhanced content analysis with AI insights
+    console.log("[generate-blog-post] Enhanced OpenAI Response erhalten");
+
     const wordCount = content.split(/\s+/).length;
     const readingTime = Math.ceil(wordCount / 160);
     const hasTitle = content.includes('# ');
@@ -243,9 +297,9 @@ FORMAT: Reines Markdown ohne Metadaten-Block, perfekt für moderne CMS-Systeme.`
           h3Count: hasH3Headings,
           listCount: hasLists,
           hasFAQ,
-          model: "gpt-4o",
+          model: usedModel,
+          provider: usedProvider,
           enhancedFeatures: true,
-          aiCapabilities: "admin-level",
           timestamp: new Date().toISOString()
         }
       }),
@@ -255,7 +309,6 @@ FORMAT: Reines Markdown ohne Metadaten-Block, perfekt für moderne CMS-Systeme.`
     );
   } catch (err) {
     console.error("[generate-blog-post] Unbehandelter Fehler:", err);
-    console.error("[generate-blog-post] Error stack:", err.stack);
     
     return new Response(
       JSON.stringify({ 
