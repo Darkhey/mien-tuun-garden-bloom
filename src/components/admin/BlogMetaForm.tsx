@@ -2,12 +2,14 @@ import React from "react";
 import TagSelector from "./TagSelector";
 
 const CATEGORY_OPTIONS = [
-  { value: "allgemein", label: "Allgemein" },
-  { value: "gartentipps", label: "Gartentipps" },
-  { value: "garten", label: "Garten" },
-  { value: "gartenplanung", label: "Gartenplanung" },
-  { value: "küche", label: "Küche" },
-  { value: "nachhaltigkeit", label: "Nachhaltigkeit" },
+  { value: "Garten & Planung", label: "Garten & Planung" },
+  { value: "Pflanzenpflege", label: "Pflanzenpflege" },
+  { value: "Ernte & Küche", label: "Ernte & Küche" },
+  { value: "Nachhaltigkeit & Umwelt", label: "Nachhaltigkeit & Umwelt" },
+  { value: "Spezielle Gartenbereiche", label: "Spezielle Gartenbereiche" },
+  { value: "Selbermachen & Ausrüstung", label: "Selbermachen & Ausrüstung" },
+  { value: "Philosophie & Lifestyle", label: "Philosophie & Lifestyle" },
+  { value: "Allgemein", label: "Allgemein" },
 ];
 
 const DIFFICULTY = [

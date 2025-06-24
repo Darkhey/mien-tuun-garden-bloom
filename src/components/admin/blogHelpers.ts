@@ -3,12 +3,14 @@
  */
 
 export const BLOG_CATEGORIES = [
+  { value: "Garten & Planung", label: "Garten & Planung" },
+  { value: "Pflanzenpflege", label: "Pflanzenpflege" },
+  { value: "Ernte & Küche", label: "Ernte & Küche" },
+  { value: "Nachhaltigkeit & Umwelt", label: "Nachhaltigkeit & Umwelt" },
+  { value: "Spezielle Gartenbereiche", label: "Spezielle Gartenbereiche" },
+  { value: "Selbermachen & Ausrüstung", label: "Selbermachen & Ausrüstung" },
+  { value: "Philosophie & Lifestyle", label: "Philosophie & Lifestyle" },
   { value: "Allgemein", label: "Allgemein" },
-  { value: "Gartentipps", label: "Gartentipps" },
-  { value: "Garten", label: "Garten" },
-  { value: "Gartenplanung", label: "Gartenplanung" },
-  { value: "Küche", label: "Küche" },
-  { value: "Nachhaltigkeit", label: "Nachhaltigkeit" },
 ];
 
 export const SEASONS = [
@@ -21,12 +23,14 @@ export const SEASONS = [
 
 // Aktualisierte Trend-Tags passend zu den neuen Kategorien
 const TREND_TAGS = {
+  "Garten & Planung": ["Beetgestaltung", "Aussaat", "Hochbeet", "Mischkultur", "Permakultur"],
+  "Pflanzenpflege": ["Gießen", "Düngen", "Schneiden", "Schädlingsfrei", "Kompost"],
+  "Ernte & Küche": ["Saisonal", "Rezepte", "Haltbarmachen", "Lagern", "Küchentipps"],
+  "Nachhaltigkeit & Umwelt": ["Plastikfrei", "Regenerativ", "Naturgarten", "Kreislauf", "Upcycling"],
+  "Spezielle Gartenbereiche": ["Urban Gardening", "Balkon", "Indoor", "Gewächshaus", "Wassersparen"],
+  "Selbermachen & Ausrüstung": ["DIY", "Werkzeuge", "Upcycling", "Bauanleitungen", "Gartenmöbel"],
+  "Philosophie & Lifestyle": ["Selbstversorgung", "Minimalismus", "Gartenwissen", "Lebensstil", "Inspiration"],
   "Allgemein": ["Tipps", "Inspiration", "Ratgeber", "Wissen", "Grundlagen"],
-  "Gartentipps": ["Pflanzenpflege", "Gießen", "Düngen", "Schneiden", "Schädlinge"],
-  "Garten": ["Beetplanung", "Aussaat", "Ernte", "Kompost", "Werkzeuge"],
-  "Gartenplanung": ["Permakultur", "No-Dig", "Biogarten", "Hochbeet", "Mischkultur"],
-  "Küche": ["Saisonal", "Regional", "Rezepte", "Kochen", "Zubereitung"],
-  "Nachhaltigkeit": ["Plastikfrei", "Regenerativ", "Naturgarten", "Kreislaufwirtschaft", "Upcycling"],
   default: ["Nachhaltig", "DIY", "Tipps", "Garten", "Natürlich"]
 };
 

@@ -1,10 +1,12 @@
 export const CATEGORIES = [
+  "Garten & Planung",
+  "Pflanzenpflege",
+  "Ernte & Küche",
+  "Nachhaltigkeit & Umwelt",
+  "Spezielle Gartenbereiche",
+  "Selbermachen & Ausrüstung",
+  "Philosophie & Lifestyle",
   "Allgemein",
-  "Gartentipps", 
-  "Garten",
-  "Gartenplanung",
-  "Küche",
-  "Nachhaltigkeit"
 ];
 
 export const SEASONS = [
