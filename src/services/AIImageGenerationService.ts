@@ -35,10 +35,12 @@ class AIImageGenerationService {
       });
 
       if (error) {
+        console.error('[AIImageGeneration] Edge function error:', error);
         throw new Error(`Bildgenerierung fehlgeschlagen: ${error.message}`);
       }
 
       if (!data?.imageUrl) {
+        console.error('[AIImageGeneration] No image URL received:', data);
         throw new Error('Keine Bild-URL von der KI erhalten');
       }
 
@@ -47,11 +49,52 @@ class AIImageGenerationService {
       return {
         url: data.imageUrl,
         prompt,
-        model: 'gpt-image-1'
+        model: data.model || 'dall-e-2'
       };
     } catch (error) {
       console.error('[AIImageGeneration] Fehler bei Bildgenerierung:', error);
-      throw error;
+      
+      // Fallback zu Unsplash wenn AI-Generierung fehlschlägt
+      try {
+        console.log('[AIImageGeneration] Versuche Unsplash Fallback...');
+        const fallbackUrl = await this.getUnsplashFallback(options.category || 'garden');
+        
+        return {
+          url: fallbackUrl,
+          prompt,
+          model: 'unsplash-fallback'
+        };
+      } catch (fallbackError) {
+        console.error('[AIImageGeneration] Auch Unsplash Fallback fehlgeschlagen:', fallbackError);
+        throw new Error('Bildgenerierung und Fallback beide fehlgeschlagen');
+      }
+    }
+  }
+
+  private async getUnsplashFallback(category: string): Promise<string> {
+    const searchTerms = {
+      'garten': 'garden vegetables herbs',
+      'kochen': 'cooking kitchen food',
+      'rezepte': 'cooking ingredients',
+      'allgemein': 'nature garden'
+    };
+    
+    const searchTerm = searchTerms[category.toLowerCase()] || 'garden nature';
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('unsplash-image-search', {
+        body: { query: searchTerm, count: 1 }
+      });
+
+      if (error || !data?.images?.[0]) {
+        // Statisches Fallback-Bild
+        return 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=600&fit=crop';
+      }
+
+      return data.images[0].urls.regular;
+    } catch (error) {
+      console.error('[AIImageGeneration] Unsplash search failed:', error);
+      return 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=600&fit=crop';
     }
   }
 

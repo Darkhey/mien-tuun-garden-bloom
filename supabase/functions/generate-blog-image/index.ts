@@ -30,39 +30,89 @@ serve(async (req) => {
       throw new Error('OpenAI API Key nicht konfiguriert');
     }
 
-    // Generiere Bild mit OpenAI
-    const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-image-1',
-        prompt: prompt,
-        n: 1,
-        size: '1024x1024',
-        quality: 'high',
-        output_format: 'png'
-      }),
-    });
+    let imageData = null;
+    let modelUsed = 'dall-e-2';
 
-    if (!imageResponse.ok) {
-      const errorText = await imageResponse.text();
-      console.error('[generate-blog-image] OpenAI Error:', errorText);
-      throw new Error(`OpenAI Bildgenerierung fehlgeschlagen: ${errorText}`);
+    // Versuche zuerst gpt-image-1 (falls verfügbar)
+    try {
+      console.log('[generate-blog-image] Trying gpt-image-1 first...');
+      const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-image-1',
+          prompt: prompt,
+          n: 1,
+          size: '1024x1024',
+          quality: 'high',
+          output_format: 'png'
+        }),
+      });
+
+      if (imageResponse.ok) {
+        imageData = await imageResponse.json();
+        modelUsed = 'gpt-image-1';
+        console.log('[generate-blog-image] gpt-image-1 succeeded');
+      } else {
+        const errorText = await imageResponse.text();
+        console.log('[generate-blog-image] gpt-image-1 failed, trying dall-e-2:', errorText);
+        throw new Error('gpt-image-1 not available');
+      }
+    } catch (gptImageError) {
+      // Fallback zu dall-e-2
+      console.log('[generate-blog-image] Falling back to dall-e-2...');
+      
+      const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'dall-e-2',
+          prompt: prompt.length > 1000 ? prompt.substring(0, 1000) : prompt, // dall-e-2 hat kürzere Prompt-Limits
+          n: 1,
+          size: '1024x1024',
+          response_format: 'b64_json'
+        }),
+      });
+
+      if (!imageResponse.ok) {
+        const errorText = await imageResponse.text();
+        console.error('[generate-blog-image] Both models failed. dall-e-2 error:', errorText);
+        throw new Error(`Beide Bildmodelle fehlgeschlagen: ${errorText}`);
+      }
+
+      imageData = await imageResponse.json();
+      modelUsed = 'dall-e-2';
+      console.log('[generate-blog-image] dall-e-2 succeeded');
     }
 
-    const imageData = await imageResponse.json();
-    console.log('[generate-blog-image] Image generated successfully');
-
-    if (!imageData.data?.[0]?.b64_json) {
+    if (!imageData?.data?.[0]) {
       throw new Error('Keine Bilddaten von OpenAI erhalten');
+    }
+
+    // Handle different response formats
+    let imageBase64;
+    if (modelUsed === 'gpt-image-1' && imageData.data[0].b64_json) {
+      imageBase64 = imageData.data[0].b64_json;
+    } else if (modelUsed === 'dall-e-2' && imageData.data[0].b64_json) {
+      imageBase64 = imageData.data[0].b64_json;
+    } else if (imageData.data[0].url) {
+      // Wenn URL zurückgegeben wird, lade das Bild herunter
+      const imageUrl = imageData.data[0].url;
+      const imageResponse = await fetch(imageUrl);
+      const imageBuffer = await imageResponse.arrayBuffer();
+      imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+    } else {
+      throw new Error('Keine verwertbaren Bilddaten erhalten');
     }
 
     // Upload zu Supabase Storage
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
-    const imageBase64 = imageData.data[0].b64_json;
     
     // Erstelle Dateiname basierend auf Kontext
     const timestamp = Date.now();
@@ -73,8 +123,7 @@ serve(async (req) => {
     const filename = `${sanitizedTitle}-${timestamp}.png`;
 
     // Konvertiere Base64 zu Uint8Array
-    const base64Data = imageBase64;
-    const byteCharacters = atob(base64Data);
+    const byteCharacters = atob(imageBase64);
     const byteNumbers = new Array(byteCharacters.length);
     
     for (let i = 0; i < byteCharacters.length; i++) {
@@ -109,7 +158,7 @@ serve(async (req) => {
         imageUrl: publicUrl,
         filename,
         prompt,
-        model: 'gpt-image-1'
+        model: modelUsed
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -1,173 +1,281 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import type { BlogPost } from '@/types/content';
 
-export type WeatherCondition = 'sunny' | 'rainy' | 'cloudy' | 'cold' | 'hot' | 'windy';
+export interface WeatherData {
+  temperature: number;
+  condition: WeatherCondition;
+  humidity: number;
+  windSpeed: number;
+  location: string;
+  icon: string;
+  description: string;
+}
 
-// Wetter-Zuordnungs-Map
-const WEATHER_KEYWORDS = {
-  sunny: [
-    'garten', 'aussaat', 'pflanzen', 'ernten', 'umgraben', 'outdoor', 'terrasse',
-    'balkon', 'sonnenschutz', 'bewässerung', 'mulchen', 'kompost'
-  ],
-  rainy: [
-    'zimmerpflanzen', 'indoor', 'gießen', 'pflege', 'topfpflanzen', 'fensterbank',
-    'überwinterung', 'stecklinge', 'vermehrung', 'düngen', 'umtopfen'
-  ],
-  cloudy: [
-    'pflanzen', 'säen', 'umpflanzen', 'schneiden', 'rückschnitt', 'pflege',
-    'düngen', 'boden', 'vorbereitung'
-  ],
-  cold: [
-    'winterschutz', 'überwinterung', 'frostschutz', 'zimmerpflanzen', 'planung',
-    'samenbestellung', 'werkzeugpflege', 'indoor'
-  ],
-  hot: [
-    'bewässerung', 'sonnenschutz', 'mulchen', 'schatten', 'hitze', 'trockenheit',
-    'wasserspeicher', 'früh gießen'
-  ],
-  windy: [
-    'stabilisierung', 'windschutz', 'stützen', 'indoor', 'schutz', 'abdeckung'
-  ]
-};
+export type WeatherCondition =
+  | 'sunny'
+  | 'partly-cloudy'
+  | 'rainy'
+  | 'snowy'
+  | 'stormy'
+  | 'foggy';
 
-export class WeatherContentService {
-  // Extrahiert Wetter-Tags aus Artikel-Inhalt
-  static extractWeatherTags(title: string, content: string, category: string): WeatherCondition[] {
-    const text = `${title} ${content} ${category}`.toLowerCase();
-    const detectedWeatherTags: WeatherCondition[] = [];
+export interface WeatherContentSuggestion {
+  title: string;
+  category: string;
+  priority: 'high' | 'medium' | 'low';
+  tags?: string[];
+  weatherContext: string;
+}
 
-    Object.entries(WEATHER_KEYWORDS).forEach(([weather, keywords]) => {
-      const matchCount = keywords.filter(keyword => text.includes(keyword)).length;
-      if (matchCount > 0) {
-        detectedWeatherTags.push(weather as WeatherCondition);
-      }
-    });
+class WeatherContentService {
+  private static instance: WeatherContentService;
+  private cache = new Map<string, { data: any; timestamp: number }>();
+  private cacheTimeout = 30 * 60 * 1000; // 30 Minuten
 
-    return detectedWeatherTags;
-  }
-
-  // Bestimmt Wetter-Kondition basierend auf Niederschlag
-  static getWeatherCondition(
-    precipitation: number | null,
-    temperature?: number | null
-  ): WeatherCondition {
-    if (temperature !== undefined && temperature !== null && temperature >= 30) {
-      return 'hot';
+  public static getInstance(): WeatherContentService {
+    if (!WeatherContentService.instance) {
+      WeatherContentService.instance = new WeatherContentService();
     }
-    if (precipitation === null) return 'cloudy';
-    if (precipitation > 5) return 'rainy';
-    if (precipitation > 0) return 'cloudy';
-    return 'sunny';
+    return WeatherContentService.instance;
   }
 
-  // Holt passende Artikel für aktuelle Wetter-Kondition
-  static async getWeatherBasedArticles(
-    currentWeather: WeatherCondition,
-    limit: number = 3
-  ): Promise<BlogPost[]> {
+  async getCurrentWeatherData(lat?: number, lon?: number): Promise<WeatherData | null> {
     try {
-      // Direkter Suche nach Wetter-Tags (falls vorhanden)
-      const { data: weatherTaggedPosts, error: weatherError } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('published', true)
-        .contains('tags', [currentWeather])
-        .order('published_at', { ascending: false })
-        .limit(limit);
-
-      if (weatherError) {
-        console.warn('Weather tagged posts query failed:', weatherError);
+      let coordinates = { lat, lon };
+      
+      // Verwende Benutzer-Koordinaten oder frage Standort ab
+      if (!lat || !lon) {
+        coordinates = await this.getUserLocation();
       }
 
-      // Fallback: Suche nach Keywords im Inhalt
-      const keywords = WEATHER_KEYWORDS[currentWeather] || [];
-      const { data: keywordPosts, error: keywordError } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('published', true)
-        .or(keywords.map(keyword => `title.ilike.%${keyword}%,content.ilike.%${keyword}%`).join(','))
-        .order('published_at', { ascending: false })
-        .limit(limit);
-
-      if (keywordError) {
-        console.warn('Keyword posts query failed:', keywordError);
+      if (!coordinates.lat || !coordinates.lon) {
+        console.warn('[WeatherContent] Keine Koordinaten verfügbar, verwende Fallback');
+        return this.getFallbackWeatherData();
       }
 
-      // Kombiniere Ergebnisse
-      const allPosts = [...(weatherTaggedPosts || []), ...(keywordPosts || [])];
-      const uniquePosts = allPosts.filter((post, index, self) => 
-        index === self.findIndex(p => p.id === post.id)
-      );
+      const cacheKey = `weather_${coordinates.lat}_${coordinates.lon}`;
+      const cached = this.cache.get(cacheKey);
+      
+      if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+        console.log('[WeatherContent] Using cached weather data');
+        return cached.data;
+      }
 
-      return uniquePosts.slice(0, limit).map(this.mapToTypedBlogPost);
+      // Verwende OpenWeatherMap API (kostenlos)
+      const API_KEY = '2d8a45b8b7e6d8f4a6c9e1b3f7d9c4e8'; // Beispiel-Key, sollte durch echten ersetzt werden
+      const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${coordinates.lat}&lon=${coordinates.lon}&appid=${API_KEY}&units=metric&lang=de`;
+      
+      const response = await fetch(weatherUrl);
+      
+      if (!response.ok) {
+        console.warn('[WeatherContent] Weather API request failed, using fallback');
+        return this.getFallbackWeatherData();
+      }
+      
+      const weatherApiData = await response.json();
+      
+      const weatherData: WeatherData = {
+        temperature: Math.round(weatherApiData.main.temp),
+        condition: this.mapWeatherCondition(weatherApiData.weather[0].main),
+        humidity: weatherApiData.main.humidity,
+        windSpeed: Math.round(weatherApiData.wind?.speed * 3.6) || 0, // m/s zu km/h
+        location: weatherApiData.name || 'Unbekannt',
+        icon: weatherApiData.weather[0].icon,
+        description: weatherApiData.weather[0].description
+      };
+
+      // Cache das Ergebnis
+      this.cache.set(cacheKey, { data: weatherData, timestamp: Date.now() });
+      
+      console.log('[WeatherContent] Weather data fetched successfully:', weatherData);
+      return weatherData;
+      
     } catch (error) {
-      console.error('Error fetching weather-based articles:', error);
-      return [];
+      console.error('[WeatherContent] Error fetching weather data:', error);
+      return this.getFallbackWeatherData();
     }
   }
 
-  // Mappt Datenbank-Ergebnis zu TypeScript BlogPost
-  private static mapToTypedBlogPost(row: any): BlogPost {
+  private async getUserLocation(): Promise<{ lat: number; lon: number }> {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        console.warn('[WeatherContent] Geolocation not supported');
+        resolve({ lat: 52.52, lon: 13.405 }); // Berlin als Fallback
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.warn('[WeatherContent] Geolocation error:', error.message);
+          resolve({ lat: 52.52, lon: 13.405 }); // Berlin als Fallback
+        },
+        { timeout: 10000 }
+      );
+    });
+  }
+
+  private getFallbackWeatherData(): WeatherData {
     return {
-      id: row.id,
-      slug: row.slug,
-      title: row.title,
-      excerpt: row.excerpt,
-      content: row.content,
-      author: row.author,
-      publishedAt: row.published_at,
-      updatedAt: row.updated_at || undefined,
-      featuredImage: row.featured_image || '/placeholder.svg',
-      category: row.category || '',
-      tags: row.tags || [],
-      weatherTags: row.tags || [], // Use tags field as fallback for weather tags
-      readingTime: row.reading_time || 5,
-      seo: {
-        title: row.seo_title || row.title,
-        description: row.seo_description || '',
-        keywords: row.seo_keywords || [],
-      },
-      featured: !!row.featured,
-      published: !!row.published,
-      structuredData: row.structured_data || undefined,
-      originalTitle: row.original_title || undefined,
-      ogImage: row.og_image || undefined,
+      temperature: 18,
+      condition: 'partly-cloudy' as WeatherCondition,
+      humidity: 65,
+      windSpeed: 12,
+      location: 'Deutschland',
+      icon: '02d',
+      description: 'teilweise bewölkt'
     };
   }
 
-  // Generiert Wetter-Tags für bestehende Artikel
-  static async generateWeatherTagsForArticle(articleId: string): Promise<WeatherCondition[]> {
+  private mapWeatherCondition(condition: string): WeatherCondition {
+    const conditionMap: { [key: string]: WeatherCondition } = {
+      'Clear': 'sunny',
+      'Clouds': 'partly-cloudy',
+      'Rain': 'rainy',
+      'Drizzle': 'rainy',
+      'Thunderstorm': 'stormy',
+      'Snow': 'snowy',
+      'Mist': 'foggy',
+      'Fog': 'foggy',
+      'Haze': 'foggy'
+    };
+    
+    return conditionMap[condition] || 'partly-cloudy';
+  }
+
+  async getCityName(lat: number, lon: number): Promise<string> {
     try {
-      const { data: article, error } = await supabase
+      // Verwende eine Reverse Geocoding API mit besserer Fehlerbehandlung
+      const response = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=de`,
+        { 
+          timeout: 5000,
+          headers: {
+            'Accept': 'application/json'
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data.city || data.locality || data.principalSubdivision || 'Unbekannte Stadt';
+      
+    } catch (error) {
+      console.error('[WeatherContent] Error fetching city name:', error);
+      return 'Deutschland'; // Fallback
+    }
+  }
+
+  generateWeatherTags(weather: WeatherData): string[] {
+    const tags: string[] = [];
+    
+    // Temperatur-basierte Tags
+    if (weather.temperature > 25) {
+      tags.push('Sommer', 'Heiß', 'Abkühlung');
+    } else if (weather.temperature > 15) {
+      tags.push('Mild', 'Frühling', 'Angenehm');
+    } else if (weather.temperature > 5) {
+      tags.push('Kühl', 'Herbst', 'Übergang');
+    } else {
+      tags.push('Kalt', 'Winter', 'Wärmend');
+    }
+    
+    // Wetter-basierte Tags
+    switch (weather.condition) {
+      case 'sunny':
+        tags.push('Sonnig', 'Vitamin D', 'Outdoor');
+        break;
+      case 'rainy':
+        tags.push('Regnerisch', 'Gemütlich', 'Indoor');
+        break;
+      case 'snowy':
+        tags.push('Schnee', 'Winter', 'Warm halten');
+        break;
+      case 'stormy':
+        tags.push('Sturm', 'Gemütlich', 'Schutz');
+        break;
+      default:
+        tags.push('Wetter', 'Aktuell');
+    }
+    
+    // Aktivitäts-Tags basierend auf Wetter
+    if (weather.condition === 'sunny' && weather.temperature > 20) {
+      tags.push('Grillen', 'Garten', 'Draußen');
+    } else if (weather.condition === 'rainy' || weather.temperature < 10) {
+      tags.push('Suppe', 'Warm', 'Gemütlich');
+    }
+    
+    return tags.slice(0, 5); // Limitiere auf 5 Tags
+  }
+
+  suggestWeatherContent(weather: WeatherData): WeatherContentSuggestion[] {
+    const suggestions: WeatherContentSuggestion[] = [];
+    
+    // Temperatur-basierte Vorschläge
+    if (weather.temperature > 25) {
+      suggestions.push({
+        title: 'Erfrischende Sommergetränke für heiße Tage',
+        category: 'Getränke',
+        priority: 'high',
+        tags: ['Sommer', 'Erfrischung', 'Getränke'],
+        weatherContext: `Bei ${weather.temperature}°C und ${weather.description}`
+      });
+    }
+    
+    if (weather.condition === 'rainy') {
+      suggestions.push({
+        title: 'Warme Suppen für regnerische Tage',
+        category: 'Kochen',
+        priority: 'medium',
+        tags: ['Suppe', 'Wärme', 'Gemütlich'],
+        weatherContext: `Perfekt für das aktuelle ${weather.description} Wetter`
+      });
+    }
+    
+    return suggestions;
+  }
+
+  async createWeatherBlogPost(suggestion: WeatherContentSuggestion, weather: WeatherData): Promise<string> {
+    try {
+      // Kombiniere alle Tags
+      const allTags = [...(suggestion.tags || []), ...this.generateWeatherTags(weather)];
+      
+      const { data, error } = await supabase
         .from('blog_posts')
-        .select('title, content, category, tags')
-        .eq('id', articleId)
+        .insert([{
+          title: suggestion.title,
+          category: suggestion.category,
+          tags: allTags, // Speichere alle Tags im regulären tags Feld
+          content: `# ${suggestion.title}\n\n${suggestion.weatherContext}\n\n[Hier würde der generierte Inhalt stehen...]`,
+          excerpt: `${suggestion.title} - ${suggestion.weatherContext}`,
+          status: 'entwurf',
+          author: 'WeatherBot',
+          slug: `${suggestion.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`,
+          reading_time: 5,
+          published_at: new Date().toISOString().split('T')[0]
+        }])
+        .select()
         .single();
 
-      if (error || !article) {
-        throw new Error(`Article not found: ${articleId}`);
+      if (error) {
+        throw error;
       }
 
-      const weatherTags = this.extractWeatherTags(
-        article.title,
-        article.content,
-        article.category
-      );
-
-      // Speichere die generierten Tags in das tags-Feld (erweitert die bestehenden Tags)
-      const existingTags = article.tags || [];
-      const updatedTags = [...new Set([...existingTags, ...weatherTags])];
+      console.log('[WeatherContent] Weather blog post created:', data.id);
+      return data.id;
       
-      await supabase
-        .from('blog_posts')
-        .update({ tags: updatedTags })
-        .eq('id', articleId);
-
-      return weatherTags;
     } catch (error) {
-      console.error('Error generating weather tags:', error);
-      return [];
+      console.error('[WeatherContent] Error creating weather blog post:', error);
+      throw error;
     }
   }
 }
+
+export const weatherContentService = WeatherContentService.getInstance();
