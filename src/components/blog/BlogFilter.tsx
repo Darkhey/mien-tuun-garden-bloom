@@ -1,13 +1,15 @@
 
 import React from "react";
 
+export type Season = 'Frühling' | 'Sommer' | 'Herbst' | 'Winter' | 'Ganzjährig';
+
 interface BlogFilterProps {
   categories: string[];
   selectedCategory: string;
   setSelectedCategory: (c: string) => void;
-  seasons: string[];
-  selectedSeason: string;
-  setSelectedSeason: (s: string) => void;
+  seasons: Season[];
+  selectedSeason: Season | '';
+  setSelectedSeason: (s: Season | '') => void;
   searchTerm: string;
   setSearchTerm: (t: string) => void;
   sortOption: string;

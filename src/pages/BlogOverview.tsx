@@ -2,26 +2,19 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from "react-helmet";
 import { useQuery } from '@tanstack/react-query';
 import BlogPostCard from "@/components/blog/BlogPostCard";
-import BlogFilter from "@/components/blog/BlogFilter";
+import BlogFilter, { Season } from "@/components/blog/BlogFilter";
 import SEOService from "@/services/SEOService";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from '@/integrations/supabase/types';
 import type { BlogPost } from '@/types/content';
 import { useSearchParams } from 'react-router-dom';
+import { BLOG_CATEGORIES, SEASONS } from '@/components/admin/blogHelpers';
 
-// Aktualisierte Kategorie-Mappings
-const CATEGORY_MAPPING: Record<string, string> = {
-  'Garten & Planung': 'Garten & Planung',
-  'Pflanzenpflege': 'Pflanzenpflege',
-  'Ernte & Küche': 'Ernte & Küche',
-  'Nachhaltigkeit & Umwelt': 'Nachhaltigkeit & Umwelt',
-  'Spezielle Gartenbereiche': 'Spezielle Gartenbereiche',
-  'Selbermachen & Ausrüstung': 'Selbermachen & Ausrüstung',
-  'Philosophie & Lifestyle': 'Philosophie & Lifestyle',
-  'Allgemein': 'Allgemein',
-};
-
-const SEASONS = ['Frühling', 'Sommer', 'Herbst', 'Winter', 'Ganzjährig'];
+// Kategorie-Mapping aus zentralen Konstanten erzeugen
+const CATEGORY_MAPPING = BLOG_CATEGORIES.reduce((acc, cat) => {
+  acc[cat.value] = cat.label;
+  return acc;
+}, {} as Record<string, string>);
 
 // Blog-Posts aus Supabase laden - mit content Feld
 const fetchBlogPosts = async () => {
@@ -52,7 +45,7 @@ const BlogOverview: React.FC = () => {
 
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedSeason, setSelectedSeason] = useState<string>('');
+  const [selectedSeason, setSelectedSeason] = useState<Season | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<'newest' | 'alphabetical' | 'length' | 'seo'>('newest');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -87,10 +80,10 @@ const BlogOverview: React.FC = () => {
       blogRows
         .map((post: Tables<'blog_posts'>) => post.season)
         .filter(Boolean)
-        .filter(season => SEASONS.includes(season as string))
+        .filter(season => SEASONS.some(s => s.value === season))
     ));
 
-    return seasonsFromPosts.sort();
+    return seasonsFromPosts.sort() as Season[];
   }, [blogRows]);
 
   // Enhanced Filter-Logik mit verbessertem Typ-Handling
@@ -233,9 +226,13 @@ const BlogOverview: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <p className="text-earth-500 text-lg">
-                {selectedCategory || selectedSeason || searchTerm
-                  ? `Keine Artikel gefunden für "${selectedCategory || selectedSeason || searchTerm}". Versuche andere Filter oder Suchbegriffe.`
-                  : 'Noch keine Artikel verfügbar.'}
+                {(() => {
+                  if (searchTerm) return `Keine Artikel gefunden für Suchbegriff "${searchTerm}".`;
+                  if (selectedCategory && selectedSeason) return `Keine Artikel in Kategorie "${selectedCategory}" für Saison "${selectedSeason}".`;
+                  if (selectedCategory) return `Keine Artikel in Kategorie "${selectedCategory}".`;
+                  if (selectedSeason) return `Keine Artikel für Saison "${selectedSeason}".`;
+                  return 'Noch keine Artikel verfügbar.';
+                })()}
               </p>
             </div>
           )}
