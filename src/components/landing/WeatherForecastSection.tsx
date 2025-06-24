@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { fetchCombinedWeatherData } from '@/queries/content';
+import { fetchCombinedWeatherData, fetchCityName } from '@/queries/content';
 import { format } from 'date-fns';
 import { WeatherContentService, WeatherCondition } from '@/services/WeatherContentService';
 import { WEATHER_LATITUDE, WEATHER_LONGITUDE, WEATHER_TIMEZONE } from '@/config/weather.config';
@@ -66,13 +66,14 @@ const WeatherForecastSection: React.FC = () => {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        
+
         try {
+          const city = await fetchCityName(latitude, longitude);
           setLocationData({
             lat: latitude,
             lon: longitude,
             granted: true,
-            city: 'Dein Standort'
+            city: city || 'Dein Standort'
           });
         } catch {
           setLocationData({
@@ -138,9 +139,16 @@ const WeatherForecastSection: React.FC = () => {
   const getNextRainWindow = () => {
     if (!hourlyPrecipitation) return null;
     const { time, precipitation } = hourlyPrecipitation;
+    const now = Date.now();
     for (let i = 0; i < precipitation.length; i++) {
       if (precipitation[i] > 0) {
         const start = new Date(time[i]);
+        if (start.getTime() <= now) {
+          while (i < precipitation.length && precipitation[i] > 0) {
+            i++;
+          }
+          continue;
+        }
         let j = i;
         while (j < precipitation.length && precipitation[j] > 0) {
           j++;
@@ -155,15 +163,19 @@ const WeatherForecastSection: React.FC = () => {
   const getRainAdvice = (window: { start: Date; end: Date } | null) => {
     if (!window) return null;
     const diffMs = window.start.getTime() - Date.now();
-    const diffMinutes = Math.round(diffMs / 60000);
-    if (diffMinutes <= RAIN_WARNING_THRESHOLDS.IMMEDIATE && diffMinutes >= 0) {
+    const diffMinutes = diffMs / 60000;
+    if (diffMinutes < 0) {
+      return null;
+    }
+    if (diffMinutes <= RAIN_WARNING_THRESHOLDS.IMMEDIATE) {
       return 'Jetzt schnell noch die Gartenstühle reinholen!';
     }
     if (
       diffMinutes > RAIN_WARNING_THRESHOLDS.IMMEDIATE &&
       diffMinutes <= RAIN_WARNING_THRESHOLDS.SHORT_TERM
     ) {
-      return `Regen in ca. ${Math.round(diffMinutes / 60)} Stunden.`;
+      const hours = Math.round((diffMinutes / 60) * 10) / 10;
+      return `Regen in ca. ${hours} Stunden.`;
     }
     return null;
   };

@@ -139,13 +139,15 @@ export const fetchCombinedWeatherData = async (
   longitude: number | string = WEATHER_LONGITUDE,
   timezone: string = WEATHER_TIMEZONE
 ): Promise<CombinedWeatherData> => {
-  const url = `${WEATHER_BASE_URL}?latitude=${encodeURIComponent(
-    String(latitude)
-  )}&longitude=${encodeURIComponent(
-    String(longitude)
-  )}&daily=precipitation_sum&hourly=precipitation&forecast_days=1&timezone=${encodeURIComponent(
+  const params = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    daily: 'precipitation_sum',
+    hourly: 'precipitation',
+    forecast_days: '1',
     timezone
-  )}`;
+  });
+  const url = `${WEATHER_BASE_URL}?${params.toString()}`;
   try {
     const res = await fetch(url);
     if (!res.ok) {
@@ -166,5 +168,38 @@ export const fetchCombinedWeatherData = async (
     throw new Error(
       `Error fetching weather data: ${err instanceof Error ? err.message : String(err)}`
     );
+  }
+};
+
+export const fetchCityName = async (
+  latitude: number,
+  longitude: number
+): Promise<string | null> => {
+  const params = new URLSearchParams({
+    latitude: String(latitude),
+    longitude: String(longitude),
+    count: '1',
+    language: 'de'
+  });
+  const url = `https://geocoding-api.open-meteo.com/v1/reverse?${params.toString()}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Geocoding request failed with status ${res.status}`);
+    }
+    const data = await res.json();
+    if (
+      data &&
+      Array.isArray(data.results) &&
+      data.results.length > 0 &&
+      typeof data.results[0].name === 'string' &&
+      data.results[0].name.trim().length > 0
+    ) {
+      return data.results[0].name as string;
+    }
+    return null;
+  } catch (err) {
+    console.error('Error fetching city name:', err);
+    return null;
   }
 };
