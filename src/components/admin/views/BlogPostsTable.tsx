@@ -9,6 +9,9 @@ import BlogPostActions from './BlogPostActions';
 interface BlogPostsTableProps {
   posts: AdminBlogPost[];
   instagramStatuses: { [key: string]: string };
+  selectedIds: string[];
+  onToggleSelect: (id: string) => void;
+  onToggleSelectAll: (visiblePosts: AdminBlogPost[]) => void;
   onToggleStatus: (id: string, currentStatus: string) => void;
   onEdit: (post: AdminBlogPost) => void;
   onInstagramPost: (post: AdminBlogPost) => void;
@@ -18,6 +21,9 @@ interface BlogPostsTableProps {
 const BlogPostsTable: React.FC<BlogPostsTableProps> = ({
   posts,
   instagramStatuses,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
   onToggleStatus,
   onEdit,
   onInstagramPost,
@@ -27,6 +33,13 @@ const BlogPostsTable: React.FC<BlogPostsTableProps> = ({
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead>
+            <input
+              type="checkbox"
+              checked={posts.length > 0 && posts.every(p => selectedIds.includes(p.id))}
+              onChange={() => onToggleSelectAll(posts)}
+            />
+          </TableHead>
           <TableHead>Titel</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Autor</TableHead>
@@ -40,6 +53,13 @@ const BlogPostsTable: React.FC<BlogPostsTableProps> = ({
       <TableBody>
         {posts.map(post => (
           <TableRow key={post.id}>
+            <TableCell>
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(post.id)}
+                onChange={() => onToggleSelect(post.id)}
+              />
+            </TableCell>
             <TableCell className="font-medium">{post.title}</TableCell>
             <TableCell>
               <Button
