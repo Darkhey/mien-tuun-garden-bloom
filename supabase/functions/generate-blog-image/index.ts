@@ -52,7 +52,7 @@ serve(async (req) => {
         }),
       });
 
-      if (imageResponse.ok) {
+      if (imageResponse.ok && imageResponse.status === 200) {
         imageData = await imageResponse.json();
         modelUsed = 'gpt-image-1';
         console.log('[generate-blog-image] gpt-image-1 succeeded');
@@ -80,7 +80,7 @@ serve(async (req) => {
         }),
       });
 
-      if (!imageResponse.ok) {
+      if (!imageResponse.ok || imageResponse.status !== 200) {
         const errorText = await imageResponse.text();
         console.error('[generate-blog-image] Both models failed. dall-e-2 error:', errorText);
         throw new Error(`Beide Bildmodelle fehlgeschlagen: ${errorText}`);
