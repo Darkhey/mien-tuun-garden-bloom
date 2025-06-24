@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, Sparkles, X, Link, FileText } from "lucide-react";
+import { aiImageGenerationService } from '@/services/AIImageGenerationService';
 import ImageUploadField from "./ImageUploadField";
 import SEOOptimizationPanel from './SEOOptimizationPanel';
 import BlogLinkManager from './BlogLinkManager';
@@ -80,60 +81,31 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
       toast({
         title: "Fehler",
         description: "Titel oder Inhalt sind erforderlich für die Bildgenerierung",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setGeneratingImage(true);
     try {
-      console.log("Starte KI-Bildgenerierung für Blog-Artikel:", formData.title);
-      
-      const contentPreview = formData.content.slice(0, 200);
-      const imagePrompt = `Hyperrealistisches, stimmungsvolles Garten- oder Küchenbild passend zum Thema "${formData.title}". Basierend auf: ${contentPreview}. Natürliches Licht, viel Atmosphäre, hochwertiger Fotografie-Stil. Ohne Text.`;
-
-      // Get current session for authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Nicht authentifiziert');
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-blog-image`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: imagePrompt }),
+      const { url } = await aiImageGenerationService.generateBlogImage({
+        title: formData.title || "Blog Bild",
+        content: formData.content || "",
+        category: formData.category,
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Edge Function returned a non-2xx status code: ${errorText}`);
-      }
-
-      const data = await response.json();
-
-      console.log("KI-Bildgenerierung Antwort:", data);
-
-      if (data?.imageUrl) {
-        setFormData(prev => ({ ...prev, featured_image: data.imageUrl }));
-        toast({
-          title: "Erfolg",
-          description: "Bild wurde erfolgreich generiert!"
-        });
-      } else {
-        throw new Error("Keine Bild-URL in der Antwort erhalten");
-      }
+      setFormData((prev) => ({ ...prev, featured_image: url }));
+      toast({ title: "Erfolg", description: "Bild wurde erfolgreich generiert!" });
     } catch (error: any) {
       console.error("Fehler bei der Bildgenerierung:", error);
       toast({
         title: "Fehler",
         description: "Bildgenerierung fehlgeschlagen: " + (error.message || "Unbekannter Fehler"),
-        variant: "destructive"
+        variant: "destructive",
       });
+    } finally {
+      setGeneratingImage(false);
     }
-    setGeneratingImage(false);
   };
 
   const removeCurrentImage = () => {
