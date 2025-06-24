@@ -7,10 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { fetchRainForecastWithCoords, fetchRainForecast } from '@/queries/content';
+import { fetchCombinedWeatherData } from '@/queries/content';
+import { format } from 'date-fns';
 import { WeatherContentService, WeatherCondition } from '@/services/WeatherContentService';
 import { WEATHER_LATITUDE, WEATHER_LONGITUDE, WEATHER_TIMEZONE } from '@/config/weather.config';
 import type { BlogPost } from '@/types/content';
+
+const RAIN_WARNING_THRESHOLDS = {
+  IMMEDIATE: 60, // minutes
+  SHORT_TERM: 180, // minutes
+};
 
 const WeatherForecastSection: React.FC = () => {
   const [locationData, setLocationData] = useState<{
@@ -23,17 +29,19 @@ const WeatherForecastSection: React.FC = () => {
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
   const [weatherArticles, setWeatherArticles] = useState<BlogPost[]>([]);
 
-  // Query mit dynamischen Koordinaten oder Fallback
-  const { data: precipitation, isLoading, error } = useQuery({
-    queryKey: ['weather-forecast', locationData?.lat, locationData?.lon],
-    queryFn: () => {
-      if (locationData?.granted && locationData.lat && locationData.lon) {
-        return fetchRainForecastWithCoords(locationData.lat, locationData.lon, WEATHER_TIMEZONE);
-      }
-      return fetchRainForecast();
-    },
+  const { data: weatherData, isLoading, error } = useQuery({
+    queryKey: ['weather-combined', locationData?.lat, locationData?.lon],
+    queryFn: () =>
+      fetchCombinedWeatherData(
+        locationData?.lat || WEATHER_LATITUDE,
+        locationData?.lon || WEATHER_LONGITUDE,
+        WEATHER_TIMEZONE
+      ),
     enabled: true,
   });
+
+  const precipitation = weatherData?.dailyPrecipitation ?? null;
+  const hourlyPrecipitation = weatherData?.hourly;
 
   // Lade passende Artikel basierend auf dem Wetter
   useEffect(() => {
@@ -127,6 +135,42 @@ const WeatherForecastSection: React.FC = () => {
     return 'bg-yellow-100 text-yellow-700';
   };
 
+  const getNextRainWindow = () => {
+    if (!hourlyPrecipitation) return null;
+    const { time, precipitation } = hourlyPrecipitation;
+    for (let i = 0; i < precipitation.length; i++) {
+      if (precipitation[i] > 0) {
+        const start = new Date(time[i]);
+        let j = i;
+        while (j < precipitation.length && precipitation[j] > 0) {
+          j++;
+        }
+        const end = new Date(time[j - 1]);
+        return { start, end };
+      }
+    }
+    return null;
+  };
+
+  const getRainAdvice = (window: { start: Date; end: Date } | null) => {
+    if (!window) return null;
+    const diffMs = window.start.getTime() - Date.now();
+    const diffMinutes = Math.round(diffMs / 60000);
+    if (diffMinutes <= RAIN_WARNING_THRESHOLDS.IMMEDIATE && diffMinutes >= 0) {
+      return 'Jetzt schnell noch die Gartenstühle reinholen!';
+    }
+    if (
+      diffMinutes > RAIN_WARNING_THRESHOLDS.IMMEDIATE &&
+      diffMinutes <= RAIN_WARNING_THRESHOLDS.SHORT_TERM
+    ) {
+      return `Regen in ca. ${Math.round(diffMinutes / 60)} Stunden.`;
+    }
+    return null;
+  };
+
+  const nextRainWindow = getNextRainWindow();
+  const rainAdvice = getRainAdvice(nextRainWindow);
+
   return (
     <section className="py-12 px-4 bg-gradient-to-br from-sky-50 to-blue-50">
       <div className="max-w-4xl mx-auto">
@@ -207,13 +251,21 @@ const WeatherForecastSection: React.FC = () => {
                         </Badge>
                       </div>
                     )}
+                    {hourlyPrecipitation && nextRainWindow && (
+                      <p className="text-sage-600 text-sm mt-1">
+                        Regen von {format(nextRainWindow.start, 'HH:mm')} bis {format(nextRainWindow.end, 'HH:mm')}
+                      </p>
+                    )}
                   </div>
-                  
+
                   <div className="bg-accent-50 rounded-lg p-4 border border-accent-100">
                     <p className="text-earth-700 font-medium mb-2">🌱 Mariannes Tipp für heute:</p>
                     <p className="text-sage-700 text-sm">
                       {getActivitySuggestion(precipitation)}
                     </p>
+                    {rainAdvice && (
+                      <p className="text-sage-700 text-sm mt-2 font-medium">{rainAdvice}</p>
+                    )}
                   </div>
                 </div>
               )}
