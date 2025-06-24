@@ -12,7 +12,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Eye, Save, Sparkles, CheckCircle, AlertCircle, Image as ImageIcon, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { SEOService, type SEOMetadata } from '@/services/SEOService';
-import { unifiedImageService } from '@/services/UnifiedImageService';
 import { WeatherContentService } from '@/services/WeatherContentService';
 
 interface QualityMetrics {
@@ -85,24 +84,42 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
     const startTime = Date.now();
 
     try {
-      // Simulate article generation with a delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      console.log('[EnhancedBlogEditor] Starte Artikel-Generierung mit Prompt:', prompt);
 
-      const newTitle = `Enhanced: ${prompt}`;
-      const newContent = `
-        <h2>Enhanced Artikel</h2>
-        <p>Dies ist ein Enhanced Artikel basierend auf dem Prompt: ${prompt}</p>
-        <p>Kategorie: ${category}, Saison: ${season}</p>
-        <p>Zielgruppe: ${audiences?.join(', ') || 'Alle'}, Inhaltstyp: ${contentType?.join(', ') || 'Blog'}</p>
-        <p>Tags: ${tags?.join(', ') || 'Keine'}</p>
-        <p>Auszug: ${excerpt}</p>
-        <img src="${propImageUrl}" alt="Featured Image" />
-      `;
+      // Generiere Artikel über Supabase Function
+      const { data: articleData, error: articleError } = await supabase.functions.invoke('generate-blog-post', {
+        body: {
+          prompt,
+          context: {
+            category: category || 'Allgemein',
+            season: season || 'ganzjährig',
+            audiences: audiences || ['anfaenger'],
+            contentType: contentType || ['blog'],
+            tags: tags || [],
+            excerpt: excerpt || ''
+          }
+        }
+      });
+
+      if (articleError) {
+        console.error('[EnhancedBlogEditor] Artikel-Generierung Fehler:', articleError);
+        throw new Error(`Artikel-Generierung fehlgeschlagen: ${articleError.message}`);
+      }
+
+      if (!articleData?.content) {
+        throw new Error('Kein Artikel-Content generiert');
+      }
+
+      console.log('[EnhancedBlogEditor] Artikel erfolgreich generiert');
+
+      // Titel aus Content extrahieren oder verwenden
+      const newTitle = articleData.title || prompt;
+      const newContent = articleData.content;
 
       setGeneratedContent(newContent);
       setGeneratedTitle(newTitle);
 
-      // Use the correct SEO service method
+      // SEO-Daten generieren
       const seoService = SEOService.getInstance();
       const seoData = await seoService.generateBlogPostSEO({
         title: newTitle,
@@ -114,13 +131,50 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
 
       setSeoMetadata(seoData);
 
-      // Simulate image selection
-      const selectedImageUrl = await unifiedImageService.getImageForContent({
-        title: newTitle,
-        content: newContent,
-        category: category || '',
-        tags: tags || [],
-      });
+      // Versuche Bild zu generieren - mit besserer Fehlerbehandlung
+      let selectedImageUrl = propImageUrl || "";
+      
+      if (!selectedImageUrl) {
+        try {
+          console.log('[EnhancedBlogEditor] Starte Bildgenerierung...');
+          
+          // Erstelle einen fokussierten Bildprompt
+          const imagePrompt = `Realistisches Gartenbild passend zu: "${newTitle}". ${category ? `Kategorie: ${category}.` : ''} Natürliches Licht, ohne Text.`;
+          
+          const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-blog-image', {
+            body: { 
+              prompt: imagePrompt,
+              context: {
+                title: newTitle,
+                category: category || 'Garten',
+                season: season || 'ganzjährig'
+              }
+            }
+          });
+
+          if (imageError) {
+            console.warn('[EnhancedBlogEditor] Bildgenerierung fehlgeschlagen:', imageError);
+            // Verwende Fallback-Bild statt Fehler zu werfen
+            selectedImageUrl = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
+          } else if (imageData?.imageUrl) {
+            selectedImageUrl = imageData.imageUrl;
+            console.log('[EnhancedBlogEditor] Bild erfolgreich generiert:', selectedImageUrl);
+          } else {
+            console.warn('[EnhancedBlogEditor] Keine Bild-URL erhalten, verwende Fallback');
+            selectedImageUrl = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
+          }
+        } catch (imageGenError) {
+          console.error('[EnhancedBlogEditor] Fehler bei der Bildgenerierung:', imageGenError);
+          // Verwende Fallback-Bild
+          selectedImageUrl = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
+          
+          toast({
+            title: "Bildgenerierung fehlgeschlagen",
+            description: "Verwende Standard-Bild. Artikel wird trotzdem erstellt.",
+            variant: "default",
+          });
+        }
+      }
 
       setFeaturedImage(selectedImageUrl);
 
@@ -133,7 +187,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
 
       const quality: QualityMetrics = {
         generationTime: Date.now() - startTime,
-        model: "Enhanced GPT-4",
+        model: "Enhanced GPT-4o",
         wordCount: newContent.split(/\s+/).length,
         readingTime: Math.ceil(newContent.split(/\s+/).length / 160),
         qualityScore: calculateQualityScore(newContent, newTitle),
@@ -144,15 +198,15 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
       setCurrentQuality(quality);
 
       toast({
-        title: "Enhanced Artikel mit SEO und Wetter-Tags generiert!",
-        description: `Quality Score: ${quality.qualityScore}, SEO Score: ${quality.seoScore}, Weather Tags: ${weatherTags.join(', ')}`,
+        title: "Enhanced Artikel generiert!",
+        description: `Quality Score: ${quality.qualityScore}, SEO Score: ${quality.seoScore}${weatherTags.length > 0 ? `, Weather Tags: ${weatherTags.join(', ')}` : ''}`,
       });
     } catch (error: any) {
       console.error("Enhanced Generation Error:", error);
       
       const quality: QualityMetrics = {
         generationTime: Date.now() - startTime,
-        model: "Enhanced GPT-4 (Fallback)",
+        model: "Enhanced GPT-4o (Fallback)",
         wordCount: 0,
         readingTime: 0,
         qualityScore: 0,
@@ -330,7 +384,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <img src={featuredImage} alt="Featured" className="rounded-md shadow-md" />
+            <img src={featuredImage} alt="Featured" className="rounded-md shadow-md max-w-full h-auto" />
           </CardContent>
         </Card>
       )}
@@ -345,8 +399,8 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <h3>{generatedTitle}</h3>
-            <div dangerouslySetInnerHTML={{ __html: generatedContent }} />
+            <h3 className="text-xl font-semibold">{generatedTitle}</h3>
+            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: generatedContent }} />
             <Button
               onClick={handleSave}
               disabled={isGenerating}
