@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import type { BlogPost } from '@/types/content';
 
 export interface WeatherData {
   temperature: number;
@@ -26,7 +27,7 @@ export interface WeatherContentSuggestion {
   weatherContext: string;
 }
 
-class WeatherContentService {
+export class WeatherContentService {
   private static instance: WeatherContentService;
   private cache = new Map<string, { data: any; timestamp: number }>();
   private cacheTimeout = 30 * 60 * 1000; // 30 Minuten
@@ -143,8 +144,102 @@ class WeatherContentService {
       'Fog': 'foggy',
       'Haze': 'foggy'
     };
-    
+
     return conditionMap[condition] || 'partly-cloudy';
+  }
+
+  /**
+   * Derive a simplified weather condition from precipitation and temperature.
+   */
+  static getWeatherCondition(
+    precipitation: number | null,
+    temperature: number | null
+  ): WeatherCondition {
+    if (precipitation !== null && precipitation > 8) {
+      return 'stormy';
+    }
+    if (precipitation !== null && precipitation > 0) {
+      return 'rainy';
+    }
+    if (temperature !== null && temperature <= 0) {
+      return 'snowy';
+    }
+    if (temperature !== null && temperature >= 28) {
+      return 'sunny';
+    }
+    return 'partly-cloudy';
+  }
+
+  /**
+   * Fetch blog posts that match the given weather condition.
+   */
+  static async getWeatherBasedArticles(
+    condition: WeatherCondition,
+    limit = 3
+  ): Promise<BlogPost[]> {
+    const tagMap: Record<WeatherCondition, string> = {
+      sunny: 'sonnig',
+      'partly-cloudy': 'sonnig',
+      rainy: 'regen',
+      snowy: 'schnee',
+      stormy: 'regen',
+      foggy: 'nebel'
+    };
+    const tag = tagMap[condition] || condition;
+
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('published', true)
+      .contains('tags', [tag])
+      .order('published_at', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    const rows = Array.isArray(data) ? data : [];
+    return rows.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      excerpt: row.excerpt,
+      content: row.content,
+      author: row.author,
+      publishedAt: row.published_at,
+      updatedAt: row.updated_at || undefined,
+      featuredImage: row.featured_image || '/placeholder.svg',
+      category: row.category || '',
+      tags: row.tags || [],
+      weatherTags: row.weather_tags || undefined,
+      readingTime: row.reading_time || 5,
+      seo: {
+        title: row.seo_title || row.title,
+        description: row.seo_description || '',
+        keywords: row.seo_keywords || []
+      },
+      featured: !!row.featured,
+      published: !!row.published,
+      structuredData: row.structured_data || undefined,
+      originalTitle: row.original_title || undefined,
+      ogImage: row.og_image || undefined
+    })) as BlogPost[];
+  }
+
+  /**
+   * Extract possible weather related tags from article content.
+   */
+  static extractWeatherTags(
+    title: string,
+    content: string,
+    category: string
+  ): string[] {
+    const text = `${title} ${content} ${category}`.toLowerCase();
+    const tags: string[] = [];
+    if (/regen/.test(text)) tags.push('regen');
+    if (/sonn/.test(text)) tags.push('sonnig');
+    if (/schnee|frost/.test(text)) tags.push('schnee');
+    if (/sturm|gewitter|wind/.test(text)) tags.push('sturm');
+    if (/nebel/.test(text)) tags.push('nebel');
+    return Array.from(new Set(tags)).slice(0, 3);
   }
 
   async getCityName(lat: number, lon: number): Promise<string> {
