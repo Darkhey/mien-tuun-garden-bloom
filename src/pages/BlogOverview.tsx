@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet";
 import { useQuery } from '@tanstack/react-query';
 import BlogPostCard from "@/components/blog/BlogPostCard";
 import BlogFilter from "@/components/blog/BlogFilter";
+import SEOService from "@/services/SEOService";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from '@/integrations/supabase/types';
 import type { BlogPost } from '@/types/content';
@@ -48,6 +49,8 @@ const BlogOverview: React.FC = () => {
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortOption, setSortOption] = useState<'newest' | 'alphabetical' | 'length' | 'seo'>('newest');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // Setze Kategorie aus URL-Parameter, wenn vorhanden
   useEffect(() => {
@@ -99,6 +102,39 @@ const BlogOverview: React.FC = () => {
     });
   }, [blogRows, selectedCategory, searchTerm]);
 
+  const postsWithScores = useMemo(() => {
+    const seoService = SEOService.getInstance();
+    return filteredPosts.map((p) => ({
+      post: p,
+      length: (p.content || '').length,
+      seo: seoService.analyzeSEO({ title: p.title, content: p.content || '', excerpt: p.excerpt || '' }).score
+    }));
+  }, [filteredPosts]);
+
+  const sortedPosts = useMemo(() => {
+    const sorted = [...postsWithScores];
+    sorted.sort((a, b) => {
+      let res = 0;
+      switch (sortOption) {
+        case 'alphabetical':
+          res = a.post.title.localeCompare(b.post.title);
+          break;
+        case 'length':
+          res = a.length - b.length;
+          break;
+        case 'seo':
+          res = a.seo - b.seo;
+          break;
+        case 'newest':
+        default:
+          res = new Date(a.post.published_at).getTime() - new Date(b.post.published_at).getTime();
+          break;
+      }
+      return sortDirection === 'asc' ? res : -res;
+    });
+    return sorted.map(s => s.post);
+  }, [postsWithScores, sortOption, sortDirection]);
+
   return (
     <>
       <Helmet>
@@ -125,6 +161,10 @@ const BlogOverview: React.FC = () => {
             setSelectedCategory={setSelectedCategory}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
+            sortOption={sortOption}
+            setSortOption={setSortOption}
+            sortDirection={sortDirection}
+            setSortDirection={setSortDirection}
           />
         </div>
       </section>
@@ -136,9 +176,9 @@ const BlogOverview: React.FC = () => {
             <div className="text-center py-12 text-earth-500">Lade Artikel...</div>
           ) : error ? (
             <div className="text-center py-12 text-red-500">Fehler beim Laden der Artikel.</div>
-          ) : filteredPosts.length > 0 ? (
+          ) : sortedPosts.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredPosts.map((post) => {
+              {sortedPosts.map((post) => {
                 const mappedPost: BlogPost = {
                   id: post.id,
                   slug: post.slug,

@@ -7,6 +7,10 @@ interface BlogFilterProps {
   setSelectedCategory: (c: string) => void;
   searchTerm: string;
   setSearchTerm: (t: string) => void;
+  sortOption: string;
+  setSortOption: (o: string) => void;
+  sortDirection: 'asc' | 'desc';
+  setSortDirection: (d: 'asc' | 'desc') => void;
 }
 
 const BlogFilter: React.FC<BlogFilterProps> = ({
@@ -15,6 +19,10 @@ const BlogFilter: React.FC<BlogFilterProps> = ({
   setSelectedCategory,
   searchTerm,
   setSearchTerm,
+  sortOption,
+  setSortOption,
+  sortDirection,
+  setSortDirection,
 }) => {
   return (
     <>
@@ -52,6 +60,24 @@ const BlogFilter: React.FC<BlogFilterProps> = ({
             {category}
           </button>
         ))}
+      </div>
+      <div className="flex items-center justify-center gap-2 mb-6">
+        <select
+          value={sortOption}
+          onChange={(e) => setSortOption(e.target.value)}
+          className="border border-sage-200 rounded-full px-4 py-2 text-sm"
+        >
+          <option value="newest">Neueste</option>
+          <option value="alphabetical">Alphabetisch</option>
+          <option value="length">Längste Artikel</option>
+          <option value="seo">SEO-Score</option>
+        </select>
+        <button
+          onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+          className="p-2 border border-sage-200 rounded-full"
+        >
+          {sortDirection === 'asc' ? '⬆️' : '⬇️'}
+        </button>
       </div>
     </>
   );
