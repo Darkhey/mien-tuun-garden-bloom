@@ -4,9 +4,8 @@ import { ArrowLeft } from 'lucide-react';
 import BlogPostHeader from "@/components/blog/BlogPostHeader";
 import BlogPostImage from "@/components/blog/BlogPostImage";
 import BlogPostContent from "@/components/blog/BlogPostContent";
-import BlogPostToRecipeSection from "@/components/blog/BlogPostToRecipeSection";
 import BlogPostShareSection from "@/components/blog/BlogPostShareSection";
-import RelatedBlogPostsCarousel from "@/components/blog/RelatedBlogPostsCarousel";
+import RelatedArticlesSection from "@/components/blog/RelatedArticlesSection";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { BlogPost } from '@/types/content';
@@ -161,14 +160,7 @@ const BlogPostPage = () => {
           tags={post.tags}
         />
         <BlogPostContent content={post.content} />
-        <BlogPostToRecipeSection post={{
-          title: post.title,
-          content: post.content,
-          featuredImage: post.featuredImage,
-          slug: post.slug,
-          category: post.category
-        }} />
-        <BlogPostShareSection 
+        <BlogPostShareSection
           title={post.title}
           imageUrl={post.featuredImage}
           excerpt={post.excerpt}
@@ -177,8 +169,8 @@ const BlogPostPage = () => {
         {/* Call to Action Section */}
         <CallToActionSection category={post.category} />
         
-        {/* Related Articles Carousel */}
-        <RelatedBlogPostsCarousel
+        {/* Verwandte Artikel */}
+        <RelatedArticlesSection
           currentSlug={post.slug}
           category={post.category}
           tags={post.tags}
