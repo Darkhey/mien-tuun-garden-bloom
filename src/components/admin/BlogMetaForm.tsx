@@ -19,11 +19,11 @@ const DIFFICULTY = [
 ];
 
 const SEASONS = [
-  { value: "frühling", label: "Frühling" },
-  { value: "sommer", label: "Sommer" },
-  { value: "herbst", label: "Herbst" },
-  { value: "winter", label: "Winter" },
-  { value: "ganzjährig", label: "Ganzjährig" },
+  { value: "Frühling", label: "Frühling" },
+  { value: "Sommer", label: "Sommer" },
+  { value: "Herbst", label: "Herbst" },
+  { value: "Winter", label: "Winter" },
+  { value: "Ganzjährig", label: "Ganzjährig" },
 ];
 
 const TAG_OPTIONS = [
