@@ -22,6 +22,10 @@ const Impressum = () => (
         <strong>Haftung für Inhalte</strong><br />
         Trotz sorgfältiger inhaltlicher Kontrolle übernehme ich keine Haftung für die Inhalte externer Links. Für den Inhalt der verlinkten Seiten sind ausschließlich deren Betreiber verantwortlich.
       </div>
+      <div className="mb-4">
+        <strong>Werbung &amp; Partnerprogramme</strong><br />
+        Diese Website bindet Anzeigen über Google AdSense ein und verwendet gelegentlich Affiliate-Links. Entsprechende Inhalte sind gekennzeichnet.
+      </div>
       <div className="mt-8 text-sm text-sage-700">Letzte Aktualisierung: {new Date().getFullYear()}</div>
     </div>
 );
