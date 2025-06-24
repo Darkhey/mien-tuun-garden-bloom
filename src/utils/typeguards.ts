@@ -40,6 +40,8 @@ export const isHourlyWeatherResponse = (
     typeof data === 'object' &&
     data.hourly &&
     Array.isArray(data.hourly.time) &&
-    Array.isArray(data.hourly.precipitation)
+    Array.isArray(data.hourly.precipitation) &&
+    data.hourly.time.every((t: any) => typeof t === 'string') &&
+    data.hourly.precipitation.every((p: any) => typeof p === 'number')
   );
 };
