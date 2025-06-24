@@ -31,3 +31,17 @@ export const isWeatherResponse = (
     data.daily.precipitation_sum.every((n: any) => typeof n === 'number')
   );
 };
+
+export const isHourlyWeatherResponse = (
+  data: any
+): data is { hourly: { time: string[]; precipitation: number[] } } => {
+  return (
+    data &&
+    typeof data === 'object' &&
+    data.hourly &&
+    Array.isArray(data.hourly.time) &&
+    data.hourly.time.every((t: any) => typeof t === 'string') &&
+    Array.isArray(data.hourly.precipitation) &&
+    data.hourly.precipitation.every((n: any) => typeof n === 'number')
+  );
+};
