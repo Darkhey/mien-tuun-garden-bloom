@@ -2,7 +2,7 @@
 # Blog-Kategorien Dokumentation
 
 ## Übersicht
-Diese Dokumentation beschreibt die erweiterten Blog-Kategorien im Mien Tuun System und deren Implementierung.
+Dieses Dokument beschreibt das finale Kategoriensystem von Mien Tuun. Es besteht aus acht Hauptkategorien. Zusätzlich gibt es die Unterkategorie "Saison" mit den Werten Frühling, Sommer, Herbst, Winter und Ganzjährig.
 
 ## Kategorien-Liste
 

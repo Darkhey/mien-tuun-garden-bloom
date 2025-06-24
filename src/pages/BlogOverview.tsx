@@ -10,14 +10,18 @@ import type { BlogPost } from '@/types/content';
 import { useSearchParams } from 'react-router-dom';
 
 // Aktualisierte Kategorie-Mappings
-const CATEGORY_MAPPING = {
+const CATEGORY_MAPPING: Record<string, string> = {
+  'Garten & Planung': 'Garten & Planung',
+  'Pflanzenpflege': 'Pflanzenpflege',
+  'Ernte & Küche': 'Ernte & Küche',
+  'Nachhaltigkeit & Umwelt': 'Nachhaltigkeit & Umwelt',
+  'Spezielle Gartenbereiche': 'Spezielle Gartenbereiche',
+  'Selbermachen & Ausrüstung': 'Selbermachen & Ausrüstung',
+  'Philosophie & Lifestyle': 'Philosophie & Lifestyle',
   'Allgemein': 'Allgemein',
-  'Gartentipps': 'Gartentipps',
-  'Garten': 'Garten',
-  'Gartenplanung': 'Gartenplanung',
-  'Küche': 'Küche',
-  'Nachhaltigkeit': 'Nachhaltigkeit'
 };
+
+const SEASONS = ['Frühling', 'Sommer', 'Herbst', 'Winter', 'Ganzjährig'];
 
 // Blog-Posts aus Supabase laden - mit content Feld
 const fetchBlogPosts = async () => {
@@ -45,9 +49,10 @@ const BlogOverview: React.FC = () => {
   // URL-Parameter auslesen
   const [searchParams] = useSearchParams();
   const categoryParam = searchParams.get('category');
-  
+
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<'newest' | 'alphabetical' | 'length' | 'seo'>('newest');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -72,9 +77,20 @@ const BlogOverview: React.FC = () => {
         .filter(Boolean)
         .filter(category => Object.keys(CATEGORY_MAPPING).includes(category))
     ));
-    
+
     // Verwende die tatsächlich vorhandenen Kategorien
     return categoriesFromPosts.sort();
+  }, [blogRows]);
+
+  const availableSeasons = useMemo(() => {
+    const seasonsFromPosts = Array.from(new Set(
+      blogRows
+        .map((post: Tables<'blog_posts'>) => post.season)
+        .filter(Boolean)
+        .filter(season => SEASONS.includes(season as string))
+    ));
+
+    return seasonsFromPosts.sort();
   }, [blogRows]);
 
   // Enhanced Filter-Logik mit verbessertem Typ-Handling
@@ -83,7 +99,9 @@ const BlogOverview: React.FC = () => {
     return posts.filter((post: Tables<'blog_posts'>) => {
       // Kategorie-Filter
       if (selectedCategory && post.category !== selectedCategory) return false;
-      
+      // Saison-Filter
+      if (selectedSeason && post.season !== selectedSeason) return false;
+
       // Suchbegriff - verbesserte Suche
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -100,7 +118,7 @@ const BlogOverview: React.FC = () => {
       }
       return true;
     });
-  }, [blogRows, selectedCategory, searchTerm]);
+  }, [blogRows, selectedCategory, selectedSeason, searchTerm]);
 
   const postsWithScores = useMemo(() => {
     const seoService = SEOService.getInstance();
@@ -159,6 +177,9 @@ const BlogOverview: React.FC = () => {
             categories={availableCategories}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
+            seasons={availableSeasons}
+            selectedSeason={selectedSeason}
+            setSelectedSeason={setSelectedSeason}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             sortOption={sortOption}
@@ -212,10 +233,9 @@ const BlogOverview: React.FC = () => {
           ) : (
             <div className="text-center py-12">
               <p className="text-earth-500 text-lg">
-                {selectedCategory || searchTerm 
-                  ? `Keine Artikel gefunden für "${selectedCategory || searchTerm}". Versuche andere Filter oder Suchbegriffe.`
-                  : "Noch keine Artikel verfügbar."
-                }
+                {selectedCategory || selectedSeason || searchTerm
+                  ? `Keine Artikel gefunden für "${selectedCategory || selectedSeason || searchTerm}". Versuche andere Filter oder Suchbegriffe.`
+                  : 'Noch keine Artikel verfügbar.'}
               </p>
             </div>
           )}

@@ -5,6 +5,9 @@ interface BlogFilterProps {
   categories: string[];
   selectedCategory: string;
   setSelectedCategory: (c: string) => void;
+  seasons: string[];
+  selectedSeason: string;
+  setSelectedSeason: (s: string) => void;
   searchTerm: string;
   setSearchTerm: (t: string) => void;
   sortOption: string;
@@ -17,6 +20,9 @@ const BlogFilter: React.FC<BlogFilterProps> = ({
   categories,
   selectedCategory,
   setSelectedCategory,
+  seasons,
+  selectedSeason,
+  setSelectedSeason,
   searchTerm,
   setSearchTerm,
   sortOption,
@@ -58,6 +64,31 @@ const BlogFilter: React.FC<BlogFilterProps> = ({
             }`}
           >
             {category}
+          </button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-2 justify-center mb-6">
+        <button
+          onClick={() => setSelectedSeason("")}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            selectedSeason === ""
+              ? 'bg-sage-600 text-white'
+              : 'bg-sage-50 text-sage-700 hover:bg-sage-100'
+          }`}
+        >
+          Alle Saisons
+        </button>
+        {seasons.map((season) => (
+          <button
+            key={season}
+            onClick={() => setSelectedSeason(season)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              selectedSeason === season
+                ? 'bg-sage-600 text-white'
+                : 'bg-sage-50 text-sage-700 hover:bg-sage-100'
+            }`}
+          >
+            {season}
           </button>
         ))}
       </div>
