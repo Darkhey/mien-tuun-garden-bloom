@@ -131,6 +131,7 @@ export const fetchHourlyPrecipitation = async (
 
 export interface CombinedWeatherData {
   dailyPrecipitation: number | null;
+  dailyMaxTemperature: number | null;
   hourly: HourlyPrecipitation;
 }
 
@@ -142,7 +143,7 @@ export const fetchCombinedWeatherData = async (
   const params = new URLSearchParams({
     latitude: String(latitude),
     longitude: String(longitude),
-    daily: 'precipitation_sum',
+    daily: 'precipitation_sum,temperature_2m_max',
     hourly: 'precipitation',
     forecast_days: '1',
     timezone
@@ -159,6 +160,7 @@ export const fetchCombinedWeatherData = async (
     }
     return {
       dailyPrecipitation: data.daily.precipitation_sum[0] ?? null,
+      dailyMaxTemperature: data.daily.temperature_2m_max[0] ?? null,
       hourly: {
         time: data.hourly.time,
         precipitation: data.hourly.precipitation,

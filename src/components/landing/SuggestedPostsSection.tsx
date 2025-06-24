@@ -11,17 +11,7 @@ const SuggestedPostsSection: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fallback = () =>
-      loadPosts(Number(WEATHER_LATITUDE), Number(WEATHER_LONGITUDE));
-    if (!navigator.geolocation) {
-      fallback();
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => loadPosts(pos.coords.latitude, pos.coords.longitude),
-      fallback,
-      { timeout: 10000, enableHighAccuracy: false, maximumAge: 300000 }
-    );
+    loadPosts(Number(WEATHER_LATITUDE), Number(WEATHER_LONGITUDE));
   }, []);
 
   const loadPosts = async (lat: number, lon: number) => {
