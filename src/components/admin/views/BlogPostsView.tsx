@@ -8,11 +8,18 @@ import EditBlogPostModal from "../EditBlogPostModal";
 import InstagramPostModal from "../InstagramPostModal";
 import BlogPostsHeader from "./BlogPostsHeader";
 import BlogPostsTable from "./BlogPostsTable";
+import BlogPostsBulkActions from "./BlogPostsBulkActions";
 import { useBlogPostsData } from "./useBlogPostsData";
+import { aiImageGenerationService } from "@/services/AIImageGenerationService";
+import { contentInsightsService } from "@/services/ContentInsightsService";
 
 const BlogPostsView: React.FC = () => {
   const [editingPost, setEditingPost] = useState<AdminBlogPost | null>(null);
   const [instagramPost, setInstagramPost] = useState<AdminBlogPost | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   const { toast } = useToast();
 
   const {
@@ -68,6 +75,157 @@ const BlogPostsView: React.FC = () => {
     });
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = (visiblePosts: AdminBlogPost[]) => {
+    const allSelected = visiblePosts.every(p => selectedIds.includes(p.id));
+
+    if (allSelected) {
+      setSelectedIds(prev => prev.filter(id => !visiblePosts.some(p => p.id === id)));
+    } else {
+      const newIds = visiblePosts.map(p => p.id);
+      setSelectedIds(prev => Array.from(new Set([...prev, ...newIds])));
+    }
+  };
+
+  const clearSelection = () => setSelectedIds([]);
+
+  const cancelOperation = () => {
+    abortController?.abort();
+    setAbortController(null);
+    setBulkLoading(false);
+  };
+
+  const optimizeTitles = async () => {
+    const controller = new AbortController();
+    setAbortController(controller);
+    setBulkLoading(true);
+    setProgress(0);
+    try {
+      const results = await Promise.allSettled(
+        selectedIds.map((id, idx) =>
+          (async () => {
+            await new Promise(res => setTimeout(res, idx * 1000));
+            if (controller.signal.aborted) throw new Error('aborted');
+            const { data, error } = await supabase
+              .from('blog_posts')
+              .select('title, content, category, seo_keywords')
+              .eq('id', id)
+              .single({ signal: controller.signal });
+
+            if (error) throw error;
+
+            const optimization = await contentInsightsService.optimizeContent({
+              title: data.title,
+              content: data.content || '',
+              category: data.category,
+              seoKeywords: data.seo_keywords,
+            });
+            if (controller.signal.aborted) throw new Error('aborted');
+
+            const newTitle = optimization.optimizedTitle || data.title;
+
+            const { error: updateError } = await supabase
+              .from('blog_posts')
+              .update({ title: newTitle })
+              .eq('id', id, { signal: controller.signal });
+
+            if (updateError) throw updateError;
+            if (controller.signal.aborted) throw new Error('aborted');
+            setProgress(Math.round(((idx + 1) / selectedIds.length) * 100));
+            return id;
+          })()
+        )
+      );
+
+      const failed = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[];
+      if (failed.length) {
+        toast({
+          title: 'Teilweise fehlgeschlagen',
+          description: `${failed.length} Artikel konnten nicht optimiert werden`,
+          variant: 'destructive'
+        });
+      } else {
+        toast({ title: 'Titel aktualisiert', description: 'Ausgewählte Titel wurden optimiert.' });
+      }
+
+      loadBlogPosts();
+      clearSelection();
+    } catch (err: any) {
+      toast({ title: 'Fehler', description: err.message, variant: 'destructive' });
+    } finally {
+      setAbortController(null);
+      setBulkLoading(false);
+      setProgress(0);
+    }
+  };
+
+  const generateImages = async () => {
+    const controller = new AbortController();
+    setAbortController(controller);
+    setBulkLoading(true);
+    setProgress(0);
+    try {
+      const results = await Promise.allSettled(
+        selectedIds.map((id, idx) =>
+          (async () => {
+            await new Promise(res => setTimeout(res, idx * 1000));
+            if (controller.signal.aborted) throw new Error('aborted');
+            const { data, error } = await supabase
+              .from('blog_posts')
+              .select('title, content, category')
+              .eq('id', id)
+              .single({ signal: controller.signal });
+
+            if (error) throw error;
+
+            const { url } = await aiImageGenerationService.generateBlogImage({
+              title: data.title,
+              content: data.content || '',
+              category: data.category
+            });
+
+            if (controller.signal.aborted) throw new Error('aborted');
+
+            const { error: updateError } = await supabase
+              .from('blog_posts')
+              .update({ featured_image: url })
+              .eq('id', id, { signal: controller.signal });
+
+            if (updateError) throw updateError;
+            if (controller.signal.aborted) throw new Error('aborted');
+            setProgress(Math.round(((idx + 1) / selectedIds.length) * 100));
+            return id;
+          })()
+        )
+      );
+
+      const failed = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[];
+      if (failed.length) {
+        toast({
+          title: 'Teilweise fehlgeschlagen',
+          description: `${failed.length} Bilder konnten nicht generiert werden`,
+          variant: 'destructive'
+        });
+      } else {
+        toast({ title: 'Bilder generiert', description: 'Neue Bilder wurden erstellt.' });
+      }
+
+      loadBlogPosts();
+      clearSelection();
+    } catch (err: any) {
+      toast({ title: 'Fehler', description: err.message, variant: 'destructive' });
+    } finally {
+      setAbortController(null);
+      setBulkLoading(false);
+      setProgress(0);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-40">
@@ -83,14 +241,27 @@ const BlogPostsView: React.FC = () => {
   return (
     <>
       <div className="space-y-4">
-        <BlogPostsHeader 
+        <BlogPostsHeader
           postsCount={posts.length}
           onRefresh={loadBlogPosts}
+        />
+
+        <BlogPostsBulkActions
+          selectedCount={selectedIds.length}
+          onOptimizeTitles={optimizeTitles}
+          onGenerateImages={generateImages}
+          onClear={clearSelection}
+          onCancel={cancelOperation}
+          loading={bulkLoading}
+          progress={progress}
         />
 
         <BlogPostsTable
           posts={posts}
           instagramStatuses={instagramStatuses}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
           onToggleStatus={handleToggleStatus}
           onEdit={handleEdit}
           onInstagramPost={handleInstagramPost}
