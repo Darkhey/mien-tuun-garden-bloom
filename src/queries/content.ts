@@ -2,7 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { BlogPost } from '@/types/content';
 import { WEATHER_BASE_URL, WEATHER_LATITUDE, WEATHER_LONGITUDE, WEATHER_TIMEZONE } from '@/config/weather.config';
-import { isBlogPost, isWeatherResponse } from '@/utils/typeguards';
+import { isBlogPost, isWeatherResponse, isHourlyWeatherResponse } from '@/utils/typeguards';
 
 export interface CommentRow {
   id: string;
@@ -97,5 +97,74 @@ export const fetchRainForecastWithCoords = async (
     return data.daily.precipitation_sum[0] ?? null;
   } catch (err) {
     throw new Error(`Error fetching weather data: ${err instanceof Error ? err.message : String(err)}`);
+  }
+};
+
+export interface HourlyPrecipitation {
+  time: string[];
+  precipitation: number[];
+}
+
+export const fetchHourlyPrecipitation = async (
+  latitude: number | string = WEATHER_LATITUDE,
+  longitude: number | string = WEATHER_LONGITUDE,
+  timezone: string = WEATHER_TIMEZONE
+): Promise<HourlyPrecipitation> => {
+  const url = `${WEATHER_BASE_URL}?latitude=${encodeURIComponent(String(latitude))}&longitude=${encodeURIComponent(String(longitude))}&hourly=precipitation&forecast_days=1&timezone=${encodeURIComponent(timezone)}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Weather request failed with status ${res.status}`);
+    }
+    const data = await res.json();
+    if (!isHourlyWeatherResponse(data)) {
+      throw new Error('Invalid weather API response');
+    }
+    return {
+      time: data.hourly.time,
+      precipitation: data.hourly.precipitation,
+    };
+  } catch (err) {
+    throw new Error(`Error fetching weather data: ${err instanceof Error ? err.message : String(err)}`);
+  }
+};
+
+export interface CombinedWeatherData {
+  dailyPrecipitation: number | null;
+  hourly: HourlyPrecipitation;
+}
+
+export const fetchCombinedWeatherData = async (
+  latitude: number | string = WEATHER_LATITUDE,
+  longitude: number | string = WEATHER_LONGITUDE,
+  timezone: string = WEATHER_TIMEZONE
+): Promise<CombinedWeatherData> => {
+  const url = `${WEATHER_BASE_URL}?latitude=${encodeURIComponent(
+    String(latitude)
+  )}&longitude=${encodeURIComponent(
+    String(longitude)
+  )}&daily=precipitation_sum&hourly=precipitation&forecast_days=1&timezone=${encodeURIComponent(
+    timezone
+  )}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Weather request failed with status ${res.status}`);
+    }
+    const data = await res.json();
+    if (!isWeatherResponse(data) || !isHourlyWeatherResponse(data)) {
+      throw new Error('Invalid weather API response');
+    }
+    return {
+      dailyPrecipitation: data.daily.precipitation_sum[0] ?? null,
+      hourly: {
+        time: data.hourly.time,
+        precipitation: data.hourly.precipitation,
+      },
+    };
+  } catch (err) {
+    throw new Error(
+      `Error fetching weather data: ${err instanceof Error ? err.message : String(err)}`
+    );
   }
 };
