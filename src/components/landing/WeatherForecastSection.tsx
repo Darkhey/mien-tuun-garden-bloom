@@ -41,17 +41,21 @@ const WeatherForecastSection: React.FC = () => {
   });
 
   const precipitation = weatherData?.dailyPrecipitation ?? null;
+  const temperatureMax = weatherData?.dailyMaxTemperature ?? null;
   const hourlyPrecipitation = weatherData?.hourly;
 
   // Lade passende Artikel basierend auf dem Wetter
   useEffect(() => {
     if (precipitation !== undefined) {
-      const currentWeather = WeatherContentService.getWeatherCondition(precipitation);
+      const currentWeather = WeatherContentService.getWeatherCondition(
+        precipitation,
+        temperatureMax
+      );
       WeatherContentService.getWeatherBasedArticles(currentWeather, 3)
         .then(setWeatherArticles)
         .catch(console.error);
     }
-  }, [precipitation]);
+  }, [precipitation, temperatureMax]);
 
   const requestLocation = () => {
     setIsRequestingLocation(true);
@@ -108,28 +112,34 @@ const WeatherForecastSection: React.FC = () => {
     );
   };
 
-  const getWeatherIcon = (precipitation: number | null) => {
+  const getWeatherIcon = (precipitation: number | null, temp: number | null) => {
+    if (temp !== null && temp >= 30) {
+      return <Sun className="w-12 h-12 text-red-500" />;
+    }
     if (precipitation === null) return <Sun className="w-12 h-12 text-yellow-500" />;
     if (precipitation > 5) return <CloudRain className="w-12 h-12 text-blue-600" />;
     if (precipitation > 0) return <CloudDrizzle className="w-12 h-12 text-gray-500" />;
     return <Sun className="w-12 h-12 text-yellow-500" />;
   };
 
-  const getWeatherDescription = (precipitation: number | null) => {
-    if (precipitation === null) return 'Wetterdaten werden geladen...';
-    if (precipitation > 5) return 'Regnerisch - perfekt für Zimmerpflanzen!';
-    if (precipitation > 0) return 'Leichter Regen - ideal zum Gießen sparen';
+  const getWeatherDescription = (precipitation: number | null, temp: number | null) => {
+    if (precipitation === null && temp === null) return 'Wetterdaten werden geladen...';
+    if (temp !== null && temp >= 30) return 'Heiß und trocken - deine Pflanzen brauchen extra Pflege!';
+    if (precipitation !== null && precipitation > 5) return 'Regnerisch - perfekt für Zimmerpflanzen!';
+    if (precipitation !== null && precipitation > 0) return 'Leichter Regen - ideal zum Gießen sparen';
     return 'Sonnig - Zeit für Gartenarbeit im Freien!';
   };
 
-  const getActivitySuggestion = (precipitation: number | null) => {
+  const getActivitySuggestion = (precipitation: number | null, temp: number | null) => {
+    if (temp !== null && temp >= 30) return 'Schattieren und ausgiebig wässern! Vermeide Arbeiten in der Mittagshitze.';
     if (precipitation === null) return '';
     if (precipitation > 5) return 'Heute ist ein guter Tag für Zimmerpflanzen-Pflege und Planung des nächsten Gartenprojekts.';
     if (precipitation > 0) return 'Leichter Regen bedeutet weniger gießen - nutze die Zeit für andere Gartenarbeiten.';
     return 'Perfektes Wetter für Aussaat, Unkraut jäten oder Ernten im Garten!';
   };
 
-  const getWeatherBadgeColor = (precipitation: number | null) => {
+  const getWeatherBadgeColor = (precipitation: number | null, temp: number | null) => {
+    if (temp !== null && temp >= 30) return 'bg-red-100 text-red-700';
     if (precipitation === null) return 'bg-gray-100 text-gray-700';
     if (precipitation > 5) return 'bg-blue-100 text-blue-700';
     if (precipitation > 0) return 'bg-gray-100 text-gray-700';
@@ -201,12 +211,12 @@ const WeatherForecastSection: React.FC = () => {
             {/* Standort-Bereich */}
             {!locationData?.granted && (
               <div className="text-center space-y-4">
-                <Button 
+                <Button
                   onClick={requestLocation}
                   disabled={isRequestingLocation}
-                  className="bg-sage-600 hover:bg-sage-700 text-white px-6 py-3 rounded-full text-lg font-medium shadow-lg hover:shadow-xl transition-all"
+                  className="flex items-center gap-2 bg-sage-600 hover:bg-sage-700 text-white px-6 py-3 rounded-full text-lg font-medium shadow-lg hover:shadow-xl transition-all"
                 >
-                  <MapPin className="w-5 h-5 mr-2" />
+                  <MapPin className="w-5 h-5" />
                   {isRequestingLocation ? 'Ermittle Standort...' : 'Standort für lokales Wetter teilen'}
                 </Button>
                 
@@ -236,7 +246,7 @@ const WeatherForecastSection: React.FC = () => {
                 ) : error ? (
                   <AlertCircle className="w-12 h-12 text-orange-500" />
                 ) : (
-                  getWeatherIcon(precipitation)
+                  getWeatherIcon(precipitation, temperatureMax)
                 )}
               </div>
 
@@ -251,17 +261,22 @@ const WeatherForecastSection: React.FC = () => {
                 <div className="space-y-3">
                   <div className="bg-gradient-to-r from-sage-100 to-blue-100 rounded-lg p-4">
                     <p className="text-earth-700 text-lg font-medium mb-1">
-                      {getWeatherDescription(precipitation)}
+                      {getWeatherDescription(precipitation, temperatureMax)}
                     </p>
                     {precipitation !== null && (
-                      <div className="flex items-center justify-center gap-2 mt-2">
+                    <div className="flex items-center justify-center gap-2 mt-2">
                         <p className="text-sage-600 text-sm">
                           Niederschlag heute: <strong>{precipitation.toFixed(1)} mm</strong>
                         </p>
-                        <Badge className={getWeatherBadgeColor(precipitation)}>
-                          {WeatherContentService.getWeatherCondition(precipitation)}
+                        <Badge className={getWeatherBadgeColor(precipitation, temperatureMax)}>
+                          {WeatherContentService.getWeatherCondition(precipitation, temperatureMax)}
                         </Badge>
                       </div>
+                    )}
+                    {temperatureMax !== null && (
+                      <p className="text-sage-600 text-sm mt-1">
+                        Höchsttemperatur: <strong>{temperatureMax.toFixed(1)}°C</strong>
+                      </p>
                     )}
                     {hourlyPrecipitation && nextRainWindow && (
                       <p className="text-sage-600 text-sm mt-1">
@@ -273,7 +288,7 @@ const WeatherForecastSection: React.FC = () => {
                   <div className="bg-accent-50 rounded-lg p-4 border border-accent-100">
                     <p className="text-earth-700 font-medium mb-2">🌱 Mariannes Tipp für heute:</p>
                     <p className="text-sage-700 text-sm">
-                      {getActivitySuggestion(precipitation)}
+                      {getActivitySuggestion(precipitation, temperatureMax)}
                     </p>
                     {rainAdvice && (
                       <p className="text-sage-700 text-sm mt-2 font-medium">{rainAdvice}</p>

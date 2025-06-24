@@ -22,13 +22,18 @@ export const isBlogPost = (obj: any): obj is BlogPost => {
 
 export const isWeatherResponse = (
   data: any
-): data is { daily: { precipitation_sum: number[] } } => {
+): data is {
+  daily: { precipitation_sum: number[]; temperature_2m_max?: number[] };
+} => {
   return (
     data &&
     typeof data === 'object' &&
     data.daily &&
     Array.isArray(data.daily.precipitation_sum) &&
-    data.daily.precipitation_sum.every((n: any) => typeof n === 'number')
+    data.daily.precipitation_sum.every((n: any) => typeof n === 'number') &&
+    (data.daily.temperature_2m_max === undefined ||
+      (Array.isArray(data.daily.temperature_2m_max) &&
+        data.daily.temperature_2m_max.every((n: any) => typeof n === 'number')))
   );
 };
 

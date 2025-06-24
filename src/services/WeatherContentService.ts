@@ -48,7 +48,13 @@ export class WeatherContentService {
   }
 
   // Bestimmt Wetter-Kondition basierend auf Niederschlag
-  static getWeatherCondition(precipitation: number | null): WeatherCondition {
+  static getWeatherCondition(
+    precipitation: number | null,
+    temperature?: number | null
+  ): WeatherCondition {
+    if (temperature !== undefined && temperature !== null && temperature >= 30) {
+      return 'hot';
+    }
     if (precipitation === null) return 'cloudy';
     if (precipitation > 5) return 'rainy';
     if (precipitation > 0) return 'cloudy';
