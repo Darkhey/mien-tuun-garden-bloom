@@ -11,7 +11,7 @@ import { useIsAdmin } from '@/hooks/useIsAdmin';
 const logger = EventLogger.getInstance();
 
 const LoggingOverlay: React.FC = () => {
-  const isAdmin = useIsAdmin();
+  const { isAdmin, isLoading } = useIsAdmin();
   const [open, setOpen] = useState(false);
   const [logs, setLogs] = useState<string[]>(logger.getLogs());
   const [autoScroll, setAutoScroll] = useState(true);
@@ -29,6 +29,10 @@ const LoggingOverlay: React.FC = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [logs, autoScroll]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   if (!isAdmin) {
     return null;
