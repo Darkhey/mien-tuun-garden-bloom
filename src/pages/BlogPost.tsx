@@ -1,34 +1,25 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from "react-helmet";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from '@/integrations/supabase/types';
-import type { BlogPost } from '@/types/content';
 import BlogStructuredData from "@/components/blog/BlogStructuredData";
-import BlogPostHeader from "@/components/blog/BlogPostHeader";
 import BlogPostContent from "@/components/blog/BlogPostContent";
 import BlogPostShareSection from "@/components/blog/BlogPostShareSection";
 import CallToActionSection from "@/components/blog/CallToActionSection";
 import RelatedArticlesSection from "@/components/blog/RelatedArticlesSection";
 import BlogComments from "@/components/blog/BlogComments";
 import { useToast } from "@/hooks/use-toast";
-import { Recipe } from '@/types/Recipe';
 import { generateUniqueSlug } from '@/utils/slugHelpers';
 import BlogPodcastSection from '@/components/blog/BlogPodcastSection';
-
-interface RouteParams {
-  slug: string;
-}
+import { Calendar, User, Tag } from 'lucide-react';
 
 const BlogPost = () => {
-  const { slug } = useParams<RouteParams>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  const [relatedRecipe, setRelatedRecipe] = useState<Recipe | null>(null);
-  const [showRecipeCreateButton, setShowRecipeCreateButton] = useState(false);
-  const [isCreatingRecipe, setIsCreatingRecipe] = useState(false);
 
   const { data: post, isLoading, error } = useQuery({
     queryKey: ['blog-post', slug],
@@ -49,92 +40,6 @@ const BlogPost = () => {
     },
   });
 
-  useEffect(() => {
-    if (post?.id) {
-      fetchRelatedRecipe(post.id);
-    }
-  }, [post?.id]);
-
-  const fetchRelatedRecipe = async (blogPostId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('recipes')
-        .select('*')
-        .eq('blog_post_id', blogPostId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error("Error fetching related recipe:", error);
-        throw error;
-      }
-
-      if (data) {
-        setRelatedRecipe(data as Recipe);
-      } else {
-        setShowRecipeCreateButton(true);
-      }
-    } catch (error) {
-      console.error("Error fetching related recipe:", error);
-    }
-  };
-
-  const handleRecipeCreate = async () => {
-    setIsCreatingRecipe(true);
-    try {
-      if (!post) throw new Error("Blog post data is not available.");
-
-      const baseTitle = `Rezept passend zum Artikel "${post.title}"`;
-      const uniqueSlug = await generateUniqueSlug(baseTitle);
-
-      const newRecipe = {
-        title: baseTitle,
-        slug: uniqueSlug,
-        blog_post_id: post.id,
-        status: 'draft',
-        description: `Automatisches Rezept für Blog-Post "${post.title}"`,
-        category: post.category || 'Sonstiges',
-        prep_time: 15,
-        cook_time: 30,
-        total_time: 45,
-        servings: 4,
-        ingredients: ['Zutaten...'],
-        instructions: ['Anleitung...'],
-        notes: ['Notizen...'],
-        images: [],
-        user_id: post.user_id,
-      };
-
-      const { data, error } = await supabase
-        .from('recipes')
-        .insert([newRecipe])
-        .select()
-        .single();
-
-      if (error) {
-        console.error("Error creating recipe:", error);
-        throw error;
-      }
-
-      toast({
-        title: "Rezept erstellt!",
-        description: `Neues Rezept "${newRecipe.title}" wurde als Entwurf erstellt.`,
-      });
-
-      setRelatedRecipe(data as Recipe);
-      setShowRecipeCreateButton(false);
-      navigate(`/admin/recipes/${data.id}`);
-    } catch (error: any) {
-      console.error("Error creating recipe:", error);
-      toast({
-        title: "Fehler beim Erstellen des Rezepts",
-        description: error.message || "Ein Fehler ist aufgetreten.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreatingRecipe(false);
-    }
-  };
-
   if (isLoading) {
     return <div className="text-center py-12">Lädt Artikel...</div>;
   }
@@ -151,10 +56,10 @@ const BlogPost = () => {
         <meta name="keywords" content={post.tags?.join(', ') || ''} />
         <meta property="og:title" content={post.title} />
         <meta property="og:description" content={post.excerpt || post.description || ''} />
-        <meta property="og:image" content={post.featuredImage} />
+        <meta property="og:image" content={post.featured_image} />
         <meta property="og:type" content="article" />
         <meta property="article:author" content={post.author} />
-        <meta property="article:published_time" content={post.publishedAt} />
+        <meta property="article:published_time" content={post.published_at} />
         <meta property="article:section" content={post.category} />
         {post.tags?.map(tag => (
           <meta key={tag} property="article:tag" content={tag} />
@@ -162,20 +67,50 @@ const BlogPost = () => {
         <link rel="canonical" href={`https://mien-tuun.de/blog/${post.slug}`} />
       </Helmet>
 
-      <BlogStructuredData post={post} />
+      <BlogStructuredData 
+        title={post.title}
+        description={post.excerpt}
+        author={post.author}
+        publishedAt={post.published_at}
+        category={post.category}
+        tags={post.tags}
+        slug={post.slug}
+      />
 
       <article className="max-w-4xl mx-auto px-4 py-8">
-        <BlogPostHeader 
-          post={post} 
-          relatedRecipe={relatedRecipe}
-          showRecipeCreateButton={showRecipeCreateButton}
-          onRecipeCreate={handleRecipeCreate}
-          isCreatingRecipe={isCreatingRecipe}
-        />
+        {/* Blog Post Header */}
+        <header className="mb-8">
+          <div className="mb-4">
+            <span className="bg-sage-100 text-sage-700 px-3 py-1 rounded-full text-sm font-medium">
+              {post.category}
+            </span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-serif font-bold text-earth-800 mb-6">{post.title}</h1>
+          <div className="flex flex-wrap items-center gap-6 text-earth-500 mb-8">
+            <div className="flex items-center"><User className="h-4 w-4 mr-2" />{post.author}</div>
+            <div className="flex items-center"><Calendar className="h-4 w-4 mr-2" />{new Date(post.published_at).toLocaleDateString('de-DE')}</div>
+            <span>{post.reading_time} Min Lesezeit</span>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-8">
+            {post.tags.map((tag) => (
+              <span
+                key={tag}
+                className="bg-sage-50 text-sage-700 px-3 py-1 rounded-full text-sm"
+              >
+                <Tag className="h-3 w-3 inline mr-1" />
+                {tag}
+              </span>
+            ))}
+          </div>
+        </header>
         
         <BlogPostContent content={post.content} />
         
-        <BlogPostShareSection post={post} />
+        <BlogPostShareSection 
+          title={post.title}
+          url={`https://mien-tuun.de/blog/${post.slug}`}
+          excerpt={post.excerpt}
+        />
         
         {/* Podcast Section */}
         <BlogPodcastSection 

@@ -149,14 +149,17 @@ const BlogPodcastManager: React.FC = () => {
       'pending': { variant: 'secondary' as const, text: 'Wartend' },
       'generating_script': { variant: 'default' as const, text: 'Script wird erstellt' },
       'generating_audio': { variant: 'default' as const, text: 'Audio wird erstellt' },
-      'ready': { variant: 'default' as const, text: 'Bereit', className: 'bg-green-100 text-green-800' },
+      'ready': { variant: 'default' as const, text: 'Bereit' },
       'error': { variant: 'destructive' as const, text: 'Fehler' }
     };
 
     const config = statusMap[status as keyof typeof statusMap] || statusMap.pending;
     
     return (
-      <Badge variant={config.variant} className={config.className}>
+      <Badge 
+        variant={config.variant} 
+        className={status === 'ready' ? 'bg-green-100 text-green-800' : undefined}
+      >
         {config.text}
       </Badge>
     );
