@@ -12,9 +12,9 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  const { podcast_id } = await req.json().catch(() => ({ podcast_id: null }))
+
   try {
-    const { podcast_id } = await req.json()
-    
     if (!podcast_id) {
       throw new Error('Podcast ID ist erforderlich')
     }
@@ -96,19 +96,18 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Fehler bei Audio-Generierung:', error)
-    
+
     // Status auf error setzen
     try {
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       )
-      
-      const { podcast_id } = await req.json()
+
       if (podcast_id) {
         await supabaseClient
           .from('blog_podcasts')
-          .update({ 
+          .update({
             status: 'error',
             error_message: error.message
           })

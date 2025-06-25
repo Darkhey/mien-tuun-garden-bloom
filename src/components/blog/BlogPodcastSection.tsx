@@ -18,6 +18,7 @@ const BlogPodcastSection: React.FC<BlogPodcastSectionProps> = ({
   blogTitle
 }) => {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
   const { toast } = useToast();
 
   // Query für bestehenden Podcast
@@ -171,11 +172,29 @@ const BlogPodcastSection: React.FC<BlogPodcastSectionProps> = ({
       )}
 
       {podcast?.status === 'ready' && podcast.audio_url && (
-        <BlogPodcastPlayer
-          audioUrl={podcast.audio_url}
-          title={podcast.title}
-          duration={podcast.duration_seconds}
-        />
+        <>
+          <BlogPodcastPlayer
+            audioUrl={podcast.audio_url}
+            title={podcast.title}
+            duration={podcast.duration_seconds}
+          />
+          {podcast.script_content && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTranscript((prev) => !prev)}
+              >
+                {showTranscript ? 'Transkript verstecken' : 'Transkript anzeigen'}
+              </Button>
+              {showTranscript && (
+                <div className="mt-2 whitespace-pre-wrap rounded-md bg-sage-50 p-4 text-sm text-earth-800">
+                  {podcast.script_content}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
