@@ -114,9 +114,8 @@ const BlogPost = () => {
         
         <BlogPostContent content={post.content} />
         
-        <BlogPostShareSection 
+        <BlogPostShareSection
           title={post.title}
-          shareUrl={`https://mien-tuun.de/blog/${post.slug}`}
           excerpt={post.excerpt}
         />
         

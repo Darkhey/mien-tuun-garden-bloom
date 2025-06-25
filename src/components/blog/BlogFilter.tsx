@@ -12,8 +12,8 @@ interface BlogFilterProps {
   setSelectedSeason: (s: Season | '') => void;
   searchTerm: string;
   setSearchTerm: (t: string) => void;
-  sortOption: string;
-  setSortOption: (o: string) => void;
+  sortOption: 'newest' | 'alphabetical' | 'length' | 'seo';
+  setSortOption: (o: 'newest' | 'alphabetical' | 'length' | 'seo') => void;
   sortDirection: 'asc' | 'desc';
   setSortDirection: (d: 'asc' | 'desc') => void;
 }
