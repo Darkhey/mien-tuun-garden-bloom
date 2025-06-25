@@ -97,7 +97,7 @@ const BlogFilter: React.FC<BlogFilterProps> = ({
       <div className="flex items-center justify-center gap-2 mb-6">
         <select
           value={sortOption}
-          onChange={(e) => setSortOption(e.target.value)}
+          onChange={(e) => setSortOption(e.target.value as 'newest' | 'alphabetical' | 'length' | 'seo')}
           className="border border-sage-200 rounded-full px-4 py-2 text-sm"
         >
           <option value="newest">Neueste</option>
