@@ -28,7 +28,8 @@ const BlogPodcastManager: React.FC = () => {
 
   const {
     generatingIds,
-    generatePodcastForPost,
+    generateScriptForPost,
+    generateAudioForPodcast,
     handlePlayPodcast,
     handleDownloadPodcast
   } = usePodcastActions(refetchPodcasts, refetchBlogPosts);
@@ -95,7 +96,8 @@ const BlogPodcastManager: React.FC = () => {
             blogPosts={filteredBlogPosts}
             podcasts={podcasts}
             generatingIds={generatingIds}
-            onGeneratePodcast={generatePodcastForPost}
+            onGenerateScript={generateScriptForPost}
+            onGenerateAudio={generateAudioForPodcast}
             onPlayPodcast={handlePlayPodcast}
             onDownloadPodcast={handleDownloadPodcast}
           />
