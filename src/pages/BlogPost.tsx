@@ -14,6 +14,7 @@ import BlogComments from "@/components/blog/BlogComments";
 import { useToast } from "@/hooks/use-toast";
 import { generateUniqueSlug } from '@/utils/slugHelpers';
 import BlogPodcastSection from '@/components/blog/BlogPodcastSection';
+import ElevenLabsAudioNative from '@/components/blog/ElevenLabsAudioNative';
 import { Calendar, User, Tag } from 'lucide-react';
 
 const BlogPost = () => {
@@ -55,6 +56,20 @@ const BlogPost = () => {
   if (error || !post) {
     return <div className="text-center py-12">Artikel nicht gefunden.</div>;
   }
+
+  // Extract plain text from content for audio generation
+  const getPlainTextFromContent = (content: string) => {
+    // Remove HTML tags and markdown formatting
+    return content
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold markdown
+      .replace(/\*(.*?)\*/g, '$1') // Remove italic markdown
+      .replace(/#{1,6}\s/g, '') // Remove header markdown
+      .replace(/\n+/g, ' ') // Replace line breaks with spaces
+      .trim();
+  };
+
+  const audioText = `${post.title}. ${post.excerpt || ''}. ${getPlainTextFromContent(post.content)}`;
 
   return (
     <>
@@ -111,6 +126,15 @@ const BlogPost = () => {
             ))}
           </div>
         </header>
+
+        {/* ElevenLabs Audio Native Player */}
+        <div className="mb-8">
+          <ElevenLabsAudioNative
+            text={audioText}
+            title={post.title}
+            voiceId="21m00Tcm4TlvDq8ikWAM"
+          />
+        </div>
         
         <BlogPostContent content={post.content} />
         
