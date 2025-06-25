@@ -1,129 +1,106 @@
-import { 
-  Settings, 
-  FileText, 
-  ChefHat, 
-  Users, 
-  Calendar, 
-  Zap, 
-  Shield, 
-  BarChart3, 
+import {
+  BarChart3,
+  BookOpen,
+  Calendar,
+  FileText,
+  Home,
+  ListChecks,
+  Settings,
+  ShoppingCart,
+  Tag,
+  Users,
   Brain,
-  TestTube,
-  Activity,
-  Clock
-} from "lucide-react";
+  Mic,
+  TestTube
+} from 'lucide-react';
 
 export interface AdminMenuItem {
   id: string;
-  label: string;
-  icon: any;
-  path: string;
-  description?: string;
-  badge?: string;
+  title: string;
+  path?: string;
+  icon?: any;
   children?: AdminMenuItem[];
 }
 
 export const adminMenuItems: AdminMenuItem[] = [
   {
-    id: "content",
-    label: "Content Management",
-    icon: FileText,
-    path: "/admin",
-    children: [
-      {
-        id: "blog-posts",
-        label: "Blog Posts",
-        icon: FileText,
-        path: "/admin/blog-posts",
-        description: "Verwalte Blog-Artikel"
-      },
-      {
-        id: "ki-blog-creator",
-        label: "KI Blog Creator",
-        icon: Brain,
-        path: "/admin/ki-blog-creator",
-        description: "Erstelle Artikel mit KI"
-      },
-      {
-        id: "recipes", 
-        label: "Rezepte",
-        icon: ChefHat,
-        path: "/admin/recipes",
-        description: "Verwalte Rezepte"
-      },
-      {
-        id: "ki-recipe-creator",
-        label: "KI Rezept Creator",
-        icon: Brain,
-        path: "/admin/ki-recipe-creator", 
-        description: "Erstelle Rezepte mit KI"
-      }
-    ]
+    id: 'dashboard',
+    title: 'Dashboard',
+    path: '/admin',
+    icon: Home
   },
   {
-    id: "content-automation",
-    label: "Content-Automatisierung",
-    icon: Zap,
-    path: "/admin/content-automation",
-    description: "Automatisierte Content-Erstellung",
+    id: 'shop',
+    title: 'Shop-Verwaltung',
+    icon: ShoppingCart,
     children: [
       {
-        id: "content-strategy",
-        label: "Content Strategy",
+        id: 'products',
+        title: 'Produkte',
+        icon: Tag,
+        path: '/admin/products'
+      },
+      {
+        id: 'categories',
+        title: 'Kategorien',
+        icon: ListChecks,
+        path: '/admin/categories'
+      },
+      {
+        id: 'orders',
+        title: 'Bestellungen',
         icon: BarChart3,
-        path: "/admin/content-strategy",
-        description: "Content-Strategien und Analytics"
-      },
-      {
-        id: "scheduled-jobs",
-        label: "Geplante Jobs",
-        icon: Clock,
-        path: "/admin/scheduled-jobs",
-        description: "Automatisierte Eintragsgeneration"
+        path: '/admin/orders'
       }
     ]
   },
   {
-    id: "system",
-    label: "System & Monitoring",
-    icon: Settings,
-    path: "/admin",
+    id: 'blog',
+    title: 'Blog-Verwaltung',
+    icon: BookOpen,
     children: [
       {
-        id: "users",
-        label: "Benutzerverwaltung",
-        icon: Users,
-        path: "/admin/users",
-        description: "Verwalte Benutzer und Rollen"
+        id: 'blog-posts',
+        title: 'Blog-Posts',
+        icon: FileText,
+        path: '/admin/blog-posts'
       },
       {
-        id: "sowing-calendar",
-        label: "Aussaatkalender",
-        icon: Calendar,
-        path: "/admin/sowing-calendar",
-        description: "Verwalte Aussaatzeiten"
+        id: 'ki-blog-creator',
+        title: 'KI Blog Creator',
+        icon: Brain,
+        path: '/admin/ki-blog-creator'
       },
       {
-        id: "blog-testing",
-        label: "Blog System Tests",
+        id: 'blog-podcasts',
+        title: 'Podcast-Manager',
+        icon: Mic,
+        path: '/admin/blog-podcasts'
+      },
+      {
+        id: 'blog-testing',
+        title: 'Blog Testing',
         icon: TestTube,
-        path: "/admin/blog-testing",
-        description: "Teste Blog-Funktionalitäten"
-      },
-      {
-        id: "system-diagnostics",
-        label: "System Diagnostics",
-        icon: Activity,
-        path: "/admin/system-diagnostics",
-        description: "KI-System Performance Analyse"
-      },
-      {
-        id: "security-log",
-        label: "Security Log",
-        icon: Shield,
-        path: "/admin/security-log",
-        description: "Sicherheitsereignisse"
+        path: '/admin/blog-testing'
       }
     ]
+  },
+  {
+    id: 'newsletter',
+    title: 'Newsletter',
+    icon: Users,
+    path: '/admin/newsletter'
+  },
+  {
+    id: 'events',
+    title: 'Veranstaltungen',
+    icon: Calendar,
+    path: '/admin/events'
+  },
+  {
+    id: 'settings',
+    title: 'Einstellungen',
+    icon: Settings,
+    path: '/admin/settings'
   }
 ];

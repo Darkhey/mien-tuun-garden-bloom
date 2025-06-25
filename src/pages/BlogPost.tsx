@@ -1,186 +1,200 @@
-import React from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Helmet } from "react-helmet";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from '@/integrations/supabase/types';
+import type { BlogPost } from '@/types/content';
+import BlogStructuredData from "@/components/blog/BlogStructuredData";
 import BlogPostHeader from "@/components/blog/BlogPostHeader";
-import BlogPostImage from "@/components/blog/BlogPostImage";
 import BlogPostContent from "@/components/blog/BlogPostContent";
 import BlogPostShareSection from "@/components/blog/BlogPostShareSection";
+import CallToActionSection from "@/components/blog/CallToActionSection";
 import RelatedArticlesSection from "@/components/blog/RelatedArticlesSection";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import type { BlogPost } from '@/types/content';
 import BlogComments from "@/components/blog/BlogComments";
-import BlogStructuredData from "@/components/blog/BlogStructuredData";
-import { Helmet } from "react-helmet";
-import CallToActionSection from '@/components/blog/CallToActionSection';
-import DynamicMetaTags from "@/components/seo/DynamicMetaTags";
+import { useToast } from "@/hooks/use-toast";
+import { Recipe } from '@/types/Recipe';
+import { generateUniqueSlug } from '@/utils/slugHelpers';
+import BlogPodcastSection from '@/components/blog/BlogPodcastSection';
 
-const BlogPostPage = () => {
-  const { slug } = useParams();
+interface RouteParams {
+  slug: string;
+}
 
-  // Lade Post mit Query
-  const { data: row, isLoading, error } = useQuery({
-    queryKey: ['blogpost', slug],
+const BlogPost = () => {
+  const { slug } = useParams<RouteParams>();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const [relatedRecipe, setRelatedRecipe] = useState<Recipe | null>(null);
+  const [showRecipeCreateButton, setShowRecipeCreateButton] = useState(false);
+  const [isCreatingRecipe, setIsCreatingRecipe] = useState(false);
+
+  const { data: post, isLoading, error } = useQuery({
+    queryKey: ['blog-post', slug],
     queryFn: async () => {
-      if (!slug) throw new Error("Kein Slug angegeben");
+      if (!slug) throw new Error("Slug is required");
       const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
         .eq('slug', slug)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
+        .eq('published', true)
+        .single();
+
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+      return data as Tables<'blog_posts'>;
     },
-    enabled: !!slug,
   });
 
-  // Session holen für UserId (nur für Kommentare relevant)
-  const [userId, setUserId] = React.useState<string | null>(null);
-  // Bewertung state
-  const [blogRating, setBlogRating] = React.useState<{
-    average: number | null;
-    count: number;
-  }>({ average: null, count: 0 });
+  useEffect(() => {
+    if (post?.id) {
+      fetchRelatedRecipe(post.id);
+    }
+  }, [post?.id]);
 
-  React.useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUserId(data.session?.user.id ?? null);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserId(session?.user.id ?? null);
-    });
-    return () => { listener?.subscription.unsubscribe(); };
-  }, []);
+  const fetchRelatedRecipe = async (blogPostId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('recipes')
+        .select('*')
+        .eq('blog_post_id', blogPostId)
+        .single();
 
-  // Lese Bewertungsdaten aus Supabase für strukturierte Daten
-  React.useEffect(() => {
-    if (!slug) return;
-    supabase
-      .from("blog_ratings")
-      .select("rating", { count: "exact" })
-      .eq("blog_slug", slug)
-      .then(({ data, count }) => {
-        if (!data || data.length === 0) {
-          setBlogRating({ average: null, count: 0 });
-        } else {
-          const sum = data.reduce((acc, cur) => acc + cur.rating, 0);
-          const avg = Math.round((sum / data.length) * 10) / 10;
-          setBlogRating({ average: avg, count: data.length });
-        }
-      });
-  }, [slug]);
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching related recipe:", error);
+        throw error;
+      }
 
-  if (isLoading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 pt-20 pb-40 text-center text-earth-600">Lade Artikel...</div>
-    );
-  }
-
-  if (!row) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 pt-20 pb-40 text-center text-earth-500">Artikel nicht gefunden.</div>
-    );
-  }
-
-  // Enhanced Mapping auf BlogPost Type mit neuen Feldern
-  const post: BlogPost = {
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
-    excerpt: row.excerpt,
-    content: row.content,
-    author: row.author,
-    userId: row.user_id ?? undefined,
-    publishedAt: row.published_at,
-    updatedAt: row.updated_at || undefined,
-    featuredImage: row.featured_image || '/placeholder.svg',
-    category: row.category || '',
-    season: row.season || undefined, // Jetzt verfügbar in der Haupttabelle
-    tags: row.tags || [],
-    readingTime: row.reading_time || 5,
-    seo: {
-      title: row.seo_title || row.title,
-      description: row.seo_description || '',
-      keywords: row.seo_keywords || [],
-    },
-    featured: !!row.featured,
-    published: !!row.published,
-    structuredData: row.structured_data || undefined,
-    originalTitle: row.original_title || undefined,
-    ogImage: row.og_image || undefined,
-    description: row.description || undefined, // Neue Beschreibung verfügbar
+      if (data) {
+        setRelatedRecipe(data as Recipe);
+      } else {
+        setShowRecipeCreateButton(true);
+      }
+    } catch (error) {
+      console.error("Error fetching related recipe:", error);
+    }
   };
 
-  // Generate canonical URL
-  const canonicalUrl = `https://mien-tuun.de/blog/${post.slug}`;
+  const handleRecipeCreate = async () => {
+    setIsCreatingRecipe(true);
+    try {
+      if (!post) throw new Error("Blog post data is not available.");
+
+      const baseTitle = `Rezept passend zum Artikel "${post.title}"`;
+      const uniqueSlug = await generateUniqueSlug(baseTitle);
+
+      const newRecipe = {
+        title: baseTitle,
+        slug: uniqueSlug,
+        blog_post_id: post.id,
+        status: 'draft',
+        description: `Automatisches Rezept für Blog-Post "${post.title}"`,
+        category: post.category || 'Sonstiges',
+        prep_time: 15,
+        cook_time: 30,
+        total_time: 45,
+        servings: 4,
+        ingredients: ['Zutaten...'],
+        instructions: ['Anleitung...'],
+        notes: ['Notizen...'],
+        images: [],
+        user_id: post.user_id,
+      };
+
+      const { data, error } = await supabase
+        .from('recipes')
+        .insert([newRecipe])
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating recipe:", error);
+        throw error;
+      }
+
+      toast({
+        title: "Rezept erstellt!",
+        description: `Neues Rezept "${newRecipe.title}" wurde als Entwurf erstellt.`,
+      });
+
+      setRelatedRecipe(data as Recipe);
+      setShowRecipeCreateButton(false);
+      navigate(`/admin/recipes/${data.id}`);
+    } catch (error: any) {
+      console.error("Error creating recipe:", error);
+      toast({
+        title: "Fehler beim Erstellen des Rezepts",
+        description: error.message || "Ein Fehler ist aufgetreten.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingRecipe(false);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-12">Lädt Artikel...</div>;
+  }
+
+  if (error || !post) {
+    return <div className="text-center py-12">Artikel nicht gefunden.</div>;
+  }
 
   return (
     <>
-      {/* Enhanced SEO Meta Tags */}
-      <DynamicMetaTags
-        title={post.seo.title}
-        description={post.seo.description}
-        keywords={post.seo.keywords}
-        ogTitle={post.seo.title}
-        ogDescription={post.seo.description}
-        ogImage={post.ogImage || post.featuredImage}
-        ogUrl={canonicalUrl}
-        canonicalUrl={canonicalUrl}
-        author={post.author}
-        publishedAt={post.publishedAt || undefined}
-        updatedAt={post.updatedAt}
-        structuredData={post.structuredData ? JSON.parse(post.structuredData) : undefined}
-      />
+      <Helmet>
+        <title>{post.title} | Mien Tuun</title>
+        <meta name="description" content={post.excerpt || post.description || ''} />
+        <meta name="keywords" content={post.tags?.join(', ') || ''} />
+        <meta property="og:title" content={post.title} />
+        <meta property="og:description" content={post.excerpt || post.description || ''} />
+        <meta property="og:image" content={post.featuredImage} />
+        <meta property="og:type" content="article" />
+        <meta property="article:author" content={post.author} />
+        <meta property="article:published_time" content={post.publishedAt} />
+        <meta property="article:section" content={post.category} />
+        {post.tags?.map(tag => (
+          <meta key={tag} property="article:tag" content={tag} />
+        ))}
+        <link rel="canonical" href={`https://mien-tuun.de/blog/${post.slug}`} />
+      </Helmet>
 
-      {/* Entferne die alten Helmet-Tags da sie jetzt in DynamicMetaTags sind */}
-      
-      {/* Back Button */}
-      <div className="max-w-4xl mx-auto px-4 pt-8">
-        <Link
-          to="/blog"
-          className="inline-flex items-center text-sage-600 hover:text-sage-700 transition-colors mb-6"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Zurück zum Blog
-        </Link>
-      </div>
-      <article className="max-w-4xl mx-auto px-4 pb-16">
-        <BlogPostHeader
-          category={post.category}
-          title={post.title}
-          author={post.author}
-          publishedAt={post.publishedAt}
-          readingTime={post.readingTime}
-          tags={post.tags}
+      <BlogStructuredData post={post} />
+
+      <article className="max-w-4xl mx-auto px-4 py-8">
+        <BlogPostHeader 
+          post={post} 
+          relatedRecipe={relatedRecipe}
+          showRecipeCreateButton={showRecipeCreateButton}
+          onRecipeCreate={handleRecipeCreate}
+          isCreatingRecipe={isCreatingRecipe}
         />
-        <BlogPostImage
-          src={post.featuredImage}
-          alt={post.title}
-          category={post.category}
-          tags={post.tags}
-        />
+        
         <BlogPostContent content={post.content} />
-        <BlogPostShareSection
-          title={post.title}
-          imageUrl={post.featuredImage}
-          excerpt={post.excerpt}
+        
+        <BlogPostShareSection post={post} />
+        
+        {/* Podcast Section */}
+        <BlogPodcastSection 
+          blogPostId={post.id}
+          blogTitle={post.title}
         />
         
-        {/* Call to Action Section */}
-        <CallToActionSection category={post.category} />
+        <CallToActionSection />
         
-        {/* Verwandte Artikel */}
-        <RelatedArticlesSection
+        <RelatedArticlesSection 
           currentSlug={post.slug}
           category={post.category}
           tags={post.tags}
         />
-
-        {/* Blog Kommentare */}
-        <BlogComments blogSlug={post.slug} userId={userId} />
+        
+        <BlogComments blogSlug={post.slug} />
       </article>
     </>
   );
 };
 
-export default BlogPostPage;
+export default BlogPost;

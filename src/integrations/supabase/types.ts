@@ -75,6 +75,65 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_podcasts: {
+        Row: {
+          audio_url: string | null
+          blog_post_id: string
+          created_at: string | null
+          description: string | null
+          duration_seconds: number | null
+          eleven_labs_id: string | null
+          error_message: string | null
+          id: string
+          published_at: string | null
+          script_content: string
+          status: string
+          title: string
+          updated_at: string | null
+          voice_settings: Json | null
+        }
+        Insert: {
+          audio_url?: string | null
+          blog_post_id: string
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          eleven_labs_id?: string | null
+          error_message?: string | null
+          id?: string
+          published_at?: string | null
+          script_content: string
+          status?: string
+          title: string
+          updated_at?: string | null
+          voice_settings?: Json | null
+        }
+        Update: {
+          audio_url?: string | null
+          blog_post_id?: string
+          created_at?: string | null
+          description?: string | null
+          duration_seconds?: number | null
+          eleven_labs_id?: string | null
+          error_message?: string | null
+          id?: string
+          published_at?: string | null
+          script_content?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+          voice_settings?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_podcasts_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_post_versions: {
         Row: {
           audiences: string[] | null

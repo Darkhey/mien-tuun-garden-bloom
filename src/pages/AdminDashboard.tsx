@@ -1,114 +1,129 @@
-import React, { useState } from "react";
-import { Navigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import AdminSidebar from "@/components/admin/AdminSidebar";
-import AdminContent from "@/components/admin/AdminContent";
-import { useAdminData } from "@/hooks/useAdminData";
-import { useAdminActions } from "@/hooks/useAdminActions";
-import EditBlogPostModal from "@/components/admin/EditBlogPostModal";
-import { AdminBlogPost, AdminView } from "@/types/admin";
-import { supabase } from "@/integrations/supabase/client";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react';
+import Account from '@/components/admin/Account';
+import BlogPostsView from '@/components/admin/views/BlogPostsView';
+import RecipesView from '@/components/admin/views/RecipesView';
+import UsersView from '@/components/admin/views/UsersView';
+import SettingsView from '@/components/admin/views/SettingsView';
+import BlogTestingView from '@/components/admin/views/BlogTestingView';
+import KIBlogCreatorView from '@/components/admin/views/KIBlogCreatorView';
+import BlogPodcastView from '@/components/admin/views/BlogPodcastView';
+import { adminMenuItems } from '@/config/adminMenu';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Menu } from "lucide-react"
+import { MainNav } from "@/components/main-nav"
+import { Separator } from "@/components/ui/separator"
+import { ModeToggle } from "@/components/mode-toggle"
+import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-const AdminDashboard: React.FC = () => {
-  const [activeView, setActiveView] = useState<AdminView>("blog-posts");
-  const [editingBlogPost, setEditingBlogPost] = useState<AdminBlogPost | null>(null);
-  
-  // Load admin data
-  const {
-    recipes,
-    blogPosts, 
-    users,
-    loading,
-    dataError,
-    setRecipes,
-    setBlogPosts,
-    setUsers,
-    loadData
-  } = useAdminData(activeView);
+const AdminDashboard = () => {
+  const [activeView, setActiveView] = useState(adminMenuItems[0].children[0].id);
+  const navigate = useNavigate();
+  const user = useUser();
+  const supabaseClient = useSupabaseClient();
 
-  // Admin actions
-  const {
-    handleTogglePremium,
-    handleDeleteUser,
-    handleToggleStatus,
-    handleDelete
-  } = useAdminActions();
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
 
-  // Check if user is admin - simplified check since we already have AdminProtectedRoute
-  const { isLoading } = useQuery({
-    queryKey: ["user-roles"],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id);
-      
-      return data || [];
-    },
-  });
+  const handleSignOut = async () => {
+    await supabaseClient.auth.signOut();
+    navigate('/login');
+  };
 
-  if (isLoading) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>;
-  }
-
-  const renderView = () => {
-    return (
-      <AdminContent
-        activeView={activeView}
-        recipes={recipes}
-        blogPosts={blogPosts}
-        users={users}
-        loading={loading}
-        error={dataError}
-        onToggleStatus={(id, status, type) => 
-          handleToggleStatus(id, status, type, recipes, blogPosts, setRecipes, setBlogPosts)
-        }
-        onDelete={(id, type) => 
-          handleDelete(id, type, recipes, blogPosts, setRecipes, setBlogPosts)
-        }
-        onTogglePremium={(userId, isPremium) => 
-          handleTogglePremium(userId, isPremium, users, setUsers)
-        }
-        onDeleteUser={(userId) => 
-          handleDeleteUser(userId, users, setUsers)
-        }
-        onEditRecipe={(recipe) => {
-          // Handle recipe editing
-        }}
-        onEditBlogPost={(post) => {
-          setEditingBlogPost(post);
-        }}
-        onDataRefresh={loadData}
-      />
-    );
+  const renderContent = () => {
+    switch (activeView) {
+      case 'account':
+        return <Account />;
+      case 'users':
+        return <UsersView />;
+      case 'recipes':
+        return <RecipesView />;
+      case 'settings':
+        return <SettingsView />;
+      case 'blog-posts':
+        return <BlogPostsView />;
+      case 'ki-blog-creator':
+        return <KIBlogCreatorView />;
+      case 'blog-podcasts':
+        return <BlogPodcastView />;
+      case 'blog-testing':
+        return <BlogTestingView />;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row gap-6 py-6">
-          <div className="w-full md:w-64 flex-shrink-0">
-            <AdminSidebar activeView={activeView} setActiveView={setActiveView} />
+    <div className="min-h-screen bg-gray-100">
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="icon" className="md:hidden">
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-80">
+          <SheetHeader>
+            <SheetTitle>Admin Menu</SheetTitle>
+            <SheetDescription>
+              Wähle eine Option aus der Liste.
+            </SheetDescription>
+          </SheetHeader>
+          <Separator className="my-4" />
+          <MainNav
+            className="flex flex-col space-y-1"
+            items={adminMenuItems}
+            setActiveView={setActiveView}
+          />
+        </SheetContent>
+      </Sheet>
+
+      <div className="p-4 md:ml-20">
+        <div className="container mx-auto">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+            <div className="flex items-center space-x-4">
+              <ModeToggle />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-8 w-8 p-0 lg:h-auto lg:w-auto lg:px-3">
+                    <span className="sr-only lg:not-sr-only">Profil</span>
+                    <Avatar className="h-8 w-8 lg:mr-2">
+                      <AvatarImage src={`https://avatar.vercel.sh/${user?.email}.png`} alt={user?.email || "Admin"} />
+                      <AvatarFallback>A</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <span className="mr-2">Profil</span>
+                    <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    Abmelden
+                    <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          <div className="flex-1 overflow-x-auto md:overflow-visible">
-            {renderView()}
+          <Separator className="my-4" />
+          <div className="grid grid-cols-1 gap-4">
+            {renderContent()}
           </div>
         </div>
       </div>
-      
-      {editingBlogPost && (
-        <EditBlogPostModal
-          post={editingBlogPost}
-          onClose={() => setEditingBlogPost(null)}
-          onSaved={() => {
-            setEditingBlogPost(null);
-            loadData();
-          }}
-        />
-      )}
     </div>
   );
 };
