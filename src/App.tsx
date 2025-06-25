@@ -7,6 +7,8 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import LazyRoute from '@/components/LazyRoute';
 import Layout from '@/components/Layout';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { EventLoggerProvider } from '@/hooks/useEventLogger';
+import DebugOverlay from '@/components/DebugOverlay';
 
 // Lazy load components
 const Index = React.lazy(() => import('./pages/Index'));
@@ -43,10 +45,11 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <Router>
-          <Layout>
-            <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Lädt...</div>}>
-              <Routes>
+        <EventLoggerProvider>
+          <Router>
+            <Layout>
+              <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Lädt...</div>}>
+                <Routes>
                 <Route path="/" element={
                   <LazyRoute>
                     {isMobile ? <MobileLandingPage /> : <Index />}
@@ -71,8 +74,10 @@ function App() {
               </Routes>
             </Suspense>
           </Layout>
+          <DebugOverlay />
           <Toaster />
         </Router>
+        </EventLoggerProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
