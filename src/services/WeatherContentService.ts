@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import type { BlogPost } from '@/types/content';
 
@@ -209,7 +210,6 @@ export class WeatherContentService {
       featuredImage: row.featured_image || '/placeholder.svg',
       category: row.category || '',
       tags: row.tags || [],
-      weatherTags: row.weather_tags || undefined,
       readingTime: row.reading_time || 5,
       seo: {
         title: row.seo_title || row.title,
@@ -248,7 +248,6 @@ export class WeatherContentService {
       const response = await fetch(
         `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=de`,
         { 
-          timeout: 5000,
           headers: {
             'Accept': 'application/json'
           }
@@ -344,18 +343,24 @@ export class WeatherContentService {
       
       const { data, error } = await supabase
         .from('blog_posts')
-        .insert([{
+        .insert({
           title: suggestion.title,
           category: suggestion.category,
-          tags: allTags, // Speichere alle Tags im regulären tags Feld
+          tags: allTags,
           content: `# ${suggestion.title}\n\n${suggestion.weatherContext}\n\n[Hier würde der generierte Inhalt stehen...]`,
           excerpt: `${suggestion.title} - ${suggestion.weatherContext}`,
           status: 'entwurf',
           author: 'WeatherBot',
           slug: `${suggestion.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now()}`,
           reading_time: 5,
-          published_at: new Date().toISOString().split('T')[0]
-        }])
+          published_at: new Date().toISOString().split('T')[0],
+          featured_image: '/placeholder.svg',
+          seo_title: suggestion.title,
+          seo_description: `${suggestion.title} - ${suggestion.weatherContext}`,
+          seo_keywords: allTags,
+          audiences: ['anfaenger'],
+          content_types: ['blog']
+        })
         .select()
         .single();
 

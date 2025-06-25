@@ -21,6 +21,14 @@ const BlogPost = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const { data: user } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    }
+  });
+
   const { data: post, isLoading, error } = useQuery({
     queryKey: ['blog-post', slug],
     queryFn: async () => {
@@ -108,7 +116,7 @@ const BlogPost = () => {
         
         <BlogPostShareSection 
           title={post.title}
-          url={`https://mien-tuun.de/blog/${post.slug}`}
+          shareUrl={`https://mien-tuun.de/blog/${post.slug}`}
           excerpt={post.excerpt}
         />
         
@@ -126,7 +134,10 @@ const BlogPost = () => {
           tags={post.tags}
         />
         
-        <BlogComments blogSlug={post.slug} />
+        <BlogComments 
+          blogSlug={post.slug} 
+          userId={user?.id || null}
+        />
       </article>
     </>
   );

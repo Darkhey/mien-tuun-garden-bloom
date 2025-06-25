@@ -21,7 +21,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeView, setActiveView }
         {adminMenuItems.map((group, groupIndex) => (
           <div key={groupIndex}>
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              {group.label}
+              {group.title}
             </h3>
             <div className="space-y-1">
               {group.children ? (
@@ -35,7 +35,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeView, setActiveView }
                       onClick={() => setActiveView(item.id as AdminView)}
                     >
                       <Icon className="mr-2 h-4 w-4" />
-                      {item.label}
+                      {item.title}
                     </Button>
                   );
                 })
@@ -47,7 +47,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeView, setActiveView }
                   onClick={() => setActiveView(group.id as AdminView)}
                 >
                   <group.icon className="mr-2 h-4 w-4" />
-                  {group.label}
+                  {group.title}
                 </Button>
               )}
             </div>

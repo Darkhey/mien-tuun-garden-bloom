@@ -115,7 +115,7 @@ const BlogPostsView: React.FC = () => {
               .from('blog_posts')
               .select('title, content, category, seo_keywords')
               .eq('id', id)
-              .single({ signal: controller.signal });
+              .single();
 
             if (error) throw error;
 
@@ -132,7 +132,7 @@ const BlogPostsView: React.FC = () => {
             const { error: updateError } = await supabase
               .from('blog_posts')
               .update({ title: newTitle })
-              .eq('id', id, { signal: controller.signal });
+              .eq('id', id);
 
             if (updateError) throw updateError;
             if (controller.signal.aborted) throw new Error('aborted');
@@ -179,7 +179,7 @@ const BlogPostsView: React.FC = () => {
               .from('blog_posts')
               .select('title, content, category')
               .eq('id', id)
-              .single({ signal: controller.signal });
+              .single();
 
             if (error) throw error;
 
@@ -194,7 +194,7 @@ const BlogPostsView: React.FC = () => {
             const { error: updateError } = await supabase
               .from('blog_posts')
               .update({ featured_image: url })
-              .eq('id', id, { signal: controller.signal });
+              .eq('id', id);
 
             if (updateError) throw updateError;
             if (controller.signal.aborted) throw new Error('aborted');
@@ -261,7 +261,7 @@ const BlogPostsView: React.FC = () => {
           instagramStatuses={instagramStatuses}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
-          onToggleSelectAll={toggleSelectAll}
+          onToggleSelectAll={() => toggleSelectAll(posts)}
           onToggleStatus={handleToggleStatus}
           onEdit={handleEdit}
           onInstagramPost={handleInstagramPost}
