@@ -162,6 +162,11 @@ const BlogPodcastList: React.FC<BlogPodcastListProps> = ({
                             <Download className="h-4 w-4" />
                           </Button>
                         </div>
+                      ) : podcast.status === 'generating_audio' ? (
+                        <Button size="sm" disabled className="bg-gray-400">
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Audio wird erstellt...
+                        </Button>
                       ) : (
                         <Button
                           size="sm"
@@ -198,7 +203,7 @@ const BlogPodcastList: React.FC<BlogPodcastListProps> = ({
                       ) : (
                         <>
                           <Mic className="h-4 w-4 mr-2" />
-                          Podcast erstellen
+                          Skript erstellen
                         </>
                       )}
                     </Button>

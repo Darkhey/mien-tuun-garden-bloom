@@ -95,14 +95,26 @@ export const usePodcastActions = (
   const generatePodcastForPost = async (blogPostId: string, title: string) => {
     await generateScriptForPost(blogPostId, title);
 
-    const { data: podcast } = await supabase
-      .from('blog_podcasts')
-      .select('id')
-      .eq('blog_post_id', blogPostId)
-      .single();
+    try {
+      const { data: podcast, error } = await supabase
+        .from('blog_podcasts')
+        .select('id')
+        .eq('blog_post_id', blogPostId)
+        .single();
 
-    if (podcast) {
-      await generateAudioForPodcast(podcast.id, blogPostId, title);
+      if (error) {
+        throw error;
+      }
+
+      if (podcast) {
+        await generateAudioForPodcast(podcast.id, blogPostId, title);
+      }
+    } catch (err: any) {
+      toast({
+        title: 'Fehler beim Podcast-Lookup',
+        description: err.message,
+        variant: 'destructive',
+      });
     }
   };
 
