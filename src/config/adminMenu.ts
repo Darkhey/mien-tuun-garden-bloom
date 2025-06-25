@@ -1,13 +1,9 @@
 import {
-  BarChart3,
   BookOpen,
   Calendar,
   FileText,
   Home,
-  ListChecks,
   Settings,
-  ShoppingCart,
-  Tag,
   Users,
   Brain,
   Mic,
@@ -28,31 +24,6 @@ export const adminMenuItems: AdminMenuItem[] = [
     title: 'Dashboard',
     path: '/admin',
     icon: Home
-  },
-  {
-    id: 'shop',
-    title: 'Shop-Verwaltung',
-    icon: ShoppingCart,
-    children: [
-      {
-        id: 'products',
-        title: 'Produkte',
-        icon: Tag,
-        path: '/admin/products'
-      },
-      {
-        id: 'categories',
-        title: 'Kategorien',
-        icon: ListChecks,
-        path: '/admin/categories'
-      },
-      {
-        id: 'orders',
-        title: 'Bestellungen',
-        icon: BarChart3,
-        path: '/admin/orders'
-      }
-    ]
   },
   {
     id: 'blog',
