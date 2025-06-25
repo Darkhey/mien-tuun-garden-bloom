@@ -1,32 +1,43 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, Download, RefreshCw, Volume2 } from 'lucide-react';
+import { Loader2, Volume2, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { formatDistanceToNow } from 'date-fns';
-import { de } from 'date-fns/locale';
+import BlogPodcastFilter from './views/BlogPodcastFilter';
+import BlogPodcastList from './views/BlogPodcastList';
+import { Button } from '@/components/ui/button';
 
 const BlogPodcastManager: React.FC = () => {
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState('');
+  const [podcastFilter, setPodcastFilter] = useState<'all' | 'with-podcast' | 'without-podcast'>('all');
+  const [category, setCategory] = useState('all');
   const { toast } = useToast();
 
-  const { data: podcasts, refetch, isLoading } = useQuery({
-    queryKey: ['admin-podcasts'],
+  // Blog-Posts laden
+  const { data: blogPosts = [], refetch: refetchBlogPosts, isLoading: loadingBlogPosts } = useQuery({
+    queryKey: ['admin-blog-posts-podcast'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('blog_posts')
+        .select('id, title, slug, category, published_at, excerpt')
+        .eq('published', true)
+        .order('published_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  // Podcasts laden
+  const { data: podcasts = [], refetch: refetchPodcasts, isLoading: loadingPodcasts } = useQuery({
+    queryKey: ['admin-podcasts-all'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('blog_podcasts')
-        .select(`
-          *,
-          blog_posts (
-            title,
-            slug,
-            category
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -34,21 +45,33 @@ const BlogPodcastManager: React.FC = () => {
     }
   });
 
-  const { data: blogPostsWithoutPodcast } = useQuery({
-    queryKey: ['blog-posts-without-podcast'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select('id, title, slug, category')
-        .not('id', 'in', `(${podcasts?.map(p => p.blog_post_id).join(',') || 'null'})`)
-        .eq('published', true)
-        .limit(10);
+  // Gefilterte Blog-Posts
+  const filteredBlogPosts = useMemo(() => {
+    let filtered = blogPosts;
 
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!podcasts
-  });
+    // Text-Filter
+    if (search) {
+      filtered = filtered.filter(post => 
+        post.title.toLowerCase().includes(search.toLowerCase()) ||
+        post.excerpt?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Kategorie-Filter
+    if (category !== 'all') {
+      filtered = filtered.filter(post => post.category === category);
+    }
+
+    // Podcast-Status-Filter
+    if (podcastFilter !== 'all') {
+      filtered = filtered.filter(post => {
+        const hasPodcast = podcasts.some(podcast => podcast.blog_post_id === post.id);
+        return podcastFilter === 'with-podcast' ? hasPodcast : !hasPodcast;
+      });
+    }
+
+    return filtered;
+  }, [blogPosts, podcasts, search, category, podcastFilter]);
 
   const generatePodcastForPost = async (blogPostId: string, title: string) => {
     setGeneratingIds(prev => new Set(prev).add(blogPostId));
@@ -56,7 +79,7 @@ const BlogPodcastManager: React.FC = () => {
     try {
       toast({
         title: "Podcast-Generierung gestartet",
-        description: `Erstelle Podcast für "${title}"`,
+        description: `Erstelle liebevollen Podcast für "${title}" mit Mariannes warmer Stimme`,
       });
 
       // Script generieren
@@ -92,10 +115,11 @@ const BlogPodcastManager: React.FC = () => {
 
       toast({
         title: "Podcast erfolgreich erstellt",
-        description: `Podcast für "${title}" ist verfügbar`,
+        description: `Mariannes liebevoller Podcast für "${title}" ist verfügbar`,
       });
 
-      refetch();
+      refetchPodcasts();
+      refetchBlogPosts();
 
     } catch (error: any) {
       toast({
@@ -112,191 +136,123 @@ const BlogPodcastManager: React.FC = () => {
     }
   };
 
-  const regenerateAudio = async (podcastId: string, title: string) => {
-    try {
-      toast({
-        title: "Audio wird neu generiert",
-        description: `Erstelle neues Audio für "${title}"`,
-      });
-
-      const { error } = await supabase.functions.invoke(
-        'generate-podcast-audio',
-        { body: { podcast_id: podcastId } }
-      );
-
-      if (error) {
-        throw new Error(`Audio-Regenerierung fehlgeschlagen: ${error.message}`);
-      }
-
-      toast({
-        title: "Audio erfolgreich regeneriert",
-        description: `Neues Audio für "${title}" ist verfügbar`,
-      });
-
-      refetch();
-
-    } catch (error: any) {
-      toast({
-        title: "Fehler bei Audio-Regenerierung",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+  const handlePlayPodcast = (audioUrl: string) => {
+    window.open(audioUrl, '_blank');
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusMap = {
-      'pending': { variant: 'secondary' as const, text: 'Wartend' },
-      'generating_script': { variant: 'default' as const, text: 'Script wird erstellt' },
-      'generating_audio': { variant: 'default' as const, text: 'Audio wird erstellt' },
-      'ready': { variant: 'default' as const, text: 'Bereit' },
-      'error': { variant: 'destructive' as const, text: 'Fehler' }
-    };
-
-    const config = statusMap[status as keyof typeof statusMap] || statusMap.pending;
-    
-    return (
-      <Badge 
-        variant={config.variant} 
-        className={status === 'ready' ? 'bg-green-100 text-green-800' : undefined}
-      >
-        {config.text}
-      </Badge>
-    );
+  const handleDownloadPodcast = (audioUrl: string, title: string) => {
+    const link = document.createElement('a');
+    link.href = audioUrl;
+    link.download = `${title}.mp3`;
+    link.click();
   };
+
+  const handleRefresh = () => {
+    refetchBlogPosts();
+    refetchPodcasts();
+  };
+
+  const isLoading = loadingBlogPosts || loadingPodcasts;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin" />
+        <Loader2 className="h-6 w-6 animate-spin mr-2" />
+        <span>Blog-Artikel und Podcasts werden geladen...</span>
       </div>
     );
   }
+
+  const podcastCount = podcasts.length;
+  const blogPostsWithPodcast = blogPosts.filter(post => 
+    podcasts.some(podcast => podcast.blog_post_id === post.id)
+  ).length;
+  const blogPostsWithoutPodcast = blogPosts.length - blogPostsWithPodcast;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Podcast-Manager</h2>
-          <p className="text-gray-600">Verwalte automatisch generierte Podcasts</p>
+          <h2 className="text-2xl font-bold">Podcast Manager</h2>
+          <p className="text-gray-600">
+            Verwalte Podcasts für Blog-Artikel mit Mariannes liebevoller Stimme
+          </p>
         </div>
-        <Button onClick={() => refetch()} variant="outline">
+        <Button onClick={handleRefresh} variant="outline">
           <RefreshCw className="h-4 w-4 mr-2" />
           Aktualisieren
         </Button>
       </div>
 
-      {/* Bestehende Podcasts */}
+      {/* Statistiken */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Volume2 className="h-5 w-5 text-sage-600" />
+              <div>
+                <p className="text-sm text-gray-600">Gesamt Podcasts</p>
+                <p className="text-xl font-semibold">{podcastCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div>
+              <p className="text-sm text-gray-600">Mit Podcast</p>
+              <p className="text-xl font-semibold text-green-600">{blogPostsWithPodcast}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div>
+              <p className="text-sm text-gray-600">Ohne Podcast</p>
+              <p className="text-xl font-semibold text-orange-600">{blogPostsWithoutPodcast}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div>
+              <p className="text-sm text-gray-600">Gesamt Artikel</p>
+              <p className="text-xl font-semibold">{blogPosts.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filter */}
+      <BlogPodcastFilter
+        search={search}
+        setSearch={setSearch}
+        podcastFilter={podcastFilter}
+        setPodcastFilter={setPodcastFilter}
+        category={category}
+        setCategory={setCategory}
+        onRefresh={handleRefresh}
+      />
+
+      {/* Blog-Posts Liste */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Volume2 className="h-5 w-5" />
-            Bestehende Podcasts ({podcasts?.length || 0})
+            Blog-Artikel ({filteredBlogPosts.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {podcasts?.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">Noch keine Podcasts erstellt</p>
-          ) : (
-            <div className="space-y-4">
-              {podcasts?.map((podcast) => (
-                <div key={podcast.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <h3 className="font-medium">{podcast.title}</h3>
-                    <p className="text-sm text-gray-600">
-                      {podcast.blog_posts?.title} • {podcast.blog_posts?.category}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      {getStatusBadge(podcast.status)}
-                      {podcast.duration_seconds && (
-                        <span className="text-xs text-gray-500">
-                          {Math.round(podcast.duration_seconds / 60)} Min
-                        </span>
-                      )}
-                      <span className="text-xs text-gray-500">
-                        {formatDistanceToNow(new Date(podcast.created_at), { 
-                          addSuffix: true, 
-                          locale: de 
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {podcast.audio_url && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => window.open(podcast.audio_url, '_blank')}
-                        >
-                          <Play className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = podcast.audio_url;
-                            link.download = `${podcast.title}.mp3`;
-                            link.click();
-                          }}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => regenerateAudio(podcast.id, podcast.title)}
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <BlogPodcastList
+            blogPosts={filteredBlogPosts}
+            podcasts={podcasts}
+            generatingIds={generatingIds}
+            onGeneratePodcast={generatePodcastForPost}
+            onPlayPodcast={handlePlayPodcast}
+            onDownloadPodcast={handleDownloadPodcast}
+          />
         </CardContent>
       </Card>
-
-      {/* Blog-Posts ohne Podcast */}
-      {blogPostsWithoutPodcast && blogPostsWithoutPodcast.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Blog-Posts ohne Podcast ({blogPostsWithoutPodcast.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {blogPostsWithoutPodcast.map((post) => (
-                <div key={post.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <h4 className="font-medium">{post.title}</h4>
-                    <p className="text-sm text-gray-600">{post.category}</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => generatePodcastForPost(post.id, post.title)}
-                    disabled={generatingIds.has(post.id)}
-                  >
-                    {generatingIds.has(post.id) ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Wird erstellt...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-2" />
-                        Podcast erstellen
-                      </>
-                    )}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };
