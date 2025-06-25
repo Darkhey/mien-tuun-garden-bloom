@@ -249,7 +249,19 @@ const BlogPostsView: React.FC = () => {
       if (sort === 'title') {
         res = a.title.localeCompare(b.title);
       } else {
-        res = new Date(a.published_at).getTime() - new Date(b.published_at).getTime();
+        const dateA = a.published_at ? new Date(a.published_at).getTime() : NaN;
+        const dateB = b.published_at ? new Date(b.published_at).getTime() : NaN;
+        const validA = !isNaN(dateA);
+        const validB = !isNaN(dateB);
+        if (validA && validB) {
+          res = dateA - dateB;
+        } else if (validA) {
+          res = -1;
+        } else if (validB) {
+          res = 1;
+        } else {
+          res = 0;
+        }
       }
       return direction === 'asc' ? res : -res;
     });
