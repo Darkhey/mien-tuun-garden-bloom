@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { AdminBlogPost } from "@/types/admin";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,11 +7,13 @@ import { useToast } from "@/hooks/use-toast";
 import EditBlogPostModal from "../EditBlogPostModal";
 import InstagramPostModal from "../InstagramPostModal";
 import BlogPostsHeader from "./BlogPostsHeader";
+import BlogPostsFilter from "./BlogPostsFilter";
 import BlogPostsTable from "./BlogPostsTable";
 import BlogPostsBulkActions from "./BlogPostsBulkActions";
 import { useBlogPostsData } from "./useBlogPostsData";
 import { aiImageGenerationService } from "@/services/AIImageGenerationService";
 import { contentInsightsService } from "@/services/ContentInsightsService";
+import { BLOG_CATEGORIES } from "../blogHelpers";
 
 const BlogPostsView: React.FC = () => {
   const [editingPost, setEditingPost] = useState<AdminBlogPost | null>(null);
@@ -21,6 +23,12 @@ const BlogPostsView: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const { toast } = useToast();
+
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [sort, setSort] = useState<'date' | 'title'>('date');
+  const [direction, setDirection] = useState<'asc' | 'desc'>('desc');
+  const categories = BLOG_CATEGORIES;
 
   const {
     posts,
@@ -226,6 +234,28 @@ const BlogPostsView: React.FC = () => {
     }
   };
 
+  const filteredPosts = useMemo(() => {
+    return posts.filter(p => {
+      if (category && p.category !== category) return false;
+      if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    });
+  }, [posts, category, search]);
+
+  const sortedPosts = useMemo(() => {
+    const sorted = [...filteredPosts];
+    sorted.sort((a, b) => {
+      let res = 0;
+      if (sort === 'title') {
+        res = a.title.localeCompare(b.title);
+      } else {
+        res = new Date(a.published_at).getTime() - new Date(b.published_at).getTime();
+      }
+      return direction === 'asc' ? res : -res;
+    });
+    return sorted;
+  }, [filteredPosts, sort, direction]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-40">
@@ -245,6 +275,17 @@ const BlogPostsView: React.FC = () => {
           postsCount={posts.length}
           onRefresh={loadBlogPosts}
         />
+        <BlogPostsFilter
+          categories={categories}
+          search={search}
+          setSearch={setSearch}
+          category={category}
+          setCategory={setCategory}
+          sort={sort}
+          setSort={setSort}
+          direction={direction}
+          setDirection={setDirection}
+        />
 
         <BlogPostsBulkActions
           selectedCount={selectedIds.length}
@@ -257,11 +298,11 @@ const BlogPostsView: React.FC = () => {
         />
 
         <BlogPostsTable
-          posts={posts}
+          posts={sortedPosts}
           instagramStatuses={instagramStatuses}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
-          onToggleSelectAll={() => toggleSelectAll(posts)}
+          onToggleSelectAll={() => toggleSelectAll(sortedPosts)}
           onToggleStatus={handleToggleStatus}
           onEdit={handleEdit}
           onInstagramPost={handleInstagramPost}
