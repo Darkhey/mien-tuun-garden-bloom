@@ -7,6 +7,8 @@ import BlogPostsView from '@/components/admin/views/BlogPostsView';
 import BlogTestingView from '@/components/admin/views/BlogTestingView';
 import KIBlogCreatorView from '@/components/admin/views/KIBlogCreatorView';
 import BlogPodcastView from '@/components/admin/views/BlogPodcastView';
+import ContentStrategyView from '@/components/admin/views/ContentStrategyView';
+import ScheduledJobsView from '@/components/admin/views/ScheduledJobsView';
 import AdminLayout from '@/components/admin/AdminLayout';
 
 const AdminDashboard = () => {
@@ -37,6 +39,10 @@ const AdminDashboard = () => {
         return <BlogPodcastView />;
       case 'blog-testing':
         return <BlogTestingView />;
+      case 'content-strategy':
+        return <ContentStrategyView />;
+      case 'scheduled-jobs':
+        return <ScheduledJobsView />;
       default:
         return <BlogPostsView />;
     }
