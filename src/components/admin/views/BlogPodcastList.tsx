@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ interface Podcast {
   blog_post_id: string;
   title: string;
   status: string;
+  script_content?: string;
   audio_url?: string;
   duration_seconds?: number;
   created_at: string;
@@ -30,7 +31,8 @@ interface BlogPodcastListProps {
   blogPosts: BlogPost[];
   podcasts: Podcast[];
   generatingIds: Set<string>;
-  onGeneratePodcast: (blogPostId: string, title: string) => void;
+  onGenerateScript: (blogPostId: string, title: string) => void;
+  onGenerateAudio: (podcastId: string, blogPostId: string, title: string) => void;
   onPlayPodcast: (audioUrl: string) => void;
   onDownloadPodcast: (audioUrl: string, title: string) => void;
 }
@@ -39,10 +41,24 @@ const BlogPodcastList: React.FC<BlogPodcastListProps> = ({
   blogPosts,
   podcasts,
   generatingIds,
-  onGeneratePodcast,
+  onGenerateScript,
+  onGenerateAudio,
   onPlayPodcast,
   onDownloadPodcast
 }) => {
+  const [openScripts, setOpenScripts] = useState<Set<string>>(new Set());
+
+  const toggleScript = (podcastId: string) => {
+    setOpenScripts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(podcastId)) {
+        newSet.delete(podcastId);
+      } else {
+        newSet.add(podcastId);
+      }
+      return newSet;
+    });
+  };
   const getPodcastForPost = (blogPostId: string) => {
     return podcasts.find(p => p.blog_post_id === blogPostId);
   };
@@ -119,7 +135,17 @@ const BlogPodcastList: React.FC<BlogPodcastListProps> = ({
                         </div>
                       )}
 
-                      {podcast.audio_url && podcast.status === 'ready' && (
+                      {podcast.script_content && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleScript(podcast.id)}
+                        >
+                          {openScripts.has(podcast.id) ? 'Skript verstecken' : 'Skript anschauen'}
+                        </Button>
+                      )}
+
+                      {podcast.audio_url && podcast.status === 'ready' ? (
                         <div className="flex items-center gap-1">
                           <Button
                             size="sm"
@@ -136,12 +162,36 @@ const BlogPodcastList: React.FC<BlogPodcastListProps> = ({
                             <Download className="h-4 w-4" />
                           </Button>
                         </div>
+                      ) : podcast.status === 'generating_audio' ? (
+                        <Button size="sm" disabled className="bg-gray-400">
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Audio wird erstellt...
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          onClick={() => onGenerateAudio(podcast.id, post.id, post.title)}
+                          disabled={isGenerating}
+                          className="bg-sage-600 hover:bg-sage-700"
+                        >
+                          {isGenerating ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Wird erstellt...
+                            </>
+                          ) : (
+                            <>
+                              <Mic className="h-4 w-4 mr-2" />
+                              Audio erstellen
+                            </>
+                          )}
+                        </Button>
                       )}
                     </div>
                   ) : (
                     <Button
                       size="sm"
-                      onClick={() => onGeneratePodcast(post.id, post.title)}
+                      onClick={() => onGenerateScript(post.id, post.title)}
                       disabled={isGenerating}
                       className="bg-sage-600 hover:bg-sage-700"
                     >
@@ -153,13 +203,18 @@ const BlogPodcastList: React.FC<BlogPodcastListProps> = ({
                       ) : (
                         <>
                           <Mic className="h-4 w-4 mr-2" />
-                          Podcast erstellen
+                          Skript erstellen
                         </>
                       )}
                     </Button>
                   )}
                 </div>
               </div>
+              {podcast && openScripts.has(podcast.id) && podcast.script_content && (
+                <div className="mt-4 whitespace-pre-wrap text-sm text-gray-700">
+                  {podcast.script_content}
+                </div>
+              )}
             </CardContent>
           </Card>
         );
