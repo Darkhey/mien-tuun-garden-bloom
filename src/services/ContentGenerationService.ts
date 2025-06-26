@@ -99,6 +99,56 @@ class ContentGenerationServiceClass {
     return match ? match[1].trim() : null;
   }
 
+  private async generateWithOpenAI(params: {
+    prompt: string;
+    category?: string;
+    season?: string;
+    audiences?: string[];
+    contentType?: string[];
+    tags?: string[];
+    excerpt?: string;
+  }): Promise<{ content: string; model?: string } | null> {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-blog-post', {
+        body: {
+          prompt: params.prompt,
+          context: {
+            category: params.category,
+            season: params.season,
+            audiences: params.audiences,
+            contentType: params.contentType,
+            tags: params.tags,
+            excerpt: params.excerpt
+          }
+        }
+      });
+
+      if (error) throw error;
+      if (data?.content) {
+        return { content: data.content, model: data.metadata?.model };
+      }
+    } catch (err) {
+      console.warn('[ContentGeneration] OpenAI failed:', err);
+    }
+    return null;
+  }
+
+  private async generateWithGemini(params: {
+    prompt: string;
+    category?: string;
+    season?: string;
+    audiences?: string[];
+    contentType?: string[];
+    tags?: string[];
+  }): Promise<string | null> {
+    try {
+      return await geminiService.generateBlogPost(params);
+    } catch (err) {
+      console.error('[ContentGeneration] Gemini generation failed:', err);
+      return null;
+    }
+  }
+
   async generateBlogPost(params: {
     prompt: string;
     category?: string;
@@ -113,56 +163,27 @@ class ContentGenerationServiceClass {
     
     try {
       const startTime = Date.now();
-      
-      // Try OpenAI first
+
       let content: string | null = null;
       let usedProvider = 'OpenAI';
       let usedModel = 'gpt-4o';
 
-      try {
-        const { data, error } = await supabase.functions.invoke('generate-blog-post', {
-          body: {
-            prompt: params.prompt,
-            context: {
-              category: params.category,
-              season: params.season,
-              audiences: params.audiences,
-              contentType: params.contentType,
-              tags: params.tags,
-              excerpt: params.excerpt
-            }
-          }
-        });
-
-        if (error) throw error;
-        if (data?.content) {
-          content = data.content;
-          usedModel = data.metadata?.model || 'gpt-4o';
-        }
-      } catch (openaiError) {
-        console.warn('[ContentGeneration] OpenAI failed, trying Gemini fallback:', openaiError);
-        
-        // Fallback to Gemini
-        try {
-          content = await geminiService.generateBlogPost({
-            prompt: params.prompt,
-            category: params.category,
-            season: params.season,
-            audiences: params.audiences,
-            contentType: params.contentType,
-            tags: params.tags
-          });
+      const openAIResult = await this.generateWithOpenAI(params);
+      if (openAIResult) {
+        content = openAIResult.content;
+        usedModel = openAIResult.model || usedModel;
+      } else {
+        const geminiResult = await this.generateWithGemini(params);
+        if (geminiResult) {
+          content = geminiResult;
           usedProvider = 'Google Gemini';
           usedModel = 'gemini-1.5-flash';
           console.log('[ContentGeneration] Gemini fallback successful');
-        } catch (geminiError) {
-          console.error('[ContentGeneration] Both OpenAI and Gemini failed:', geminiError);
-          throw new Error('Beide KI-Services sind nicht verfügbar');
         }
       }
 
       if (!content) {
-        throw new Error('Kein Content generiert');
+        throw new Error('Beide KI-Services sind nicht verfügbar');
       }
 
       // Titel aus Content extrahieren
