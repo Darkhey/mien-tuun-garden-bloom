@@ -20,12 +20,32 @@ interface StrategyArticleResponse {
   slug?: string;
 }
 
+interface CategoryContentGap {
+  categoryId: string;
+  categoryName: string;
+  icon: string;
+  articleCount: number;
+  missingTopics: string[];
+  priority: number;
+}
+
+const BLOG_CATEGORIES = [
+  { id: 'gaertnern', name: 'Gärtnern', icon: '🌱', keywords: ['garten', 'pflanzen', 'aussaat', 'ernte', 'pflege'] },
+  { id: 'gartenkueche', name: 'Gartenküche', icon: '👩‍🍳', keywords: ['kochen', 'rezept', 'ernte', 'kräuter', 'saisonal'] },
+  { id: 'diy-basteln', name: 'DIY & Basteln', icon: '🔨', keywords: ['diy', 'basteln', 'selbermachen', 'bauen', 'upcycling'] },
+  { id: 'nachhaltigkeit', name: 'Nachhaltigkeit', icon: '♻️', keywords: ['nachhaltig', 'umwelt', 'bio', 'plastikfrei', 'zero waste'] },
+  { id: 'indoor-gardening', name: 'Indoor Gardening', icon: '🏠', keywords: ['indoor', 'zimmerpflanzen', 'hydroponik', 'sprossen'] },
+  { id: 'saisonales', name: 'Saisonales', icon: '🍂', keywords: ['saison', 'frühling', 'sommer', 'herbst', 'winter'] },
+  { id: 'lifestyle', name: 'Lifestyle', icon: '✨', keywords: ['lifestyle', 'gesundheit', 'wellness', 'selbstversorgung'] }
+];
+
 const ContentStrategyDashboard: React.FC = () => {
   const [strategies, setStrategies] = useState<ContentStrategy[]>([]);
   const [calendar, setCalendar] = useState<ContentCalendarEntry[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledPost[]>([]);
   const [enhancedTrends, setEnhancedTrends] = useState<EnhancedTrend[]>([]);
   const [gaps, setGaps] = useState<ContentGap[]>([]);
+  const [categoryGaps, setCategoryGaps] = useState<CategoryContentGap[]>([]);
   const [keywordGaps, setKeywordGaps] = useState<TrendKeyword[]>([]);
   const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
   const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
@@ -34,6 +54,118 @@ const ContentStrategyDashboard: React.FC = () => {
   const [cacheAge, setCacheAge] = useState<number | null>(null);
   const [usingCache, setUsingCache] = useState(false);
   const { toast } = useToast();
+
+  const analyzeCategoryGaps = async (): Promise<CategoryContentGap[]> => {
+    try {
+      // Hole aktuelle Blog-Posts
+      const { data: posts } = await supabase
+        .from('blog_posts')
+        .select('category, title, tags')
+        .eq('published', true);
+
+      const categoryGaps: CategoryContentGap[] = [];
+
+      for (const category of BLOG_CATEGORIES) {
+        // Zähle Artikel in dieser Kategorie
+        const categoryPosts = posts?.filter(post => 
+          post.category?.toLowerCase().includes(category.id) ||
+          category.keywords.some(keyword => 
+            post.title?.toLowerCase().includes(keyword) ||
+            post.tags?.some((tag: string) => tag.toLowerCase().includes(keyword))
+          )
+        ) || [];
+
+        // Generiere fehlende Themen basierend auf Kategorie
+        const missingTopics = generateMissingTopicsForCategory(category, categoryPosts.length);
+        
+        categoryGaps.push({
+          categoryId: category.id,
+          categoryName: category.name,
+          icon: category.icon,
+          articleCount: categoryPosts.length,
+          missingTopics,
+          priority: calculateCategoryPriority(categoryPosts.length, category.id)
+        });
+      }
+
+      return categoryGaps.sort((a, b) => b.priority - a.priority);
+    } catch (error) {
+      console.error('[ContentStrategy] Error analyzing category gaps:', error);
+      return [];
+    }
+  };
+
+  const generateMissingTopicsForCategory = (category: any, currentCount: number): string[] => {
+    const topicSuggestions: Record<string, string[]> = {
+      'gaertnern': [
+        'Hochbeet anlegen für Anfänger',
+        'Kompost richtig anlegen',
+        'Mischkultur Tipps',
+        'Garten im Herbst vorbereiten',
+        'Natürliche Schädlingsbekämpfung'
+      ],
+      'gartenkueche': [
+        'Kräuter konservieren',
+        'Fermentieren für Anfänger',
+        'Zero Waste in der Küche',
+        'Saisonaler Ernährungsplan',
+        'Essbare Blüten verwenden'
+      ],
+      'diy-basteln': [
+        'Upcycling Gartenmöbel',
+        'Pflanzgefäße selber machen',
+        'Gewächshaus DIY',
+        'Gartenwerkzeug reparieren',
+        'Kompostbehälter bauen'
+      ],
+      'nachhaltigkeit': [
+        'Plastikfrei gärtnern',
+        'Regenwasser sammeln',
+        'Permakultur Grundlagen',
+        'Naturdünger herstellen',
+        'Klimafreundlich gärtnern'
+      ],
+      'indoor-gardening': [
+        'Microgreens anbauen',
+        'Zimmerpflanzen für Anfänger',
+        'Hydroponik Setup',
+        'Kräuter auf der Fensterbank',
+        'Indoor Kompostierung'
+      ],
+      'saisonales': [
+        'Frühlingsarbeiten im Garten',
+        'Winterschutz für Pflanzen',
+        'Herbsternte einlagern',
+        'Sommergemüse anbauen',
+        'Ganzjähriger Anbauplan'
+      ],
+      'lifestyle': [
+        'Selbstversorgung beginnen',
+        'Garten als Therapie',
+        'Achtsames Gärtnern',
+        'Work-Life-Balance durch Garten',
+        'Minimalismus im Garten'
+      ]
+    };
+
+    const suggestions = topicSuggestions[category.id] || [];
+    // Zeige mehr Vorschläge wenn weniger Artikel vorhanden
+    const suggestionCount = Math.max(3, Math.min(5, 8 - Math.floor(currentCount / 2)));
+    return suggestions.slice(0, suggestionCount);
+  };
+
+  const calculateCategoryPriority = (articleCount: number, categoryId: string): number => {
+    // Basis-Priorität basierend auf fehlenden Artikeln
+    let priority = Math.max(0, 10 - articleCount);
+    
+    // Saisonale Kategorien bekommen Boost
+    if (categoryId === 'saisonales') priority += 2;
+    
+    // Core-Kategorien bekommen Boost
+    if (['gaertnern', 'gartenkueche'].includes(categoryId)) priority += 1;
+    
+    return priority * 10; // Skalierung für bessere Darstellung
+  };
 
   const loadStrategicData = async (forceRefresh: boolean = false) => {
     setLoading(true);
@@ -57,6 +189,11 @@ const ContentStrategyDashboard: React.FC = () => {
           setCategoryStats(cachedData.categoryStats);
           setCacheAge(ContentStrategyCacheService.getCacheAge());
           setUsingCache(true);
+          
+          // Kategorie-Gaps separat laden (nicht gecacht)
+          const categoryGapsData = await analyzeCategoryGaps();
+          setCategoryGaps(categoryGapsData);
+          
           setLoading(false);
           return;
         }
@@ -64,12 +201,13 @@ const ContentStrategyDashboard: React.FC = () => {
 
       // Neue Daten laden
       console.log("[StrategyDashboard] Loading fresh data from services");
-      const [strategiesData, posts, trendsData, gapsData, insights] = await Promise.all([
+      const [strategiesData, posts, trendsData, gapsData, insights, categoryGapsData] = await Promise.all([
         contentStrategyService.generateContentStrategy({ timeframe: 4 }),
         blogAnalyticsService.fetchBlogPosts(),
         blogAnalyticsService.fetchCurrentTrends(),
         Promise.resolve(contextAnalyzer.analyzeContentGaps()),
-        contentInsightsService.fetchInsights()
+        contentInsightsService.fetchInsights(),
+        analyzeCategoryGaps()
       ]);
 
       const existing = blogAnalyticsService.extractKeywords(posts);
@@ -97,6 +235,7 @@ const ContentStrategyDashboard: React.FC = () => {
       setSuggestions(insights.suggestions.slice(0, 5));
       setScheduled(insights.scheduled.slice(0, 5));
       setCalendar(calendarData.slice(0, 10));
+      setCategoryGaps(categoryGapsData);
       setCacheAge(0);
       
       console.log("[StrategyDashboard] Fresh data loaded and cached successfully");
@@ -122,11 +261,39 @@ const ContentStrategyDashboard: React.FC = () => {
     console.log(`[StrategyDashboard] Starting article creation for: ${topic}`);
     
     try {
-      console.log(`[StrategyDashboard] Calling Supabase function with params:`, { topic, category, season, urgency });
+      const categoryMapping = BLOG_CATEGORIES.find(cat => 
+        cat.name.toLowerCase() === category.toLowerCase() || 
+        cat.id === category.toLowerCase()
+      );
+      
+      const mariannePrompt = `Schreibe einen ausführlichen Blog-Artikel im Stil von Marianne über "${topic}". 
+        Der Artikel gehört zur Kategorie "${categoryMapping?.name || category}" ${categoryMapping?.icon || ''}.
+        
+        Marianne's Stil:
+        - Herzlich und persönlich (Du/Sie-Form)
+        - Teilt gerne persönliche Gartenerfahrungen
+        - Praktische, umsetzbare Tipps
+        - Ermutigt Leser zum Ausprobieren
+        - Verwendet deutsche Gartenbegriffe
+        
+        Der Artikel soll:
+        - Mindestens 800 Wörter haben
+        - Praktische Schritt-für-Schritt Anleitungen enthalten
+        - Zu ${categoryMapping?.name || category} passen
+        - Saisonale Bezüge einbauen ${season ? `(besonders ${season})` : ''}
+        - Häufige Fehler und deren Vermeidung erwähnen`;
+      
+      console.log(`[StrategyDashboard] Calling Supabase function with enhanced prompt`);
       
       const { data, error } = await supabase.functions
         .invoke<StrategyArticleResponse>('create-strategy-article', {
-          body: { topic, category, season, urgency },
+          body: { 
+            topic, 
+            category: categoryMapping?.name || category, 
+            season, 
+            urgency,
+            customPrompt: mariannePrompt 
+          },
         });
 
       if (error) {
@@ -134,33 +301,21 @@ const ContentStrategyDashboard: React.FC = () => {
         throw new Error(error.message || "Edge Function Fehler");
       }
 
-      if (!data) {
-        console.error("[StrategyDashboard] No response data received");
-        throw new Error("Keine Antwort von der Edge Function erhalten");
-      }
-
-      console.log("[StrategyDashboard] Function response:", data);
-
-      if (!data.success) {
-        if (Array.isArray(data.missingEnv)) {
-          console.error("[StrategyDashboard] Missing environment variables:", data.missingEnv);
-          throw new Error(
-            `Server-Konfiguration fehlt: ${data.missingEnv.join(', ')}`
-          );
+      if (!data || !data.success) {
+        if (Array.isArray(data?.missingEnv)) {
+          throw new Error(`Server-Konfiguration fehlt: ${data.missingEnv.join(', ')}`);
         }
-        console.error("[StrategyDashboard] Function returned error:", data.error);
-        throw new Error(data.error || "Artikel konnte nicht erstellt werden");
+        throw new Error(data?.error || "Artikel konnte nicht erstellt werden");
       }
 
       console.log("[StrategyDashboard] Article created successfully:", data.slug);
       
       toast({
         title: "Artikel erstellt! 🎉",
-        description: `"${topic}" wurde erfolgreich veröffentlicht`,
+        description: `"${topic}" wurde erfolgreich im Marianne-Stil veröffentlicht`,
       });
 
       // Cache löschen um neue Daten zu laden
-      console.log("[StrategyDashboard] Clearing cache after article creation");
       ContentStrategyCacheService.clearCache();
       await loadStrategicData(true);
       
@@ -168,20 +323,11 @@ const ContentStrategyDashboard: React.FC = () => {
       console.error("[StrategyDashboard] Error creating article:", error);
       
       let errorMessage = "Artikel konnte nicht erstellt werden";
-      
-      if (error.message?.includes("Failed to fetch")) {
-        errorMessage = "Verbindung zur Edge Function fehlgeschlagen. Bitte prüfen Sie die Konfiguration.";
-      } else if (error.message?.includes("OPENAI_API_KEY")) {
-        errorMessage = "OpenAI API-Schlüssel nicht konfiguriert. Bitte kontaktieren Sie den Administrator.";
-      } else if (error.message?.includes("Edge Function")) {
-        errorMessage = "Edge Function Fehler. Bitte versuchen Sie es später erneut.";
-      } else if (error.message?.includes("Server-Konfiguration fehlt")) {
-        errorMessage = error.message;
+      if (error.message?.includes("OPENAI_API_KEY")) {
+        errorMessage = "OpenAI API-Schlüssel nicht konfiguriert.";
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
-      console.error("[StrategyDashboard] Final error message:", errorMessage);
       
       toast({
         title: "Fehler beim Erstellen",
@@ -189,7 +335,6 @@ const ContentStrategyDashboard: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      console.log("[StrategyDashboard] Article creation process finished");
       setCreatingArticle(null);
     }
   };
@@ -253,17 +398,17 @@ const ContentStrategyDashboard: React.FC = () => {
             <ExclamationTriangle className="h-5 w-5 text-orange-600" />
             <div>
               <p className="text-sm font-medium text-orange-800">
-                Hinweis: Artikel-Erstellung erfordert konfigurierte OpenAI API-Schlüssel
+                Hinweis: Artikel werden im Marianne-Stil erstellt
               </p>
               <p className="text-xs text-orange-600">
-                Falls Fehler auftreten, kontaktieren Sie bitte den Administrator zur Konfiguration der Edge Functions.
+                Alle generierten Artikel folgen Marianne's persönlichem und praktischem Schreibstil.
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Erweiterte Trend-Übersicht */}
+      {/* Erweiterte Trend-Übersicht mit Quellen */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -341,6 +486,59 @@ const ContentStrategyDashboard: React.FC = () => {
                     )}
                   </Button>
                 </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Kategorie-basierte Content-Lücken */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Content-Lücken nach Kategorien
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {categoryGaps.map((gap, idx) => (
+              <div key={idx} className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{gap.icon}</span>
+                    <div>
+                      <div className="font-medium text-lg">{gap.categoryName}</div>
+                      <div className="text-sm text-gray-600">
+                        {gap.articleCount} Artikel vorhanden • Priorität: {Math.round(gap.priority/10)}/10
+                      </div>
+                    </div>
+                  </div>
+                  <Badge variant={gap.priority > 50 ? "destructive" : gap.priority > 30 ? "secondary" : "default"}>
+                    {gap.priority > 50 ? "Hoch" : gap.priority > 30 ? "Mittel" : "Niedrig"}
+                  </Badge>
+                </div>
+                
+                <div className="mb-3">
+                  <div className="text-sm font-medium mb-2">Fehlende Themen:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {gap.missingTopics.map((topic, topicIdx) => (
+                      <Badge 
+                        key={topicIdx} 
+                        variant="outline" 
+                        className="text-xs cursor-pointer hover:bg-gray-100"
+                        onClick={() => handleCreateArticle(topic, gap.categoryId)}
+                      >
+                        {topic}
+                        {creatingArticle === topic && (
+                          <Loader2 className="h-3 w-3 animate-spin ml-1" />
+                        )}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                
+                <Progress value={Math.min(100, gap.articleCount * 10)} className="h-2" />
               </div>
             ))}
           </div>

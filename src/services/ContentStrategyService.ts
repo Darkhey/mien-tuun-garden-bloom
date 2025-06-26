@@ -1,3 +1,4 @@
+
 import { contextAnalyzer, TrendData, ContentGap } from "./ContextAnalyzer";
 import { contentGenerationService } from "./ContentGenerationService";
 import { blogAnalyticsService, TrendKeyword } from "./BlogAnalyticsService";
@@ -30,10 +31,13 @@ interface PersonalizationProfile {
 
 class ContentStrategyService {
   private strategicKeywords = {
-    "gartenplanung": ["Permakultur", "Mischkultur", "Fruchtfolge", "Kompost", "Hochbeet"],
-    "saisonale-kueche": ["Meal Prep", "Fermentieren", "Einkochen", "Regional", "Zero Waste"],
-    "nachhaltigkeit": ["Plastikfrei", "Klimafreundlich", "Regenerativ", "Kreislauf"],
-    "diY-projekte": ["Upcycling", "Balkon", "Indoor", "Kinder", "Budget"]
+    "gaertnern": ["Hochbeet", "Kompost", "Mischkultur", "Permakultur", "Aussaat", "Pflege"],
+    "gartenkueche": ["Fermentieren", "Einkochen", "Kräuter", "Saisonal", "Zero Waste", "Regional"],
+    "diy-basteln": ["Upcycling", "Selbermachen", "Bauen", "Reparieren", "Gartenmöbel", "Werkzeug"],
+    "nachhaltigkeit": ["Plastikfrei", "Klimafreundlich", "Regenerativ", "Naturgarten", "Kreislauf"],
+    "indoor-gardening": ["Zimmerpflanzen", "Hydroponik", "Microgreens", "Sprossen", "Keimlinge"],
+    "saisonales": ["Frühling", "Sommer", "Herbst", "Winter", "Erntezeit", "Aussaatzeit"],
+    "lifestyle": ["Selbstversorgung", "Achtsamkeit", "Work-Life-Balance", "Minimalismus", "Wellness"]
   };
 
   async generateContentStrategy(context: {
@@ -65,6 +69,10 @@ class ContentStrategyService {
 
       const strategies: ContentStrategy[] = [];
       
+      // Kategorie-spezifische Strategien
+      const categoryStrategies = this.generateCategorySpecificStrategies();
+      strategies.push(...categoryStrategies);
+      
       // Saisonale Strategien
       const seasonalStrategy = this.generateSeasonalStrategy(trends, gaps);
       strategies.push(...seasonalStrategy);
@@ -91,31 +99,68 @@ class ContentStrategyService {
     }
   }
 
+  private generateCategorySpecificStrategies(): ContentStrategy[] {
+    const strategies: ContentStrategy[] = [];
+    const currentSeason = this.getCurrentSeason();
+    
+    // Prioritäten für verschiedene Kategorien
+    const categoryPriorities = {
+      "gaertnern": 95,
+      "gartenkueche": 90,
+      "nachhaltigkeit": 85,
+      "saisonales": 80,
+      "diy-basteln": 75,
+      "indoor-gardening": 70,
+      "lifestyle": 65
+    };
+
+    Object.entries(this.strategicKeywords).forEach(([category, keywords]) => {
+      const priority = categoryPriorities[category as keyof typeof categoryPriorities] || 60;
+      
+      strategies.push({
+        priority,
+        category,
+        season: currentSeason,
+        suggestedTopics: [
+          `${keywords[0]} für Anfänger - Marianne's Tipps`,
+          `${keywords[1]} Schritt-für-Schritt Anleitung`,
+          `Häufige Fehler bei ${keywords[2]} vermeiden`,
+          `${keywords[0]} und ${keywords[1]} perfekt kombinieren`,
+          `${currentSeason} ist perfekt für ${keywords[0]}`
+        ],
+        reasoning: `${category} ist eine Kernkategorie mit hoher Leser-Nachfrage. Marianne's persönlicher Stil passt perfekt zu praktischen ${category}-Themen.`,
+        urgency: priority > 85 ? 'high' : priority > 75 ? 'medium' : 'low'
+      });
+    });
+
+    return strategies;
+  }
+
   private getFallbackStrategies(): ContentStrategy[] {
     const currentSeason = this.getCurrentSeason();
     return [
       {
         priority: 90,
-        category: "gartenplanung",
+        category: "gaertnern",
         season: currentSeason,
         suggestedTopics: [
-          "Hochbeet optimal nutzen",
-          "Gartenprojekte für Anfänger",
-          "Nachhaltige Gartenplanung"
+          "Hochbeet optimal nutzen - Marianne's bewährte Methoden",
+          "Gartenprojekte für Anfänger mit Erfolgsgarantie",
+          "Nachhaltige Gartenplanung leicht gemacht"
         ],
-        reasoning: "Saisonale Gartenplanung ist immer relevant",
+        reasoning: "Gärtnern ist unsere Kernkategorie mit der höchsten Leser-Engagement",
         urgency: 'medium'
       },
       {
         priority: 85,
-        category: "saisonale-kueche",
+        category: "gartenkueche",
         season: currentSeason,
         suggestedTopics: [
-          "Saisonale Rezepte für den Sommer",
-          "Erntefrische Gerichte",
-          "Konservieren leicht gemacht"
+          "Saisonale Rezepte direkt aus dem Garten",
+          "Erntefrische Gerichte - einfach und lecker",
+          "Konservieren leicht gemacht - Marianne's Geheimnisse"
         ],
-        reasoning: "Saisonale Küche hat hohe Nachfrage",
+        reasoning: "Gartenküche verbindet Garten und Küche perfekt - sehr beliebt bei unseren Lesern",
         urgency: 'medium'
       }
     ];
@@ -133,12 +178,12 @@ class ContentStrategyService {
         category: trend.category,
         season: currentSeason,
         suggestedTopics: [
-          `${trend.keyword} für ${currentSeason}`,
-          `${trend.keyword} Tipps und Tricks`,
-          `${trend.keyword} für Anfänger`,
-          `${trend.keyword} Step-by-Step Anleitung`
+          `${trend.keyword} für ${currentSeason} - Marianne's Erfahrungen`,
+          `${trend.keyword} Tipps direkt aus der Praxis`,
+          `Anfänger-Guide: ${trend.keyword} erfolgreich meistern`,
+          `${trend.keyword} Fehler, die ich nie wieder mache`
         ],
-        reasoning: `Hohe saisonale Relevanz für ${trend.keyword} in ${currentSeason}`,
+        reasoning: `Hohe saisonale Relevanz für ${trend.keyword} in ${currentSeason}. Marianne's persönliche Geschichten machen das Thema authentisch und nahbar.`,
         urgency: trend.relevance > 0.8 ? 'high' : 'medium'
       });
     }
