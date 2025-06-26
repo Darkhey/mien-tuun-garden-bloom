@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
+import DOMPurify from 'dompurify';
+import { debounce } from 'lodash';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ElevenLabsAudioNativeProps {
   text: string;
@@ -17,39 +20,40 @@ const ElevenLabsAudioNative: React.FC<ElevenLabsAudioNativeProps> = ({
 }) => {
   const [htmlSnippet, setHtmlSnippet] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const createProject = async () => {
+  const debouncedCreateProject = useCallback(
+    debounce(async (t: string, ti: string, v: string) => {
       setIsLoading(true);
+      setError(null);
       try {
-        const response = await fetch('/api/elevenlabs-audio-native', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text,
-            voice_id: voiceId,
+        const { data, error } = await supabase.functions.invoke('elevenlabs-audio-native', {
+          body: {
+            text: t,
+            voice_id: v,
             model_id: 'eleven_multilingual_v2',
-            name: title,
-          }),
+            name: ti,
+          }
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to create audio native project');
+        if (error) {
+          throw new Error(error.message);
         }
 
-        const data = await response.json();
-        setHtmlSnippet(data.html_snippet);
-      } catch (error) {
-        console.error('Error creating audio native project:', error);
+        setHtmlSnippet((data as any).html_snippet);
+      } catch (err: any) {
+        console.error('Error creating audio native project:', err);
+        setError(err.message ?? 'Unbekannter Fehler');
       } finally {
         setIsLoading(false);
       }
-    };
+    }, 500),
+    []
+  );
 
-    createProject();
-  }, [text, title, voiceId]);
+  useEffect(() => {
+    debouncedCreateProject(text, title, voiceId);
+  }, [text, title, voiceId, debouncedCreateProject]);
 
   return (
     <Card className={`bg-gradient-to-r from-sage-50 to-accent-50 ${className}`}>
@@ -58,8 +62,10 @@ const ElevenLabsAudioNative: React.FC<ElevenLabsAudioNativeProps> = ({
           <div className="flex items-center gap-2 text-sm text-earth-700">
             <Loader2 className="h-4 w-4 animate-spin" /> Projekt wird vorbereitet
           </div>
+        ) : error ? (
+          <div className="text-sm text-red-600">{error}</div>
         ) : (
-          <div dangerouslySetInnerHTML={{ __html: htmlSnippet ?? '' }} />
+          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlSnippet ?? '') }} />
         )}
       </CardContent>
     </Card>
