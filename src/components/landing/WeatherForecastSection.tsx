@@ -18,12 +18,18 @@ const RAIN_WARNING_THRESHOLDS = {
   SHORT_TERM: 180, // minutes
 };
 
+const HEAT_TIPS = [
+  'Früh morgens oder abends gießen, um Verdunstung zu reduzieren.',
+  'Mulch schützt den Boden vor Austrocknung.',
+  'Empfindliche Pflanzen gegebenenfalls beschatten.'
+];
+
 const WeatherForecastSection: React.FC = () => {
   const [locationData, setLocationData] = useState<{
     lat: number;
     lon: number;
     granted: boolean;
-    city?: string;
+    city?: string | null;
   } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isRequestingLocation, setIsRequestingLocation] = useState(false);
@@ -77,13 +83,14 @@ const WeatherForecastSection: React.FC = () => {
             lat: latitude,
             lon: longitude,
             granted: true,
-            city: city || 'Dein Standort'
+            city: city ?? null
           });
         } catch {
           setLocationData({
             lat: latitude,
             lon: longitude,
-            granted: true
+            granted: true,
+            city: null
           });
         }
         setIsRequestingLocation(false);
@@ -131,7 +138,9 @@ const WeatherForecastSection: React.FC = () => {
   };
 
   const getActivitySuggestion = (precipitation: number | null, temp: number | null) => {
-    if (temp !== null && temp >= 30) return 'Schattieren und ausgiebig wässern! Vermeide Arbeiten in der Mittagshitze.';
+    if (temp !== null && temp >= 30) {
+      return 'Schattieren und ausgiebig wässern! Vermeide Arbeiten in der Mittagshitze.';
+    }
     if (precipitation === null) return '';
     if (precipitation > 5) return 'Heute ist ein guter Tag für Zimmerpflanzen-Pflege und Planung des nächsten Gartenprojekts.';
     if (precipitation > 0) return 'Leichter Regen bedeutet weniger gießen - nutze die Zeit für andere Gartenarbeiten.';
@@ -236,7 +245,9 @@ const WeatherForecastSection: React.FC = () => {
               {locationData?.granted && (
                 <div className="flex items-center justify-center gap-2 text-sage-600 mb-4">
                   <MapPin className="w-4 h-4" />
-                  <span className="text-sm">{locationData.city || 'Dein Standort'}</span>
+                  <span className="text-sm">
+                    {locationData.city ?? `${locationData.lat.toFixed(2)}, ${locationData.lon.toFixed(2)}`}
+                  </span>
                 </div>
               )}
 
@@ -286,14 +297,21 @@ const WeatherForecastSection: React.FC = () => {
                   </div>
 
                   <div className="bg-accent-50 rounded-lg p-4 border border-accent-100">
-                    <p className="text-earth-700 font-medium mb-2">🌱 Mariannes Tipp für heute:</p>
-                    <p className="text-sage-700 text-sm">
-                      {getActivitySuggestion(precipitation, temperatureMax)}
-                    </p>
-                    {rainAdvice && (
-                      <p className="text-sage-700 text-sm mt-2 font-medium">{rainAdvice}</p>
-                    )}
-                  </div>
+                  <p className="text-earth-700 font-medium mb-2">🌱 Mariannes Tipp für heute:</p>
+                  <p className="text-sage-700 text-sm">
+                    {getActivitySuggestion(precipitation, temperatureMax)}
+                  </p>
+                  {temperatureMax !== null && temperatureMax >= 30 && (
+                    <ul className="text-sage-700 text-sm list-disc list-inside mt-2 space-y-1">
+                      {HEAT_TIPS.map((tip) => (
+                        <li key={tip}>{tip}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {rainAdvice && (
+                    <p className="text-sage-700 text-sm mt-2 font-medium">{rainAdvice}</p>
+                  )}
+                </div>
                 </div>
               )}
             </div>
