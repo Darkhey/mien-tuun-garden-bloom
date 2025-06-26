@@ -203,7 +203,12 @@ async function generateContentInsights(supabase: any) {
     throw new Error('Keine KI-Antwort erhalten');
   }
 
-  const insights = JSON.parse(insightsText);
+  let insights;
+  try {
+    insights = JSON.parse(insightsText);
+  } catch {
+    throw new Error('Invalid JSON response from AI');
+  }
 
   return new Response(
     JSON.stringify({
