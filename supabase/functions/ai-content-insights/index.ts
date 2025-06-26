@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -39,6 +38,8 @@ serve(async (req) => {
         return await predictContentTrends(supabaseClient);
       case 'optimize_content':
         return await optimizeContent(data, supabaseClient);
+      case 'integrate_internal_links':
+        return await integrateInternalLinks(data);
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -370,5 +371,103 @@ Gib eine JSON-Antwort mit:
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+  }
+}
+
+async function integrateInternalLinks(requestData: any) {
+  if (!OPENAI_ADMIN_KEY) {
+    throw new Error("OpenAI Admin-Schlüssel nicht konfiguriert für Link-Integration");
+  }
+
+  const { content, suggestedLinks, instructions } = requestData;
+  
+  if (!content || !suggestedLinks || suggestedLinks.length === 0) {
+    throw new Error("Content und Link-Vorschläge sind erforderlich");
+  }
+
+  console.log(`[AI Content Insights] Integrating ${suggestedLinks.length} internal links`);
+
+  try {
+    const linksDescription = suggestedLinks.map((link: any, idx: number) => 
+      `${idx + 1}. Titel: "${link.title}"
+         Slug: /blog/${link.slug}
+         Kategorie: ${link.category}
+         Vorgeschlagener Anchor: "${link.anchorText}"
+         Kontext: ${link.context}`
+    ).join('\n\n');
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_ADMIN_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `Du bist ein SEO-Experte für interne Verlinkung. Deine Aufgabe ist es, gegebene interne Links natürlich und organisch in den Content zu integrieren.
+
+WICHTIGE REGELN:
+1. Verwende maximal 3 Links aus den Vorschlägen
+2. Links müssen thematisch relevant und kontextuell passend sein
+3. Anchor-Texte sollen natürlich klingen und zum Lesefluss passen
+4. Format: [Anchor Text](/blog/slug)
+5. Schreibe Sätze um wenn nötig, um Links organisch einzubauen
+6. Links sollen den Lesern echten Mehrwert bieten
+7. Vermeide zu viele Links in einem Absatz
+8. Der umgeschriebene Text soll besser lesbar sein als das Original`
+          },
+          {
+            role: "user",
+            content: `Integriere interne Links in diesen Content:
+
+ORIGINAL CONTENT:
+${content}
+
+VERFÜGBARE LINK-VORSCHLÄGE:
+${linksDescription}
+
+SPEZIELLE ANWEISUNGEN:
+${instructions}
+
+Schreibe den gesamten Content neu und baue dabei organisch bis zu 3 der relevantesten Links ein. Achte darauf, dass der Text flüssig lesbar bleibt und die Links echten Mehrwert bieten.`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 3000,
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!data.choices || !data.choices[0]) {
+      throw new Error("Keine gültige Antwort von OpenAI erhalten");
+    }
+
+    const optimizedContent = data.choices[0].message.content;
+    
+    // Zähle integrierte Links
+    const linkCount = (optimizedContent.match(/\[([^\]]+)\]\(\/blog\/[^)]+\)/g) || []).length;
+    
+    console.log(`[AI Content Insights] Successfully integrated ${linkCount} internal links`);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        optimizedContent,
+        linksIntegrated: linkCount,
+        message: `${linkCount} interne Links wurden erfolgreich integriert`,
+        timestamp: new Date().toISOString()
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+
+  } catch (error: any) {
+    console.error('[AI Content Insights] Link integration failed:', error);
+    throw new Error(`Link-Integration fehlgeschlagen: ${error.message}`);
   }
 }

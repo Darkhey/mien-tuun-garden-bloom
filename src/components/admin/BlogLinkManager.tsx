@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Link, ExternalLink, Plus, Trash2, Loader2, Search } from 'lucide-react';
+import { Link, ExternalLink, Plus, Trash2, Loader2, Search, Sparkles, Wand2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -37,6 +36,7 @@ const BlogLinkManager: React.FC<BlogLinkManagerProps> = ({
     context: string;
     position: number;
   }>>([]);
+  const [aiProcessing, setAiProcessing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -156,6 +156,81 @@ const BlogLinkManager: React.FC<BlogLinkManagerProps> = ({
     });
   };
 
+  const integrateLinksWithAI = async () => {
+    if (suggestedLinks.length === 0) {
+      toast({
+        title: 'Keine Vorschläge',
+        description: 'Führen Sie zuerst eine Link-Analyse durch',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setAiProcessing(true);
+    try {
+      // Wähle bis zu 3 beste Link-Vorschläge basierend auf Relevanz
+      const topLinks = suggestedLinks
+        .slice(0, 3)
+        .map(link => ({
+          title: link.post.title,
+          slug: link.post.slug,
+          category: link.post.category,
+          anchorText: link.anchorText,
+          context: link.context
+        }));
+
+      console.log('[BlogLinkManager] Integrating links with AI:', topLinks);
+
+      const { data, error } = await supabase.functions.invoke('ai-content-insights', {
+        body: {
+          action: 'integrate_internal_links',
+          data: {
+            content: currentContent,
+            suggestedLinks: topLinks,
+            instructions: `
+              Integriere die vorgeschlagenen internen Links natürlich in den Text:
+              1. Schreibe den Text so um, dass die Links organisch eingebaut werden
+              2. Verwende passende Anchor-Texte die zum Kontext passen
+              3. Stelle sicher, dass die Links den Lesefluss nicht unterbrechen
+              4. Maximal 3 Links pro Text
+              5. Links sollten thematisch relevant sein
+              6. Verwende das Format [Anchor Text](/blog/slug)
+            `
+          }
+        }
+      });
+
+      if (error) {
+        throw new Error(`KI-Integration fehlgeschlagen: ${error.message}`);
+      }
+
+      if (data?.success && data?.optimizedContent) {
+        onContentUpdate(data.optimizedContent);
+        
+        // Entferne erfolgreich integrierte Links aus den Vorschlägen
+        setSuggestedLinks([]);
+        
+        toast({
+          title: 'Links erfolgreich integriert!',
+          description: `${topLinks.length} interne Links wurden natürlich in den Text eingebaut`
+        });
+
+        console.log('[BlogLinkManager] AI integration successful');
+      } else {
+        throw new Error('Keine optimierten Inhalte erhalten');
+      }
+
+    } catch (error: any) {
+      console.error('[BlogLinkManager] AI integration failed:', error);
+      toast({
+        title: 'KI-Integration fehlgeschlagen',
+        description: error.message || 'Unbekannter Fehler bei der Link-Integration',
+        variant: 'destructive'
+      });
+    }
+    setAiProcessing(false);
+  };
+
   const extractKeywords = (text: string): string[] => {
     return text
       .toLowerCase()
@@ -243,57 +318,87 @@ const BlogLinkManager: React.FC<BlogLinkManagerProps> = ({
         </CardContent>
       </Card>
 
-      {/* Smart Link Suggestions */}
+      {/* Smart Link Suggestions with AI Integration */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Smarte Link-Vorschläge
+              <Sparkles className="h-5 w-5" />
+              KI-gestützte Link-Integration
             </span>
-            <Button 
-              onClick={analyzeLinkOpportunities} 
-              disabled={loading}
-              size="sm"
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="h-4 w-4" />
+            <div className="flex gap-2">
+              <Button 
+                onClick={analyzeLinkOpportunities} 
+                disabled={loading}
+                size="sm"
+                variant="outline"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+                Analysieren
+              </Button>
+              {suggestedLinks.length > 0 && (
+                <Button 
+                  onClick={integrateLinksWithAI}
+                  disabled={aiProcessing || suggestedLinks.length === 0}
+                  size="sm"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white"
+                >
+                  {aiProcessing ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Wand2 className="h-4 w-4 mr-2" />
+                  )}
+                  {aiProcessing ? 'KI integriert...' : 'KI-Integration (max. 3 Links)'}
+                </Button>
               )}
-              Analysieren
-            </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {suggestedLinks.length > 0 ? (
             <div className="space-y-3">
-              {suggestedLinks.map((suggestion, idx) => (
-                <div key={idx} className="border rounded p-3 space-y-2">
+              <div className="text-sm text-gray-600 mb-4">
+                {suggestedLinks.length} Verlinkungsmöglichkeiten gefunden. 
+                Die KI wird die besten 3 auswählen und natürlich in den Text einbauen.
+              </div>
+              {suggestedLinks.slice(0, 3).map((suggestion, idx) => (
+                <div key={idx} className="border rounded p-3 space-y-2 bg-gradient-to-r from-blue-50 to-purple-50">
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-sm">{suggestion.post.title}</h4>
                     <Badge variant="secondary">{suggestion.post.category}</Badge>
                   </div>
                   <p className="text-xs text-gray-600">
-                    <strong>Anchor Text:</strong> "{suggestion.anchorText}"
+                    <strong>Vorgeschlagener Anchor:</strong> "{suggestion.anchorText}"
                   </p>
                   <p className="text-xs text-gray-500">
                     <strong>Kontext:</strong> {suggestion.context}
                   </p>
                   <Button
                     size="sm"
+                    variant="outline"
                     onClick={() => addLink(suggestion.post, suggestion.anchorText)}
                     className="w-full"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Link einfügen
+                    Manuell einfügen
                   </Button>
                 </div>
               ))}
+              
+              {suggestedLinks.length > 3 && (
+                <div className="text-xs text-gray-500 text-center mt-2">
+                  + {suggestedLinks.length - 3} weitere Vorschläge verfügbar
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-gray-500 text-sm">
-              Klicken Sie auf "Analysieren" um Verlinkungsmöglichkeiten zu finden
+              Klicken Sie auf "Analysieren" um Verlinkungsmöglichkeiten zu finden. 
+              Anschließend können Sie mit einem Klick bis zu 3 Links automatisch integrieren lassen.
             </p>
           )}
         </CardContent>
