@@ -14,22 +14,48 @@ import BlogLinkManager from './BlogLinkManager';
 import BlogContentExtender from './BlogContentExtender';
 import EditableBlogPreview from './EditableBlogPreview';
 import type { SEOMetadata } from '@/services/SEOService';
+import type { Database } from '@/integrations/supabase/types';
+
+type BlogPostRow = Database['public']['Tables']['blog_posts']['Row'];
+
+interface BlogPostFormState {
+  title: string;
+  content: string;
+  excerpt: string;
+  category: string;
+  featured_image: string;
+  status: string;
+}
 
 interface EditBlogPostModalProps {
-  post: any;
+  post: Partial<BlogPostRow> | null;
   onClose: () => void;
   onSaved: () => void;
 }
 
+const extractExcerpt = (content?: string, fallback = ""): string => {
+  if (!content) return fallback;
+  const firstLine = content
+    .split(/\n+/)
+    .map((l) => l.replace(/^#+\s*/, "").trim())
+    .find((l) => l.length > 0);
+  return firstLine ? firstLine.slice(0, 200) : fallback;
+};
+
 const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, onSaved }) => {
-  const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-    excerpt: "",
-    category: "",
-    featured_image: "",
-    status: "entwurf",
-  });
+  const initData = (p: Partial<BlogPostRow> | null): BlogPostFormState => {
+    const content = p?.content || "";
+    return {
+      title: p?.title || "",
+      content,
+      excerpt: p?.excerpt?.trim() || extractExcerpt(content, ""),
+      category: p?.category || "",
+      featured_image: p?.featured_image || "",
+      status: p?.status || "entwurf",
+    };
+  };
+
+  const [formData, setFormData] = useState(initData(post));
   const [loading, setLoading] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [seoData, setSeoData] = useState<SEOMetadata | null>(null);
@@ -39,37 +65,18 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
   // Lade die Blog-Post Daten beim Öffnen
   useEffect(() => {
     console.log('[EditBlogModal] Loading post data:', post);
-    
-    if (post) {
-      // Extrahiere ersten Absatz als Excerpt wenn nicht vorhanden
-      const firstParagraph = post.content ? 
-        post.content.split('\n\n')[0].replace(/#+\s*/g, '').substring(0, 200) : 
-        post.excerpt || "";
-      
-      const postData = {
-        title: post.title || "",
-        content: post.content || "",
-        excerpt: post.excerpt || firstParagraph,
-        category: post.category || "",
-        featured_image: post.featured_image || "",
-        status: post.status || "entwurf",
-      };
-      
-      console.log('[EditBlogModal] Setting form data:', postData);
-      setFormData(postData);
-    }
+    setFormData(initData(post));
   }, [post]);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof BlogPostFormState, value: string) => {
     console.log(`[EditBlogModal] Updating ${field}:`, value);
-    
-    // Auto-update excerpt wenn content geändert wird
-    if (field === 'content' && value && !formData.excerpt) {
-      const firstParagraph = value.split('\n\n')[0].replace(/#+\s*/g, '').substring(0, 200);
-      setFormData(prev => ({ 
-        ...prev, 
-        [field]: value,
-        excerpt: firstParagraph
+
+    if (field === 'content') {
+      const newExcerpt = formData.excerpt || extractExcerpt(value);
+      setFormData(prev => ({
+        ...prev,
+        content: value,
+        excerpt: newExcerpt
       }));
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
