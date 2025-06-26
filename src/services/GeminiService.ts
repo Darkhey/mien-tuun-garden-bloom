@@ -1,4 +1,6 @@
 
+import { supabase } from '@/integrations/supabase/client';
+
 export interface GeminiConfig {
   temperature?: number;
   maxOutputTokens?: number;
