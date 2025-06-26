@@ -268,7 +268,12 @@ async function predictContentTrends(supabase: any) {
     throw new Error('Keine KI-Antwort erhalten');
   }
 
-  const trends = JSON.parse(trendsText);
+  let trends;
+  try {
+    trends = JSON.parse(trendsText);
+  } catch {
+    throw new Error('Invalid JSON response from AI');
+  }
 
   return new Response(
     JSON.stringify({
