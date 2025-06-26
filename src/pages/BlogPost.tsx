@@ -13,7 +13,6 @@ import RelatedArticlesSection from "@/components/blog/RelatedArticlesSection";
 import BlogComments from "@/components/blog/BlogComments";
 import { useToast } from "@/hooks/use-toast";
 import { generateUniqueSlug } from '@/utils/slugHelpers';
-import BlogPodcastSection from '@/components/blog/BlogPodcastSection';
 import ElevenLabsAudioNative from '@/components/blog/ElevenLabsAudioNative';
 import { Calendar, User, Tag } from 'lucide-react';
 
@@ -137,18 +136,12 @@ const BlogPost = () => {
         </div>
         
         <BlogPostContent content={post.content} />
-        
+
         <BlogPostShareSection
           title={post.title}
           excerpt={post.excerpt}
         />
-        
-        {/* Podcast Section */}
-        <BlogPodcastSection 
-          blogPostId={post.id}
-          blogTitle={post.title}
-        />
-        
+
         <CallToActionSection />
         
         <RelatedArticlesSection 
