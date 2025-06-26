@@ -9,6 +9,7 @@ import type { Tables } from '@/integrations/supabase/types';
 import type { BlogPost } from '@/types/content';
 import { useSearchParams } from 'react-router-dom';
 import { BLOG_CATEGORIES, SEASONS } from '@/components/admin/blogHelpers';
+import { extractTagsFromText } from '@/utils/tagExtractor';
 
 // Kategorie-Mapping aus zentralen Konstanten erzeugen
 const CATEGORY_MAPPING = BLOG_CATEGORIES.reduce((acc, cat) => {
@@ -47,6 +48,7 @@ const BlogOverview: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSeason, setSelectedSeason] = useState<Season | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortOption, setSortOption] = useState<'newest' | 'alphabetical' | 'length' | 'seo'>('newest');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -71,7 +73,6 @@ const BlogOverview: React.FC = () => {
         .filter(category => Object.keys(CATEGORY_MAPPING).includes(category))
     ));
 
-    // Verwende die tatsächlich vorhandenen Kategorien
     return categoriesFromPosts.sort();
   }, [blogRows]);
 
@@ -86,16 +87,30 @@ const BlogOverview: React.FC = () => {
     return seasonsFromPosts.sort() as Season[];
   }, [blogRows]);
 
-  // Enhanced Filter-Logik mit verbessertem Typ-Handling
+  // Erweiterte Filter-Logik mit Tag-Unterstützung
   const filteredPosts = useMemo(() => {
     const posts = blogRows as Tables<'blog_posts'>[];
     return posts.filter((post: Tables<'blog_posts'>) => {
       // Kategorie-Filter
       if (selectedCategory && post.category !== selectedCategory) return false;
+      
       // Saison-Filter
       if (selectedSeason && post.season !== selectedSeason) return false;
 
-      // Suchbegriff - verbesserte Suche
+      // Tag-Filter - prüfe sowohl explizite Tags als auch extrahierte Tags aus dem Content
+      if (selectedTags.length > 0) {
+        const postTags = post.tags || [];
+        const contentTags = extractTagsFromText(post.content + ' ' + post.title + ' ' + post.excerpt, 20);
+        const allPostTags = [...postTags, ...contentTags].map(tag => tag.toLowerCase());
+        
+        const hasMatchingTag = selectedTags.some(selectedTag => 
+          allPostTags.some(postTag => postTag.includes(selectedTag.toLowerCase()))
+        );
+        
+        if (!hasMatchingTag) return false;
+      }
+
+      // Erweiterte Suchbegriff-Logik
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
         const titleMatch = post.title?.toLowerCase().includes(searchLower);
@@ -104,14 +119,20 @@ const BlogOverview: React.FC = () => {
         const contentMatch = post.content?.toLowerCase().includes(searchLower);
         const tagMatch = post.tags?.some(tag => tag.toLowerCase().includes(searchLower));
         const categoryMatch = post.category?.toLowerCase().includes(searchLower);
+        const authorMatch = post.author?.toLowerCase().includes(searchLower);
         
-        if (!titleMatch && !excerptMatch && !descriptionMatch && !contentMatch && !tagMatch && !categoryMatch) {
+        // Erweiterte Content-Analyse für bessere Suchergebnisse
+        const contentTags = extractTagsFromText(post.content, 10);
+        const extractedTagMatch = contentTags.some(tag => tag.toLowerCase().includes(searchLower));
+        
+        if (!titleMatch && !excerptMatch && !descriptionMatch && !contentMatch && 
+            !tagMatch && !categoryMatch && !authorMatch && !extractedTagMatch) {
           return false;
         }
       }
       return true;
     });
-  }, [blogRows, selectedCategory, selectedSeason, searchTerm]);
+  }, [blogRows, selectedCategory, selectedSeason, searchTerm, selectedTags]);
 
   const postsWithScores = useMemo(() => {
     const seoService = SEOService.getInstance();
@@ -165,7 +186,7 @@ const BlogOverview: React.FC = () => {
           <p className="text-xl text-earth-600 mb-8">
             Entdecke spannende Artikel, praktische Tipps und kreative Ideen rund um Garten, Küche und einen nachhaltigen Lebensstil.
           </p>
-          {/* Filter UI */}
+          {/* Erweiterte Filter UI */}
           <BlogFilter
             categories={availableCategories}
             selectedCategory={selectedCategory}
@@ -186,6 +207,18 @@ const BlogOverview: React.FC = () => {
       {/* Blog Posts Grid */}
       <section className="py-16 px-4">
         <div className="max-w-6xl mx-auto">
+          {/* Ergebnis-Anzeige */}
+          {!isLoading && (
+            <div className="mb-8 text-center">
+              <p className="text-earth-600">
+                {sortedPosts.length} Artikel gefunden
+                {(selectedCategory || selectedSeason || searchTerm || selectedTags.length > 0) && 
+                  ' (gefiltert)'
+                }
+              </p>
+            </div>
+          )}
+          
           {isLoading ? (
             <div className="text-center py-12 text-earth-500">Lade Artikel...</div>
           ) : error ? (
@@ -228,6 +261,7 @@ const BlogOverview: React.FC = () => {
               <p className="text-earth-500 text-lg">
                 {(() => {
                   if (searchTerm) return `Keine Artikel gefunden für Suchbegriff "${searchTerm}".`;
+                  if (selectedTags.length > 0) return `Keine Artikel mit den Tags "${selectedTags.join(', ')}" gefunden.`;
                   if (selectedCategory && selectedSeason) return `Keine Artikel in Kategorie "${selectedCategory}" für Saison "${selectedSeason}".`;
                   if (selectedCategory) return `Keine Artikel in Kategorie "${selectedCategory}".`;
                   if (selectedSeason) return `Keine Artikel für Saison "${selectedSeason}".`;
