@@ -8,7 +8,34 @@ const corsHeaders = {
 };
 
 const OPENAI_ADMIN_KEY = Deno.env.get("OPENAI_ADMIN_KEY");
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 const heuristicCache = new Map<string, any>();
+
+async function generateWithGemini(prompt: string, temperature = 0.4, maxTokens = 2000) {
+  if (!GEMINI_API_KEY) {
+    throw new Error("Gemini API Key nicht konfiguriert");
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature, maxOutputTokens: maxTokens },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API Fehler (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -56,61 +83,73 @@ serve(async (req) => {
   }
 });
 
+
 async function analyzeContentPerformance(contentData: any, supabase: any) {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENAI_ADMIN_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "Du bist ein KI-Experte für Content-Performance-Analyse. Analysiere den gegebenen Content und gib eine detaillierte Bewertung als JSON zurück."
+  const systemMsg =
+    "Du bist ein KI-Experte für Content-Performance-Analyse. Analysiere den gegebenen Content und gib eine detaillierte Bewertung als JSON zurück.";
+  const userMsg = `Analysiere diesen Content für Performance-Vorhersage:\n\nTitel: ${contentData.title}\nKategorie: ${contentData.category}\nTags: ${contentData.tags?.join(', ') || 'Keine'}\nContent-Länge: ${contentData.content?.length || 0} Zeichen\nSEO-Keywords: ${contentData.seoKeywords?.join(', ') || 'Keine'}\n\nGib eine JSON-Antwort mit:\n- performanceScore (0-100)\n- seoOptimization (0-100)\n- engagementPrediction (0-100)\n- recommendations (Array von Strings)\n- estimatedViews (Zahl)\n- competitiveness (low/medium/high)`;
+
+  let analysisText: string | null = null;
+
+  if (OPENAI_ADMIN_KEY) {
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENAI_ADMIN_KEY}`,
+          "Content-Type": "application/json",
         },
-        {
-          role: "user",
-          content: `Analysiere diesen Content für Performance-Vorhersage:
-          
-Titel: ${contentData.title}
-Kategorie: ${contentData.category}
-Tags: ${contentData.tags?.join(', ') || 'Keine'}
-Content-Länge: ${contentData.content?.length || 0} Zeichen
-SEO-Keywords: ${contentData.seoKeywords?.join(', ') || 'Keine'}
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: systemMsg },
+            { role: "user", content: userMsg },
+          ],
+          temperature: 0.3,
+          max_tokens: 1500,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        analysisText = data.choices?.[0]?.message?.content ?? null;
+      }
+    } catch (err) {
+      console.error('[AI Content Insights] OpenAI performance analysis failed:', err);
+    }
+  }
 
-Gib eine JSON-Antwort mit:
-- performanceScore (0-100)
-- seoOptimization (0-100) 
-- engagementPrediction (0-100)
-- recommendations (Array von Strings)
-- estimatedViews (Zahl)
-- competitiveness (low/medium/high)`
-        }
-      ],
-      temperature: 0.3,
-      max_tokens: 1500,
-    }),
-  });
+  if (!analysisText && GEMINI_API_KEY) {
+    try {
+      analysisText = await generateWithGemini(`${systemMsg}\n\n${userMsg}`, 0.3, 1500);
+    } catch (err) {
+      console.error('[AI Content Insights] Gemini performance fallback failed:', err);
+    }
+  }
 
-  const data = await response.json();
-  const analysis = JSON.parse(data.choices[0].message.content);
+  if (!analysisText) {
+    throw new Error('Keine KI-Antwort erhalten');
+  }
+
+  let analysis;
+  try {
+    analysis = JSON.parse(analysisText);
+  } catch {
+    analysis = { recommendations: [analysisText] };
+  }
 
   return new Response(
-    JSON.stringify({ 
-      success: true, 
+    JSON.stringify({
+      success: true,
       analysis,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     }),
     {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    }
+    },
   );
 }
 
 async function generateContentInsights(supabase: any) {
-  // Fetch recent blog posts for analysis
   const { data: posts, error } = await supabase
     .from('blog_posts')
     .select('title, category, tags, engagement_score, quality_score, created_at')
@@ -119,107 +158,124 @@ async function generateContentInsights(supabase: any) {
 
   if (error) throw error;
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENAI_ADMIN_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "Du bist ein Content-Strategie-Experte. Analysiere die gegebenen Blogpost-Daten und identifiziere Trends, Lücken und Opportunities."
+  const systemMsg =
+    'Du bist ein Content-Strategie-Experte. Analysiere die gegebenen Blogpost-Daten und identifiziere Trends, L\u00fccken und Opportunities.';
+  const userMsg = `Analysiere diese Blogpost-Daten und gib Insights als JSON zur\u00fcck:\n\n${JSON.stringify(posts, null, 2)}\n\nGib eine JSON-Antwort mit:\n- topPerformingCategories (Array)\n- contentGaps (Array von Opportunities)\n- seasonalTrends (Array)\n- recommendedTopics (Array mit topic, reason, priority)\n- performanceInsights (Array von Beobachtungen)`;
+
+  let insightsText: string | null = null;
+
+  if (OPENAI_ADMIN_KEY) {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_ADMIN_KEY}`,
+          'Content-Type': 'application/json',
         },
-        {
-          role: "user",
-          content: `Analysiere diese Blogpost-Daten und gib Insights als JSON zurück:
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemMsg },
+            { role: 'user', content: userMsg },
+          ],
+          temperature: 0.4,
+          max_tokens: 2000,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        insightsText = data.choices?.[0]?.message?.content ?? null;
+      }
+    } catch (err) {
+      console.error('[AI Content Insights] OpenAI insights failed:', err);
+    }
+  }
 
-${JSON.stringify(posts, null, 2)}
+  if (!insightsText && GEMINI_API_KEY) {
+    try {
+      insightsText = await generateWithGemini(`${systemMsg}\n\n${userMsg}`, 0.4, 2000);
+    } catch (err) {
+      console.error('[AI Content Insights] Gemini insights fallback failed:', err);
+    }
+  }
 
-Gib eine JSON-Antwort mit:
-- topPerformingCategories (Array)
-- contentGaps (Array von Opportunities)
-- seasonalTrends (Array)
-- recommendedTopics (Array mit topic, reason, priority)
-- performanceInsights (Array von Beobachtungen)`
-        }
-      ],
-      temperature: 0.4,
-      max_tokens: 2000,
-    }),
-  });
+  if (!insightsText) {
+    throw new Error('Keine KI-Antwort erhalten');
+  }
 
-  const data = await response.json();
-  const insights = JSON.parse(data.choices[0].message.content);
+  const insights = JSON.parse(insightsText);
 
   return new Response(
-    JSON.stringify({ 
-      success: true, 
+    JSON.stringify({
+      success: true,
       insights,
       dataPoints: posts.length,
-      generatedAt: new Date().toISOString()
+      generatedAt: new Date().toISOString(),
     }),
     {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    }
+    },
   );
 }
 
 async function predictContentTrends(supabase: any) {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENAI_ADMIN_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "Du bist ein Trend-Analyst für Garten- und Küchen-Content. Basierend auf aktuellen Trends und saisonalen Faktoren, vorhersage relevante Content-Trends für die nächsten Monate."
+  const systemMsg = 'Du bist ein Trend-Analyst f\u00fcr Garten- und K\u00fcchen-Content. Basierend auf aktuellen Trends und saisonalen Faktoren, vorhersage relevante Content-Trends f\u00fcr die n\u00e4chsten Monate.';
+  const userMsg = `Analysiere und vorhersage Content-Trends f\u00fcr deutsche Garten- und K\u00fcchen-Blogs.\n\nBer\u00fccksichtige:\n- Aktuelle Jahreszeit: ${new Date().toLocaleDateString('de-DE', { month: 'long' })}\n- Nachhaltigkeitstrends\n- Urbane Gartentrends\n- Gesunde Ern\u00e4hrung\n- Selbstversorgung\n\nGib eine JSON-Antwort mit:\n- emergingTrends (Array mit trend, description, potential 0-100)\n- seasonalOpportunities (Array)\n- keywordOpportunities (Array)\n- contentTypes (Array der trending Content-Formate)\n- timeframe (wann diese Trends relevant werden)`;
+
+  let trendsText: string | null = null;
+
+  if (OPENAI_ADMIN_KEY) {
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${OPENAI_ADMIN_KEY}`,
+          'Content-Type': 'application/json',
         },
-        {
-          role: "user",
-          content: `Analysiere und vorhersage Content-Trends für deutsche Garten- und Küchen-Blogs. 
-          
-Berücksichtige:
-- Aktuelle Jahreszeit: ${new Date().toLocaleDateString('de-DE', { month: 'long' })}
-- Nachhaltigkeitstrends
-- Urbane Gartentrends
-- Gesunde Ernährung
-- Selbstversorgung
+        body: JSON.stringify({
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemMsg },
+            { role: 'user', content: userMsg },
+          ],
+          temperature: 0.6,
+          max_tokens: 2000,
+        }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        trendsText = data.choices?.[0]?.message?.content ?? null;
+      }
+    } catch (err) {
+      console.error('[AI Content Insights] OpenAI trends failed:', err);
+    }
+  }
 
-Gib eine JSON-Antwort mit:
-- emergingTrends (Array mit trend, description, potential 0-100)
-- seasonalOpportunities (Array)
-- keywordOpportunities (Array)
-- contentTypes (Array der trending Content-Formate)
-- timeframe (wann diese Trends relevant werden)`
-        }
-      ],
-      temperature: 0.6,
-      max_tokens: 2000,
-    }),
-  });
+  if (!trendsText && GEMINI_API_KEY) {
+    try {
+      trendsText = await generateWithGemini(`${systemMsg}\n\n${userMsg}`, 0.6, 2000);
+    } catch (err) {
+      console.error('[AI Content Insights] Gemini trends fallback failed:', err);
+    }
+  }
 
-  const data = await response.json();
-  const trends = JSON.parse(data.choices[0].message.content);
+  if (!trendsText) {
+    throw new Error('Keine KI-Antwort erhalten');
+  }
+
+  const trends = JSON.parse(trendsText);
 
   return new Response(
-    JSON.stringify({ 
-      success: true, 
+    JSON.stringify({
+      success: true,
       trends,
-      predictedFor: new Date().toISOString()
+      predictedFor: new Date().toISOString(),
     }),
     {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    }
+    },
   );
 }
-
 async function optimizeContent(contentData: any, supabase: any) {
   if (!contentData) {
     throw new Error('contentData is required');
