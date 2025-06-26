@@ -10,41 +10,75 @@ const corsHeaders = {
 const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
 const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
 
-async function generateWithGemini(prompt: string) {
-  if (!geminiApiKey) {
-    throw new Error("Gemini API Key nicht konfiguriert");
-  }
-
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{
-          text: prompt
-        }]
-      }],
-      generationConfig: {
-        temperature: 0.15,
-        maxOutputTokens: 1400,
-      }
-    }),
+function jsonResponse(data: any, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API Fehler (${response.status}): ${errorText}`);
+async function generateWithOpenAI(systemPrompt: string) {
+  if (!openAIApiKey) return null;
+
+  try {
+    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${openAIApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o",
+        messages: [{ role: "system", content: systemPrompt }],
+        temperature: 0.15,
+        max_tokens: 1400,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      console.warn(`[generate-recipe] OpenAI Fehler ${aiResponse.status}: ${errText.substring(0, 200)}`);
+      return null;
+    }
+
+    const data = await aiResponse.json();
+    if (data.choices?.[0]?.message?.content) {
+      return JSON.parse(data.choices[0].message.content);
+    }
+  } catch (err) {
+    console.warn('[generate-recipe] OpenAI Request fehlgeschlagen:', err);
   }
 
-  const data = await response.json();
-  
-  if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-    throw new Error("Keine Antwort von Gemini erhalten");
+  return null;
+}
+
+async function generateWithGemini(prompt: string) {
+  if (!geminiApiKey) return null;
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.15, maxOutputTokens: 1400 }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.warn(`[generate-recipe] Gemini Fehler ${response.status}: ${errorText}`);
+      return null;
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    return text ? text.trim() : null;
+  } catch (err) {
+    console.error('[generate-recipe] Gemini Request fehlgeschlagen:', err);
+    return null;
   }
-  
-  return data.candidates[0].content.parts[0].text.trim();
 }
 
 serve(async (req) => {
@@ -57,10 +91,7 @@ serve(async (req) => {
     // Get authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ error: "Missing authorization header" }, 401);
     }
 
     const body = await req.json();
@@ -114,91 +145,30 @@ ${freeText ? "Hinweise/Wünsche: " + freeText : ""}
 Wähle Zutaten und Zubereitung sinnvoll und saisonal passend. Kompakte, gültige JSON-Antwort!
     `.trim();
 
-    let recipe = null;
+    let recipe = await generateWithOpenAI(systemPrompt);
     let usedProvider = 'OpenAI';
 
-    // Try OpenAI first
-    if (openAIApiKey) {
-      try {
-        const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${openAIApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "system",
-                content: systemPrompt
-              },
-            ],
-            temperature: 0.15,
-            max_tokens: 1400,
-            response_format: { type: "json_object" },
-          }),
-        });
-
-        if (aiResponse.ok) {
-          const data = await aiResponse.json();
-          if (data.choices?.[0]?.message?.content) {
-            recipe = JSON.parse(data.choices[0].message.content);
-            console.log('[generate-recipe] OpenAI erfolgreich verwendet');
-          }
-        } else {
-          const errText = await aiResponse.text();
-          console.warn(`[generate-recipe] OpenAI Fehler ${aiResponse.status}: ${errText.substring(0, 200)}`);
-        }
-      } catch (openaiError) {
-        console.warn('[generate-recipe] OpenAI Request fehlgeschlagen, verwende Gemini Fallback:', openaiError);
-      }
-    }
-
-    // Fallback to Gemini
-    if (!recipe && geminiApiKey) {
-      try {
-        console.log('[generate-recipe] Verwende Gemini Fallback...');
-        const geminiResponse = await generateWithGemini(`${systemPrompt}\n\nBitte erstelle ein JSON-Objekt für das Rezept.`);
-        
-        // Try to extract JSON from Gemini response
+    if (!recipe) {
+      console.log('[generate-recipe] Verwende Gemini Fallback...');
+      const geminiResponse = await generateWithGemini(`${systemPrompt}\n\nBitte erstelle ein JSON-Objekt für das Rezept.`);
+      if (geminiResponse) {
         const jsonMatch = geminiResponse.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           recipe = JSON.parse(jsonMatch[0]);
           usedProvider = 'Google Gemini';
           console.log('[generate-recipe] Gemini Fallback erfolgreich verwendet');
         }
-      } catch (geminiError) {
-        console.error('[generate-recipe] Gemini Fallback fehlgeschlagen:', geminiError);
       }
     }
 
     if (!recipe) {
-      return new Response(
-        JSON.stringify({
-          error: "Beide KI-Services nicht verfügbar",
-          code: "no_ai_service",
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return jsonResponse({ error: "Beide KI-Services nicht verfügbar", code: "no_ai_service" }, 500);
     }
 
-    return new Response(
-      JSON.stringify({ 
-        recipe,
-        provider: usedProvider
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ recipe, provider: usedProvider });
 
   } catch (err) {
     console.error('[generate-recipe] Fehler:', err);
-    return new Response(
-      JSON.stringify({
-        error: String(err?.message ?? err),
-        code: "unhandled_error",
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return jsonResponse({ error: String(err?.message ?? err), code: "unhandled_error" }, 500);
   }
 });

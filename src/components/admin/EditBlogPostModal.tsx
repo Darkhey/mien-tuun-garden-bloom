@@ -22,14 +22,33 @@ interface EditBlogPostModalProps {
 }
 
 const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, onSaved }) => {
-  const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-    excerpt: "",
-    category: "",
-    featured_image: "",
-    status: "entwurf",
-  });
+  const initData = (p: any) => {
+    if (!p) {
+      return {
+        title: "",
+        content: "",
+        excerpt: "",
+        category: "",
+        featured_image: "",
+        status: "entwurf",
+      };
+    }
+
+    const firstParagraph = p.content ?
+      p.content.split('\n\n')[0].replace(/#+\s*/g, '').substring(0, 200) :
+      p.excerpt || "";
+
+    return {
+      title: p.title || "",
+      content: p.content || "",
+      excerpt: p.excerpt || firstParagraph,
+      category: p.category || "",
+      featured_image: p.featured_image || "",
+      status: p.status || "entwurf",
+    };
+  };
+
+  const [formData, setFormData] = useState(initData(post));
   const [loading, setLoading] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [seoData, setSeoData] = useState<SEOMetadata | null>(null);
@@ -39,28 +58,10 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
   // Lade die Blog-Post Daten beim Öffnen
   useEffect(() => {
     console.log('[EditBlogModal] Loading post data:', post);
-    
-    if (post) {
-      // Extrahiere ersten Absatz als Excerpt wenn nicht vorhanden
-      const firstParagraph = post.content ? 
-        post.content.split('\n\n')[0].replace(/#+\s*/g, '').substring(0, 200) : 
-        post.excerpt || "";
-      
-      const postData = {
-        title: post.title || "",
-        content: post.content || "",
-        excerpt: post.excerpt || firstParagraph,
-        category: post.category || "",
-        featured_image: post.featured_image || "",
-        status: post.status || "entwurf",
-      };
-      
-      console.log('[EditBlogModal] Setting form data:', postData);
-      setFormData(postData);
-    }
+    setFormData(initData(post));
   }, [post]);
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
     console.log(`[EditBlogModal] Updating ${field}:`, value);
     
     // Auto-update excerpt wenn content geändert wird
