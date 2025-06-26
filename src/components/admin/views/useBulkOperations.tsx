@@ -4,19 +4,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { aiImageGenerationService, BatchProgress } from "@/services/AIImageGenerationService";
 import { contentInsightsService } from "@/services/ContentInsightsService";
+import { optimizationTrackingService, OptimizationBatch } from "@/services/OptimizationTrackingService";
 
 export const useBulkOperations = (selectedIds: string[], clearSelection: () => void, loadBlogPosts: () => void) => {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [batchProgress, setBatchProgress] = useState<BatchProgress | undefined>();
+  const [currentOptimizationBatch, setCurrentOptimizationBatch] = useState<OptimizationBatch | undefined>();
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const { toast } = useToast();
 
   const cancelOperation = () => {
     abortController?.abort();
+    if (currentOptimizationBatch) {
+      optimizationTrackingService.cancelBatch(currentOptimizationBatch.id);
+    }
     setAbortController(null);
     setBulkLoading(false);
     setBatchProgress(undefined);
+    setCurrentOptimizationBatch(undefined);
   };
 
   const optimizeTitles = async () => {
@@ -24,62 +30,112 @@ export const useBulkOperations = (selectedIds: string[], clearSelection: () => v
     setAbortController(controller);
     setBulkLoading(true);
     setProgress(0);
+
     try {
+      // Fetch blog posts data
+      const { data: postsData, error } = await supabase
+        .from('blog_posts')
+        .select('id, title, content, category, seo_keywords')
+        .in('id', selectedIds);
+
+      if (error) throw error;
+
+      // Create optimization batch
+      const batch = optimizationTrackingService.createBatch('title', 
+        postsData.map(post => ({ id: post.id, title: post.title }))
+      );
+      setCurrentOptimizationBatch(batch);
+
       const results = await Promise.allSettled(
-        selectedIds.map((id, idx) =>
+        postsData.map((post, idx) =>
           (async () => {
             await new Promise(res => setTimeout(res, idx * 1000));
             if (controller.signal.aborted) throw new Error('aborted');
-            const { data, error } = await supabase
-              .from('blog_posts')
-              .select('title, content, category, seo_keywords')
-              .eq('id', id)
-              .single();
 
-            if (error) throw error;
-
-            const optimization = await contentInsightsService.optimizeContent({
-              title: data.title,
-              content: data.content || '',
-              category: data.category,
-              seoKeywords: data.seo_keywords,
+            // Update status to processing
+            optimizationTrackingService.updateResult(batch.id, post.id, { 
+              status: 'processing',
+              originalValue: post.title
             });
-            if (controller.signal.aborted) throw new Error('aborted');
 
-            const newTitle = optimization.optimizedTitle || data.title;
+            try {
+              const optimization = await contentInsightsService.optimizeContent({
+                title: post.title,
+                content: post.content || '',
+                category: post.category,
+                seoKeywords: post.seo_keywords,
+              });
 
-            const { error: updateError } = await supabase
-              .from('blog_posts')
-              .update({ title: newTitle })
-              .eq('id', id);
+              if (controller.signal.aborted) throw new Error('aborted');
 
-            if (updateError) throw updateError;
-            if (controller.signal.aborted) throw new Error('aborted');
-            setProgress(Math.round(((idx + 1) / selectedIds.length) * 100));
-            return id;
+              const newTitle = optimization.optimizedTitle || post.title;
+              const hasChanges = newTitle !== post.title;
+
+              const { error: updateError } = await supabase
+                .from('blog_posts')
+                .update({ title: newTitle })
+                .eq('id', post.id);
+
+              if (updateError) throw updateError;
+
+              // Update optimization result
+              optimizationTrackingService.updateResult(batch.id, post.id, {
+                status: 'completed',
+                optimizedValue: newTitle,
+                changes: hasChanges ? [`Titel geändert von "${post.title}" zu "${newTitle}"`] : [],
+                aiProvider: 'OpenAI',
+                model: 'gpt-4o'
+              });
+
+              setProgress(Math.round(((idx + 1) / selectedIds.length) * 100));
+              return post.id;
+            } catch (error) {
+              optimizationTrackingService.updateResult(batch.id, post.id, {
+                status: 'failed',
+                error: error instanceof Error ? error.message : 'Unbekannter Fehler'
+              });
+              throw error;
+            }
           })()
         )
       );
 
-      const failed = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[];
-      if (failed.length) {
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      if (failed > 0 && successful === 0) {
         toast({
-          title: 'Teilweise fehlgeschlagen',
-          description: `${failed.length} Artikel konnten nicht optimiert werden`,
+          title: 'Titel-Optimierung fehlgeschlagen',
+          description: `Alle ${failed} Versuche sind fehlgeschlagen`,
           variant: 'destructive'
         });
+      } else if (failed > 0) {
+        toast({
+          title: 'Titel-Optimierung teilweise erfolgreich',
+          description: `${successful} Titel optimiert, ${failed} fehlgeschlagen`,
+          variant: 'default'
+        });
       } else {
-        toast({ title: 'Titel aktualisiert', description: 'Ausgewählte Titel wurden optimiert.' });
+        toast({ 
+          title: '✨ Titel-Optimierung abgeschlossen!', 
+          description: `${successful} Artikel-Titel wurden erfolgreich mit KI optimiert.` 
+        });
       }
 
       loadBlogPosts();
       clearSelection();
     } catch (err: any) {
-      toast({ title: 'Fehler', description: err.message, variant: 'destructive' });
+      console.error('Title optimization failed:', err);
+      toast({ 
+        title: 'Titel-Optimierung fehlgeschlagen', 
+        description: err.message || 'Unbekannter Fehler', 
+        variant: 'destructive' 
+      });
     } finally {
       setAbortController(null);
       setBulkLoading(false);
       setProgress(0);
+      setCurrentOptimizationBatch(undefined);
     }
   };
 
@@ -112,6 +168,12 @@ export const useBulkOperations = (selectedIds: string[], clearSelection: () => v
         throw new Error('Keine Artikel zum Verarbeiten gefunden');
       }
 
+      // Create optimization batch
+      const batch = optimizationTrackingService.createBatch('image', 
+        postsData.map(post => ({ id: post.id, title: post.title }))
+      );
+      setCurrentOptimizationBatch(batch);
+
       // Check for abort before starting
       if (controller.signal.aborted) {
         throw new Error('Operation aborted by user');
@@ -128,6 +190,17 @@ export const useBulkOperations = (selectedIds: string[], clearSelection: () => v
         (progress) => {
           setBatchProgress(progress);
           
+          // Update optimization tracking
+          progress.results.forEach(result => {
+            optimizationTrackingService.updateResult(batch.id, result.id, {
+              status: result.status,
+              imageUrl: result.imageUrl,
+              error: result.error,
+              model: result.model,
+              warning: result.warning
+            });
+          });
+          
           // Check for abort during processing
           if (controller.signal.aborted) {
             throw new Error('Operation aborted by user');
@@ -142,19 +215,19 @@ export const useBulkOperations = (selectedIds: string[], clearSelection: () => v
       if (successCount > 0 && failureCount === 0) {
         toast({
           title: '🎉 Alle Bilder erfolgreich generiert!',
-          description: `${successCount} Bilder wurden mit 3 parallelen Prozessen erstellt.`,
+          description: `${successCount} hochwertige KI-Bilder wurden mit 3 parallelen Prozessen erstellt und automatisch zugewiesen.`,
         });
       } else if (successCount > 0) {
         toast({
           title: 'Batch-Verarbeitung abgeschlossen',
-          description: `${successCount} Bilder erstellt, ${failureCount} fehlgeschlagen.`,
+          description: `${successCount} Bilder erstellt, ${failureCount} mit Fallback-Bildern.`,
           variant: 'default'
         });
       } else {
         toast({
-          title: 'Batch-Verarbeitung fehlgeschlagen',
-          description: `Alle ${failureCount} Versuche sind fehlgeschlagen.`,
-          variant: 'destructive'
+          title: 'Bild-Generierung mit Fallbacks',
+          description: `${failureCount} Artikel erhielten Fallback-Bilder da die KI-Generierung nicht verfügbar war.`,
+          variant: 'default'
         });
       }
 
@@ -173,13 +246,29 @@ export const useBulkOperations = (selectedIds: string[], clearSelection: () => v
       setBulkLoading(false);
       setBatchProgress(undefined);
       setProgress(0);
+      setCurrentOptimizationBatch(undefined);
     }
+  };
+
+  // Get recent optimization stats
+  const getRecentOptimizations = () => {
+    const allBatches = optimizationTrackingService.getAllBatches();
+    const recentBatches = allBatches.slice(0, 10); // Last 10 batches
+    
+    return {
+      titles: recentBatches.filter(b => b.type === 'title').reduce((sum, b) => sum + b.completedItems, 0),
+      images: recentBatches.filter(b => b.type === 'image').reduce((sum, b) => sum + b.completedItems, 0),
+      totalSuccessful: recentBatches.reduce((sum, b) => sum + b.completedItems, 0),
+      totalFailed: recentBatches.reduce((sum, b) => sum + b.failedItems, 0)
+    };
   };
 
   return {
     bulkLoading,
     progress,
     batchProgress,
+    currentOptimizationBatch,
+    recentOptimizations: getRecentOptimizations(),
     optimizeTitles,
     generateImages,
     cancelOperation
