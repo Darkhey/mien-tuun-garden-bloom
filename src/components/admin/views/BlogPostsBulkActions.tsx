@@ -1,9 +1,10 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, AlertTriangle } from "lucide-react";
+import { Info, AlertTriangle, Zap } from "lucide-react";
+import BatchProgressDisplay from './BatchProgressDisplay';
+import { BatchProgress } from "@/services/AIImageGenerationService";
 
 interface BlogPostsBulkActionsProps {
   selectedCount: number;
@@ -12,7 +13,8 @@ interface BlogPostsBulkActionsProps {
   onClear: () => void;
   onCancel: () => void;
   loading: boolean;
-  progress: number;
+  progress?: number;
+  batchProgress?: BatchProgress;
 }
 
 const BlogPostsBulkActions: React.FC<BlogPostsBulkActionsProps> = ({
@@ -22,7 +24,8 @@ const BlogPostsBulkActions: React.FC<BlogPostsBulkActionsProps> = ({
   onClear,
   onCancel,
   loading,
-  progress
+  progress,
+  batchProgress
 }) => {
   if (selectedCount === 0) return null;
 
@@ -34,6 +37,7 @@ const BlogPostsBulkActions: React.FC<BlogPostsBulkActionsProps> = ({
           Titel optimieren
         </Button>
         <Button size="sm" onClick={onGenerateImages} disabled={loading}>
+          <Zap className="h-4 w-4 mr-1" />
           Bilder generieren
         </Button>
         {loading ? (
@@ -47,18 +51,21 @@ const BlogPostsBulkActions: React.FC<BlogPostsBulkActionsProps> = ({
         )}
       </div>
       
-      {loading && (
+      {/* Enhanced Batch Progress Display */}
+      {batchProgress && (
+        <BatchProgressDisplay 
+          progress={batchProgress} 
+          isActive={loading} 
+        />
+      )}
+
+      {/* Fallback for old progress system */}
+      {loading && !batchProgress && progress !== undefined && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span>Verarbeitung läuft...</span>
-            <span>{progress}%</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-          
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription className="text-xs">
-              Bildgenerierung kann mehrere Minuten dauern. 
+              Bildgenerierung läuft mit 3 parallelen Prozessen. 
               Optimierte Verzögerung zwischen Anfragen für bessere Zuverlässigkeit.
             </AlertDescription>
           </Alert>

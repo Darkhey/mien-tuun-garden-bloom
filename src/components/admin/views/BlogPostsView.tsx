@@ -10,7 +10,7 @@ import BlogPostsFilter from "./BlogPostsFilter";
 import BlogPostsTable from "./BlogPostsTable";
 import BlogPostsBulkActions from "./BlogPostsBulkActions";
 import { useBlogPostsData } from "./useBlogPostsData";
-import { aiImageGenerationService } from "@/services/AIImageGenerationService";
+import { aiImageGenerationService, BatchProgress } from "@/services/AIImageGenerationService";
 import { contentInsightsService } from "@/services/ContentInsightsService";
 import { BLOG_CATEGORIES } from "../blogHelpers";
 
@@ -20,6 +20,7 @@ const BlogPostsView: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [batchProgress, setBatchProgress] = useState<BatchProgress | undefined>();
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const { toast } = useToast();
 
@@ -105,6 +106,7 @@ const BlogPostsView: React.FC = () => {
     abortController?.abort();
     setAbortController(null);
     setBulkLoading(false);
+    setBatchProgress(undefined);
   };
 
   const optimizeTitles = async () => {
@@ -175,122 +177,73 @@ const BlogPostsView: React.FC = () => {
     const controller = new AbortController();
     setAbortController(controller);
     setBulkLoading(true);
-    setProgress(0);
-    
-    let successCount = 0;
-    let errorCount = 0;
-    const errors: string[] = [];
+    setBatchProgress({
+      total: selectedIds.length,
+      completed: 0,
+      inProgress: 0,
+      failed: 0,
+      results: []
+    });
     
     try {
-      console.log(`[BlogPostsView] Starting batch image generation for ${selectedIds.length} posts`);
+      console.log(`[BlogPostsView] Starting concurrent batch generation for ${selectedIds.length} posts`);
       
-      const results = await Promise.allSettled(
-        selectedIds.map((id, idx) =>
-          (async () => {
-            // Enhanced delay - 4-7 seconds between requests
-            const baseDelay = 4000; // 4 seconds base
-            const variableDelay = Math.random() * 3000; // 0-3 seconds random
-            const delay = baseDelay + variableDelay + (idx * 1000); // Additional second per item
-            
-            await new Promise(res => setTimeout(res, delay));
-            
-            if (controller.signal.aborted) {
-              throw new Error('Operation aborted by user');
-            }
-            
-            console.log(`[BlogPostsView] Processing post ${idx + 1}/${selectedIds.length} (ID: ${id}) after ${Math.round(delay/1000)}s delay`);
-            
-            const { data, error } = await supabase
-              .from('blog_posts')
-              .select('title, content, category')
-              .eq('id', id)
-              .single();
+      // Fetch post data
+      const { data: postsData, error } = await supabase
+        .from('blog_posts')
+        .select('id, title, content, category')
+        .in('id', selectedIds);
 
-            if (error) {
-              console.error(`[BlogPostsView] Failed to fetch post ${id}:`, error);
-              throw new Error(`Artikel laden fehlgeschlagen: ${error.message}`);
-            }
+      if (error) {
+        throw new Error(`Fehler beim Laden der Artikel: ${error.message}`);
+      }
 
-            if (controller.signal.aborted) {
-              throw new Error('Operation aborted by user');
-            }
+      if (!postsData || postsData.length === 0) {
+        throw new Error('Keine Artikel zum Verarbeiten gefunden');
+      }
 
-            console.log(`[BlogPostsView] Generating image for: "${data.title}"`);
-            
-            // Generate image with enhanced error handling
-            const generatedImage = await aiImageGenerationService.generateBlogImage({
-              title: data.title,
-              content: data.content || '',
-              category: data.category
-            });
+      // Check for abort before starting
+      if (controller.signal.aborted) {
+        throw new Error('Operation aborted by user');
+      }
 
-            if (controller.signal.aborted) {
-              throw new Error('Operation aborted by user');
-            }
-
-            console.log(`[BlogPostsView] Image generated for ${id}:`, {
-              url: generatedImage.url?.substring(0, 50) + '...',
-              model: generatedImage.model,
-              hasWarning: !!generatedImage.warning
-            });
-
-            // Update database
-            const { error: updateError } = await supabase
-              .from('blog_posts')
-              .update({ featured_image: generatedImage.url })
-              .eq('id', id);
-
-            if (updateError) {
-              console.error(`[BlogPostsView] Failed to update post ${id}:`, updateError);
-              throw new Error(`Datenbank-Update fehlgeschlagen: ${updateError.message}`);
-            }
-
-            if (controller.signal.aborted) {
-              throw new Error('Operation aborted by user');
-            }
-
-            // Update progress
-            const progressPercent = Math.round(((idx + 1) / selectedIds.length) * 100);
-            setProgress(progressPercent);
-            
-            console.log(`[BlogPostsView] Successfully processed post ${idx + 1}/${selectedIds.length}`);
-            
-            return { id, success: true, warning: generatedImage.warning };
-          })()
-        )
+      // Use the new concurrent batch processing
+      const results = await aiImageGenerationService.generateImagesInBatches(
+        postsData.map(post => ({
+          id: post.id,
+          title: post.title,
+          content: post.content || '',
+          category: post.category || ''
+        })),
+        (progress) => {
+          setBatchProgress(progress);
+          
+          // Check for abort during processing
+          if (controller.signal.aborted) {
+            throw new Error('Operation aborted by user');
+          }
+        }
       );
 
-      // Analyze results
-      results.forEach((result, idx) => {
-        if (result.status === 'fulfilled') {
-          successCount++;
-          if (result.value.warning) {
-            console.log(`[BlogPostsView] Post ${idx + 1} completed with warning:`, result.value.warning);
-          }
-        } else {
-          errorCount++;
-          const errorMsg = result.reason?.message || 'Unbekannter Fehler';
-          errors.push(`Post ${idx + 1}: ${errorMsg}`);
-          console.error(`[BlogPostsView] Post ${idx + 1} failed:`, result.reason);
-        }
-      });
+      // Final summary
+      const successCount = results.filter(r => r.status === 'completed').length;
+      const failureCount = results.filter(r => r.status === 'failed').length;
 
-      // Enhanced user feedback
-      if (successCount > 0 && errorCount === 0) {
+      if (successCount > 0 && failureCount === 0) {
         toast({
-          title: 'Bilder erfolgreich generiert! 🎉',
-          description: `${successCount} Bilder wurden erfolgreich erstellt.`,
+          title: '🎉 Alle Bilder erfolgreich generiert!',
+          description: `${successCount} Bilder wurden mit 3 parallelen Prozessen erstellt.`,
         });
-      } else if (successCount > 0 && errorCount > 0) {
+      } else if (successCount > 0) {
         toast({
-          title: 'Teilweise erfolgreich',
-          description: `${successCount} Bilder erstellt, ${errorCount} fehlgeschlagen.`,
+          title: 'Batch-Verarbeitung abgeschlossen',
+          description: `${successCount} Bilder erstellt, ${failureCount} fehlgeschlagen.`,
           variant: 'default'
         });
       } else {
         toast({
-          title: 'Bildgenerierung fehlgeschlagen',
-          description: `Alle ${errorCount} Versuche sind fehlgeschlagen.`,
+          title: 'Batch-Verarbeitung fehlgeschlagen',
+          description: `Alle ${failureCount} Versuche sind fehlgeschlagen.`,
           variant: 'destructive'
         });
       }
@@ -299,15 +252,16 @@ const BlogPostsView: React.FC = () => {
       clearSelection();
       
     } catch (err: any) {
-      console.error('[BlogPostsView] Batch operation failed:', err);
+      console.error('[BlogPostsView] Concurrent batch operation failed:', err);
       toast({ 
         title: 'Batch-Operation fehlgeschlagen', 
-        description: err.message || 'Unbekannter Fehler bei der Batch-Verarbeitung', 
+        description: err.message || 'Unbekannter Fehler bei der parallelen Verarbeitung', 
         variant: 'destructive' 
       });
     } finally {
       setAbortController(null);
       setBulkLoading(false);
+      setBatchProgress(undefined);
       setProgress(0);
     }
   };
@@ -385,6 +339,7 @@ const BlogPostsView: React.FC = () => {
           onCancel={cancelOperation}
           loading={bulkLoading}
           progress={progress}
+          batchProgress={batchProgress}
         />
 
         <BlogPostsTable

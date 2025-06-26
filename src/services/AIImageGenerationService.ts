@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 export interface ImageGenerationOptions {
@@ -16,10 +15,30 @@ export interface GeneratedImage {
   warning?: string;
 }
 
+export interface BatchProgress {
+  total: number;
+  completed: number;
+  inProgress: number;
+  failed: number;
+  results: BatchImageResult[];
+}
+
+export interface BatchImageResult {
+  id: string;
+  title: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  imageUrl?: string;
+  thumbnailUrl?: string;
+  error?: string;
+  model?: string;
+  warning?: string;
+}
+
 class AIImageGenerationService {
   private readonly FALLBACK_IMAGE = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
   private readonly MAX_RETRIES = 2;
   private readonly RETRY_DELAY = 3000; // 3 seconds
+  private readonly CONCURRENT_LIMIT = 3; // 3 simultaneous processes
 
   async generateBlogImage(options: ImageGenerationOptions): Promise<GeneratedImage> {
     console.log('[AIImageGeneration] Starting generation for:', options.title);
@@ -121,6 +140,127 @@ class AIImageGenerationService {
       model: 'static-fallback',
       warning: 'Alle Bildgenerierungsversuche fehlgeschlagen - Standard-Bild verwendet'
     };
+  }
+
+  async generateImagesInBatches(
+    posts: Array<{ id: string; title: string; content: string; category: string }>,
+    onProgress: (progress: BatchProgress) => void
+  ): Promise<BatchImageResult[]> {
+    console.log(`[AIImageGeneration] Starting batch generation for ${posts.length} posts with ${this.CONCURRENT_LIMIT} concurrent processes`);
+    
+    const results: BatchImageResult[] = posts.map(post => ({
+      id: post.id,
+      title: post.title,
+      status: 'pending' as const
+    }));
+
+    // Initialize progress
+    const progress: BatchProgress = {
+      total: posts.length,
+      completed: 0,
+      inProgress: 0,
+      failed: 0,
+      results: [...results]
+    };
+    onProgress(progress);
+
+    // Process in batches of CONCURRENT_LIMIT
+    for (let i = 0; i < posts.length; i += this.CONCURRENT_LIMIT) {
+      const batch = posts.slice(i, i + this.CONCURRENT_LIMIT);
+      
+      // Start all processes in the batch simultaneously
+      const batchPromises = batch.map(async (post, batchIndex) => {
+        const resultIndex = i + batchIndex;
+        
+        try {
+          // Update status to processing
+          results[resultIndex].status = 'processing';
+          progress.inProgress++;
+          onProgress({ ...progress, results: [...results] });
+
+          // Add staggered delay to avoid hitting rate limits
+          const delay = batchIndex * 1000; // 1 second between starts
+          if (delay > 0) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+
+          console.log(`[AIImageGeneration] Processing post ${resultIndex + 1}/${posts.length}: "${post.title}"`);
+
+          // Generate image
+          const generatedImage = await this.generateBlogImage({
+            title: post.title,
+            content: post.content,
+            category: post.category
+          });
+
+          // Create thumbnail URL
+          const thumbnailUrl = this.createThumbnailUrl(generatedImage.url);
+
+          // Update database
+          const { error: updateError } = await supabase
+            .from('blog_posts')
+            .update({ featured_image: generatedImage.url })
+            .eq('id', post.id);
+
+          if (updateError) {
+            throw new Error(`Datenbank-Update fehlgeschlagen: ${updateError.message}`);
+          }
+
+          // Update result
+          results[resultIndex] = {
+            ...results[resultIndex],
+            status: 'completed',
+            imageUrl: generatedImage.url,
+            thumbnailUrl,
+            model: generatedImage.model,
+            warning: generatedImage.warning
+          };
+
+          progress.completed++;
+          progress.inProgress--;
+          
+          console.log(`[AIImageGeneration] Successfully processed post ${resultIndex + 1}/${posts.length}`);
+
+        } catch (error) {
+          console.error(`[AIImageGeneration] Failed to process post ${resultIndex + 1}:`, error);
+          
+          results[resultIndex] = {
+            ...results[resultIndex],
+            status: 'failed',
+            error: error instanceof Error ? error.message : 'Unbekannter Fehler'
+          };
+
+          progress.failed++;
+          progress.inProgress--;
+        }
+
+        onProgress({ ...progress, results: [...results] });
+      });
+
+      // Wait for the batch to complete
+      await Promise.all(batchPromises);
+      
+      // Add delay between batches (except for the last one)
+      if (i + this.CONCURRENT_LIMIT < posts.length) {
+        console.log('[AIImageGeneration] Waiting 2 seconds before next batch...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+
+    console.log(`[AIImageGeneration] Batch generation completed. Success: ${progress.completed}, Failed: ${progress.failed}`);
+    return results;
+  }
+
+  private createThumbnailUrl(imageUrl: string): string {
+    // If it's an Unsplash URL, create a thumbnail version
+    if (imageUrl.includes('unsplash.com')) {
+      return imageUrl.includes('?') 
+        ? `${imageUrl}&w=100&h=100&fit=crop`
+        : `${imageUrl}?w=100&h=100&fit=crop`;
+    }
+    
+    // For other URLs, return as-is (could be enhanced with image processing)
+    return imageUrl;
   }
 
   private createImagePrompt(options: ImageGenerationOptions): string {
