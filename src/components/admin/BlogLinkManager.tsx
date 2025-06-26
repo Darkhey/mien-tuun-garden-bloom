@@ -59,13 +59,14 @@ const BlogLinkManager: React.FC<BlogLinkManagerProps> = ({
         .select('id, title, slug, category, excerpt')
         .eq('status', 'veröffentlicht')
         .neq('id', postId)
-        .order('created_at', { ascending: false });
+        .order('published_at', { ascending: false });
 
       if (error) throw error;
       setAvailablePosts(data || []);
       setFilteredPosts(data || []);
     } catch (error) {
-      console.error('Fehler beim Laden der Blog-Posts:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      console.error('Fehler beim Laden der Blog-Posts:', message, error);
     }
   };
 
