@@ -1,14 +1,15 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search, Loader2, Triangle as ExclamationTriangle } from "lucide-react";
+import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search, Loader2, Triangle as ExclamationTriangle, RefreshCcw, Database, Zap } from "lucide-react";
 import { contentStrategyService, ContentStrategy, ContentCalendarEntry } from "@/services/ContentStrategyService";
 import { contextAnalyzer, ContentGap } from "@/services/ContextAnalyzer";
 import { blogAnalyticsService, TrendKeyword } from "@/services/BlogAnalyticsService";
 import { contentInsightsService, CategoryStat, ContentSuggestion, ScheduledPost } from "@/services/ContentInsightsService";
+import { ContentStrategyCacheService } from "@/services/ContentStrategyCacheService";
+import { TrendSourceService, EnhancedTrend } from "@/services/TrendSourceService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,20 +24,46 @@ const ContentStrategyDashboard: React.FC = () => {
   const [strategies, setStrategies] = useState<ContentStrategy[]>([]);
   const [calendar, setCalendar] = useState<ContentCalendarEntry[]>([]);
   const [scheduled, setScheduled] = useState<ScheduledPost[]>([]);
-  const [trends, setTrends] = useState<TrendKeyword[]>([]);
+  const [enhancedTrends, setEnhancedTrends] = useState<EnhancedTrend[]>([]);
   const [gaps, setGaps] = useState<ContentGap[]>([]);
   const [keywordGaps, setKeywordGaps] = useState<TrendKeyword[]>([]);
   const [suggestions, setSuggestions] = useState<ContentSuggestion[]>([]);
   const [categoryStats, setCategoryStats] = useState<CategoryStat[]>([]);
   const [loading, setLoading] = useState(false);
   const [creatingArticle, setCreatingArticle] = useState<string | null>(null);
+  const [cacheAge, setCacheAge] = useState<number | null>(null);
+  const [usingCache, setUsingCache] = useState(false);
   const { toast } = useToast();
 
-  const loadStrategicData = async () => {
+  const loadStrategicData = async (forceRefresh: boolean = false) => {
     setLoading(true);
+    setUsingCache(false);
+    
     try {
-      console.log("[StrategyDashboard] Loading strategic data");
+      console.log("[StrategyDashboard] Loading strategic data", forceRefresh ? "(force refresh)" : "");
       
+      // Versuche zuerst Cache zu laden
+      if (!forceRefresh) {
+        const cachedData = ContentStrategyCacheService.getCachedData();
+        if (cachedData) {
+          console.log("[StrategyDashboard] Using cached data");
+          setStrategies(cachedData.strategies);
+          setCalendar(cachedData.calendar);
+          setScheduled(cachedData.scheduled);
+          setEnhancedTrends(TrendSourceService.enhanceTrends(cachedData.trends));
+          setGaps(cachedData.gaps);
+          setKeywordGaps(cachedData.keywordGaps);
+          setSuggestions(cachedData.suggestions);
+          setCategoryStats(cachedData.categoryStats);
+          setCacheAge(ContentStrategyCacheService.getCacheAge());
+          setUsingCache(true);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Neue Daten laden
+      console.log("[StrategyDashboard] Loading fresh data from services");
       const [strategiesData, posts, trendsData, gapsData, insights] = await Promise.all([
         contentStrategyService.generateContentStrategy({ timeframe: 4 }),
         blogAnalyticsService.fetchBlogPosts(),
@@ -47,21 +74,45 @@ const ContentStrategyDashboard: React.FC = () => {
 
       const existing = blogAnalyticsService.extractKeywords(posts);
       const kwGaps = blogAnalyticsService.findKeywordGaps(trendsData, existing);
+      const calendarData = await contentStrategyService.generateContentCalendar(strategiesData, 2);
 
+      // Daten in Cache speichern
+      ContentStrategyCacheService.saveData({
+        strategies: strategiesData,
+        calendar: calendarData.slice(0, 10),
+        trends: trendsData.slice(0, 6),
+        gaps: gapsData,
+        keywordGaps: kwGaps,
+        suggestions: insights.suggestions.slice(0, 5),
+        categoryStats: insights.categoryStats,
+        scheduled: insights.scheduled.slice(0, 5)
+      });
+
+      // State aktualisieren
       setStrategies(strategiesData);
-      setTrends(trendsData.slice(0, 6));
+      setEnhancedTrends(TrendSourceService.enhanceTrends(trendsData.slice(0, 6)));
       setGaps(gapsData);
       setKeywordGaps(kwGaps);
       setCategoryStats(insights.categoryStats);
       setSuggestions(insights.suggestions.slice(0, 5));
       setScheduled(insights.scheduled.slice(0, 5));
-
-      const calendarData = await contentStrategyService.generateContentCalendar(strategiesData, 2);
       setCalendar(calendarData.slice(0, 10));
+      setCacheAge(0);
       
-      console.log("[StrategyDashboard] Data loaded successfully");
+      console.log("[StrategyDashboard] Fresh data loaded and cached successfully");
+      
+      toast({
+        title: "Daten aktualisiert",
+        description: "Neue Analyse wurde erfolgreich durchgeführt",
+      });
+      
     } catch (error) {
       console.error("[StrategyDashboard] Error loading data:", error);
+      toast({
+        title: "Fehler beim Laden",
+        description: "Daten konnten nicht aktualisiert werden",
+        variant: "destructive",
+      });
     }
     setLoading(false);
   };
@@ -108,14 +159,14 @@ const ContentStrategyDashboard: React.FC = () => {
         description: `"${topic}" wurde erfolgreich veröffentlicht`,
       });
 
-      // Daten neu laden
-      console.log("[StrategyDashboard] Reloading data after article creation");
-      await loadStrategicData();
+      // Cache löschen um neue Daten zu laden
+      console.log("[StrategyDashboard] Clearing cache after article creation");
+      ContentStrategyCacheService.clearCache();
+      await loadStrategicData(true);
       
     } catch (error: any) {
       console.error("[StrategyDashboard] Error creating article:", error);
       
-      // Better error handling with specific messages
       let errorMessage = "Artikel konnte nicht erstellt werden";
       
       if (error.message?.includes("Failed to fetch")) {
@@ -173,9 +224,25 @@ const ContentStrategyDashboard: React.FC = () => {
         <div>
           <h2 className="text-2xl font-bold">Content Strategy Dashboard</h2>
           <p className="text-gray-600">KI-gesteuerte Content-Planung und Trend-Analyse</p>
+          {usingCache && cacheAge !== null && (
+            <div className="flex items-center gap-2 mt-1 text-sm text-blue-600">
+              <Database className="h-4 w-4" />
+              <span>Cache verwendet (vor {cacheAge} Min. aktualisiert)</span>
+            </div>
+          )}
         </div>
-        <Button onClick={loadStrategicData} disabled={loading}>
-          {loading ? "Analysiere..." : "Daten aktualisieren"}
+        <Button onClick={() => loadStrategicData(true)} disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Analysiere...
+            </>
+          ) : (
+            <>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Daten aktualisieren
+            </>
+          )}
         </Button>
       </div>
 
@@ -196,33 +263,84 @@ const ContentStrategyDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Trend-Übersicht */}
+      {/* Erweiterte Trend-Übersicht */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Aktuelle Trends
+            Aktuelle Trends mit Quellen
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {trends.map((trend, idx) => (
-              <div key={idx} className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                   onClick={() => handleCreateArticle(trend.keyword, trend.category)}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">{trend.keyword}</span>
-                  <Badge variant="outline">{Math.round(trend.relevance * 100)}%</Badge>
-                </div>
-                <div className="text-sm text-gray-600 mb-2">
-                  {trend.category}
-                </div>
-                <Progress value={trend.relevance * 100} className="h-2" />
-                {creatingArticle === trend.keyword && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-blue-600">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Erstelle Artikel...
+          <div className="space-y-4">
+            {enhancedTrends.map((trend, idx) => (
+              <div key={idx} className="p-4 border rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-lg">{trend.keyword}</span>
+                      <Badge variant="outline">{Math.round(trend.relevance * 100)}%</Badge>
+                      {trend.confidence && (
+                        <Badge variant="secondary" className="text-xs">
+                          {trend.confidence}% Vertrauen
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-600 mb-2">
+                      {trend.category} 
+                      {trend.seasonality && (
+                        <span className="ml-2 text-blue-600">• {trend.seasonality}</span>
+                      )}
+                      {trend.searchVolume && (
+                        <span className="ml-2 text-green-600">• ~{trend.searchVolume} Suchanfragen/Monat</span>
+                      )}
+                    </div>
                   </div>
-                )}
+                </div>
+                
+                {/* Quellen-Information */}
+                <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="text-sm font-medium mb-2">Datenquellen:</div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {trend.sources.map((source, sourceIdx) => (
+                      <div key={sourceIdx} className="flex items-center gap-2 text-xs">
+                        <span className="text-lg">{TrendSourceService.getSourceIcon(source.type)}</span>
+                        <div>
+                          <span className="font-medium">{source.name}</span>
+                          <span className={`ml-1 ${TrendSourceService.getReliabilityColor(source.reliability)}`}>
+                            ({source.reliability}%)
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    {trend.sources[0]?.description}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Progress value={trend.relevance * 100} className="h-2 flex-1 mr-4" />
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleCreateArticle(trend.keyword, trend.category)}
+                    disabled={creatingArticle === trend.keyword}
+                    className="flex items-center gap-2"
+                  >
+                    {creatingArticle === trend.keyword ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Erstelle...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-3 w-3" />
+                        Artikel generieren
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -240,22 +358,29 @@ const ContentStrategyDashboard: React.FC = () => {
         <CardContent>
           <div className="space-y-3">
             {gaps.map((gap, idx) => (
-              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                   onClick={() => handleCreateArticle(gap.topic, 'garten', undefined, gap.urgency > 0.8 ? 'high' : 'medium')}>
+              <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
                   <div className="font-medium">{gap.topic}</div>
                   <div className="text-sm text-gray-600">{gap.reason}</div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${getUrgencyColor(gap.urgency > 0.8 ? 'high' : 'medium')}`} />
-                  <span className="text-sm">{Math.round(gap.urgency * 100)}% Priorität</span>
-                </div>
-                {creatingArticle === gap.topic && (
-                  <div className="flex items-center gap-2 ml-2 text-sm text-blue-600">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Erstelle...
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${getUrgencyColor(gap.urgency > 0.8 ? 'high' : 'medium')}`} />
+                    <span className="text-sm">{Math.round(gap.urgency * 100)}% Priorität</span>
                   </div>
-                )}
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleCreateArticle(gap.topic, 'garten', undefined, gap.urgency > 0.8 ? 'high' : 'medium')}
+                    disabled={creatingArticle === gap.topic}
+                  >
+                    {creatingArticle === gap.topic ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      'Artikel erstellen'
+                    )}
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
@@ -455,13 +580,13 @@ const ContentStrategyDashboard: React.FC = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Button variant="outline" className="h-auto p-4 flex flex-col items-start"
-                    onClick={() => trends[0] && handleCreateArticle(trends[0].keyword, trends[0].category)}
-                    disabled={!trends[0] || creatingArticle === trends[0]?.keyword}>
+                    onClick={() => enhancedTrends[0] && handleCreateArticle(enhancedTrends[0].keyword, enhancedTrends[0].category)}
+                    disabled={!enhancedTrends[0] || creatingArticle === enhancedTrends[0]?.keyword}>
               <div className="font-medium mb-1">Top-Trend Content</div>
               <div className="text-sm text-gray-600">
-                {trends[0] ? `Artikel zu ${trends[0].keyword} erstellen` : 'Keine Trends'}
+                {enhancedTrends[0] ? `Artikel zu ${enhancedTrends[0].keyword} erstellen` : 'Keine Trends'}
               </div>
-              {creatingArticle === trends[0]?.keyword && (
+              {creatingArticle === enhancedTrends[0]?.keyword && (
                 <Loader2 className="h-4 w-4 animate-spin mt-2" />
               )}
             </Button>
