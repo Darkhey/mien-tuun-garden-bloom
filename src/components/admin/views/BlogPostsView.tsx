@@ -187,15 +187,18 @@ const BlogPostsView: React.FC = () => {
       const results = await Promise.allSettled(
         selectedIds.map((id, idx) =>
           (async () => {
-            // Enhanced delay for better rate limiting (3-5 seconds)
-            const delay = 3000 + (idx * 2000); // 3s, 5s, 7s, 9s...
+            // Enhanced delay - 4-7 seconds between requests
+            const baseDelay = 4000; // 4 seconds base
+            const variableDelay = Math.random() * 3000; // 0-3 seconds random
+            const delay = baseDelay + variableDelay + (idx * 1000); // Additional second per item
+            
             await new Promise(res => setTimeout(res, delay));
             
             if (controller.signal.aborted) {
               throw new Error('Operation aborted by user');
             }
             
-            console.log(`[BlogPostsView] Processing post ${idx + 1}/${selectedIds.length} (ID: ${id})`);
+            console.log(`[BlogPostsView] Processing post ${idx + 1}/${selectedIds.length} (ID: ${id}) after ${Math.round(delay/1000)}s delay`);
             
             const { data, error } = await supabase
               .from('blog_posts')
@@ -214,7 +217,7 @@ const BlogPostsView: React.FC = () => {
 
             console.log(`[BlogPostsView] Generating image for: "${data.title}"`);
             
-            // Enhanced image generation with better error handling
+            // Generate image with enhanced error handling
             const generatedImage = await aiImageGenerationService.generateBlogImage({
               title: data.title,
               content: data.content || '',
@@ -231,7 +234,7 @@ const BlogPostsView: React.FC = () => {
               hasWarning: !!generatedImage.warning
             });
 
-            // Update database with new image
+            // Update database
             const { error: updateError } = await supabase
               .from('blog_posts')
               .update({ featured_image: generatedImage.url })
@@ -251,11 +254,6 @@ const BlogPostsView: React.FC = () => {
             setProgress(progressPercent);
             
             console.log(`[BlogPostsView] Successfully processed post ${idx + 1}/${selectedIds.length}`);
-            
-            // Show warning if fallback was used
-            if (generatedImage.warning) {
-              console.warn(`[BlogPostsView] Warning for ${data.title}:`, generatedImage.warning);
-            }
             
             return { id, success: true, warning: generatedImage.warning };
           })()
@@ -286,27 +284,17 @@ const BlogPostsView: React.FC = () => {
       } else if (successCount > 0 && errorCount > 0) {
         toast({
           title: 'Teilweise erfolgreich',
-          description: `${successCount} Bilder erstellt, ${errorCount} fehlgeschlagen. Details in der Konsole.`,
+          description: `${successCount} Bilder erstellt, ${errorCount} fehlgeschlagen.`,
           variant: 'default'
         });
-        
-        // Log detailed errors for debugging
-        console.group('[BlogPostsView] Detailed error report:');
-        errors.forEach(error => console.error(error));
-        console.groupEnd();
       } else {
         toast({
           title: 'Bildgenerierung fehlgeschlagen',
-          description: `Alle ${errorCount} Versuche sind fehlgeschlagen. Prüfen Sie die Konsole für Details.`,
+          description: `Alle ${errorCount} Versuche sind fehlgeschlagen.`,
           variant: 'destructive'
         });
-        
-        console.group('[BlogPostsView] All errors:');
-        errors.forEach(error => console.error(error));
-        console.groupEnd();
       }
 
-      // Reload data and clear selection
       loadBlogPosts();
       clearSelection();
       

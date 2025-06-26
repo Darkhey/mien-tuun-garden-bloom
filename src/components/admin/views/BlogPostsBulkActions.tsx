@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, AlertTriangle } from "lucide-react";
 
 interface BlogPostsBulkActionsProps {
   selectedCount: number;
@@ -48,7 +48,7 @@ const BlogPostsBulkActions: React.FC<BlogPostsBulkActionsProps> = ({
       </div>
       
       {loading && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="flex items-center justify-between text-sm">
             <span>Verarbeitung läuft...</span>
             <span>{progress}%</span>
@@ -59,7 +59,15 @@ const BlogPostsBulkActions: React.FC<BlogPostsBulkActionsProps> = ({
             <Info className="h-4 w-4" />
             <AlertDescription className="text-xs">
               Bildgenerierung kann mehrere Minuten dauern. 
-              Die Verarbeitung erfolgt mit optimierten Delays für bessere Zuverlässigkeit.
+              Optimierte Verzögerung zwischen Anfragen für bessere Zuverlässigkeit.
+            </AlertDescription>
+          </Alert>
+          
+          <Alert className="bg-amber-50 border-amber-200">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-xs text-amber-800">
+              <strong>Wichtiger Hinweis:</strong> Bei Fehlern werden automatisch Fallback-Bilder verwendet. 
+              Der Vorgang läuft auch bei einzelnen Fehlern weiter.
             </AlertDescription>
           </Alert>
         </div>

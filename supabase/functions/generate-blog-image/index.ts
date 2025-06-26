@@ -38,12 +38,12 @@ serve(async (req) => {
     let modelUsed = 'dall-e-2';
     let imageBase64 = null;
 
-    // Enhanced image generation with better error handling
+    // Try dall-e-3 first, then fall back to dall-e-2
     try {
-      console.log(`[${requestId}] Attempting image generation with gpt-image-1...`);
+      console.log(`[${requestId}] Attempting image generation with dall-e-3...`);
       
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout for dall-e-3
       
       const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
@@ -52,12 +52,12 @@ serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-image-1',
-          prompt: prompt,
+          model: 'dall-e-3',
+          prompt: prompt.length > 4000 ? prompt.substring(0, 4000) : prompt,
           n: 1,
           size: '1024x1024',
-          quality: 'high',
-          output_format: 'png'
+          quality: 'standard',
+          response_format: 'b64_json'
         }),
         signal: controller.signal
       });
@@ -66,32 +66,20 @@ serve(async (req) => {
 
       if (imageResponse.ok) {
         imageData = await imageResponse.json();
-        modelUsed = 'gpt-image-1';
-        console.log(`[${requestId}] gpt-image-1 succeeded`);
-        
-        // Handle different response formats
-        if (imageData.data?.[0]?.b64_json) {
-          imageBase64 = imageData.data[0].b64_json;
-        } else if (imageData.data?.[0]?.url) {
-          // Download image from URL and convert to base64
-          const imgResponse = await fetch(imageData.data[0].url);
-          const imgBuffer = await imgResponse.arrayBuffer();
-          imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
-        }
+        modelUsed = 'dall-e-3';
+        imageBase64 = imageData.data[0].b64_json;
+        console.log(`[${requestId}] dall-e-3 succeeded`);
       } else {
         const errorText = await imageResponse.text();
-        console.log(`[${requestId}] gpt-image-1 failed:`, imageResponse.status, errorText);
-        throw new Error(`gpt-image-1 failed: ${imageResponse.status}`);
+        console.log(`[${requestId}] dall-e-3 failed:`, imageResponse.status, errorText);
+        throw new Error(`dall-e-3 failed: ${imageResponse.status}`);
       }
-    } catch (gptImageError) {
+    } catch (dalle3Error) {
       console.log(`[${requestId}] Falling back to dall-e-2...`);
-      
-      // Fallback to dall-e-2 with shorter prompt
-      const fallbackPrompt = prompt.length > 1000 ? prompt.substring(0, 1000) : prompt;
       
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout for dall-e-2
         
         const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
           method: 'POST',
@@ -101,7 +89,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             model: 'dall-e-2',
-            prompt: fallbackPrompt,
+            prompt: prompt.length > 1000 ? prompt.substring(0, 1000) : prompt,
             n: 1,
             size: '1024x1024',
             response_format: 'b64_json'
@@ -124,9 +112,9 @@ serve(async (req) => {
       } catch (dalleError) {
         console.error(`[${requestId}] Both AI models failed:`, dalleError);
         
-        // Use fallback static image
+        // Return fallback image immediately
         const fallbackImageUrl = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
-        console.log(`[${requestId}] Using fallback image:`, fallbackImageUrl);
+        console.log(`[${requestId}] Using static fallback image:`, fallbackImageUrl);
         
         return new Response(
           JSON.stringify({ 
@@ -147,7 +135,7 @@ serve(async (req) => {
       throw new Error('Keine Bilddaten erhalten');
     }
 
-    // Enhanced storage upload with retry and fallback
+    // Enhanced storage upload with retry mechanism
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
     
     const timestamp = Date.now();
@@ -163,7 +151,7 @@ serve(async (req) => {
     try {
       console.log(`[${requestId}] Attempting storage upload...`);
       
-      // Convert Base64 to Uint8Array with better error handling
+      // Convert Base64 to Uint8Array
       const byteCharacters = atob(imageBase64);
       const byteNumbers = new Array(byteCharacters.length);
       
@@ -174,7 +162,7 @@ serve(async (req) => {
       const byteArray = new Uint8Array(byteNumbers);
       console.log(`[${requestId}] Image size: ${byteArray.length} bytes`);
 
-      // Upload to Supabase Storage with retry
+      // Upload with retry mechanism
       let uploadAttempts = 0;
       const maxUploadAttempts = 3;
       
@@ -196,7 +184,7 @@ serve(async (req) => {
             if (uploadAttempts === maxUploadAttempts) {
               throw uploadError;
             }
-            // Wait before retry
+            // Wait before retry (exponential backoff)
             await new Promise(resolve => setTimeout(resolve, 1000 * uploadAttempts));
           } else {
             uploadSuccess = true;
@@ -223,6 +211,7 @@ serve(async (req) => {
       
       // Fallback: Return base64 data URI
       publicUrl = `data:image/png;base64,${imageBase64}`;
+      uploadSuccess = false;
       console.log(`[${requestId}] Using base64 data URI as fallback`);
     }
 
@@ -251,7 +240,7 @@ serve(async (req) => {
   } catch (error) {
     console.error(`[${requestId}] Critical error:`, error);
     
-    // Enhanced error response with more details
+    // Enhanced error response with fallback
     const errorResponse = {
       error: 'Bildgenerierung fehlgeschlagen',
       details: error.message,

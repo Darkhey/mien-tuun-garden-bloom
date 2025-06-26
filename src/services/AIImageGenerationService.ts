@@ -19,7 +19,7 @@ export interface GeneratedImage {
 class AIImageGenerationService {
   private readonly FALLBACK_IMAGE = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
   private readonly MAX_RETRIES = 2;
-  private readonly RETRY_DELAY = 2000; // 2 seconds
+  private readonly RETRY_DELAY = 3000; // 3 seconds
 
   async generateBlogImage(options: ImageGenerationOptions): Promise<GeneratedImage> {
     console.log('[AIImageGeneration] Starting generation for:', options.title);
@@ -112,53 +112,15 @@ class AIImageGenerationService {
       }
     }
 
-    // All retries failed - use local fallback
-    console.error('[AIImageGeneration] All attempts failed, using local fallback');
+    // All retries failed - use fallback
+    console.error('[AIImageGeneration] All attempts failed, using fallback');
     
-    try {
-      const fallbackUrl = await this.getUnsplashFallback(options.category || 'garden');
-      return {
-        url: fallbackUrl,
-        prompt,
-        model: 'unsplash-fallback',
-        warning: 'AI-Generierung fehlgeschlagen - Unsplash-Fallback verwendet'
-      };
-    } catch (fallbackError) {
-      console.error('[AIImageGeneration] Even fallback failed:', fallbackError);
-      
-      return {
-        url: this.FALLBACK_IMAGE,
-        prompt,
-        model: 'static-fallback',
-        warning: 'Alle Bildquellen fehlgeschlagen - Standard-Bild verwendet'
-      };
-    }
-  }
-
-  private async getUnsplashFallback(category: string): Promise<string> {
-    const searchTerms = {
-      'garten': 'garden vegetables herbs',
-      'kochen': 'cooking kitchen food',
-      'rezepte': 'cooking ingredients',
-      'allgemein': 'nature garden'
+    return {
+      url: this.FALLBACK_IMAGE,
+      prompt,
+      model: 'static-fallback',
+      warning: 'Alle Bildgenerierungsversuche fehlgeschlagen - Standard-Bild verwendet'
     };
-    
-    const searchTerm = searchTerms[category.toLowerCase()] || 'garden nature';
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('unsplash-image-search', {
-        body: { query: searchTerm, count: 1 }
-      });
-
-      if (error || !data?.images?.[0]) {
-        throw new Error('Unsplash search failed');
-      }
-
-      return data.images[0].urls.regular;
-    } catch (error) {
-      console.error('[AIImageGeneration] Unsplash fallback failed:', error);
-      throw error;
-    }
   }
 
   private createImagePrompt(options: ImageGenerationOptions): string {
@@ -214,41 +176,6 @@ class AIImageGenerationService {
     ];
     
     return relevantKeywords.filter(keyword => text.includes(keyword));
-  }
-
-  async uploadImageToSupabase(imageBase64: string, filename: string): Promise<string> {
-    try {
-      const base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/png' });
-      
-      const { data, error } = await supabase.storage
-        .from('blog-images')
-        .upload(`generated/${filename}`, blob, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (error) {
-        throw error;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('blog-images')
-        .getPublicUrl(`generated/${filename}`);
-
-      return publicUrl;
-    } catch (error) {
-      console.error('[AIImageGeneration] Upload error:', error);
-      throw new Error(`Bild-Upload fehlgeschlagen: ${error.message}`);
-    }
   }
 }
 
