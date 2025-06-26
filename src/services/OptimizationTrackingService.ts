@@ -11,6 +11,7 @@ export interface OptimizationResult {
   changes?: string[];
   aiProvider?: string;
   model?: string;
+  imageUrl?: string;
 }
 
 export interface OptimizationBatch {

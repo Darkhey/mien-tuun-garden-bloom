@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
@@ -17,21 +17,22 @@ import BlogPostsFilter from './BlogPostsFilter';
 import BlogPostsTable from './BlogPostsTable';
 import EnhancedBlogPostsBulkActions from './EnhancedBlogPostsBulkActions';
 import EditBlogPostModal from '../EditBlogPostModal';
+import { BLOG_CATEGORIES } from '../blogHelpers';
+import InstagramPostModal from '../InstagramPostModal';
 
 const BlogPostsView: React.FC = () => {
   const { toast } = useToast();
-  const { blogPosts, categories, loading, loadBlogPosts } = useBlogPostsData();
-  const { selectedIds, toggleSelection, clearSelection, isSelected, selectAll, hasSelection } = useSelection();
-  const { 
-    editingPost, 
-    setEditingPost, 
-    showCreateModal, 
-    setShowCreateModal, 
-    handleEdit, 
-    handleDelete, 
-    handleToggleStatus, 
-    handleSavePost 
-  } = useBlogPostModals(loadBlogPosts, toast);
+  const { posts, loading, instagramStatuses, loadBlogPosts, loadInstagramStatuses, handleToggleStatus, handleDelete } = useBlogPostsData();
+  const { selectedIds, toggleSelect, toggleSelectAll, clearSelection } = useSelection();
+  const {
+    editingPost,
+    instagramPost,
+    handleEdit,
+    handleInstagramPost,
+    handleInstagramSuccess,
+    closeEditModal,
+    closeInstagramModal
+  } = useBlogPostModals(loadBlogPosts, loadInstagramStatuses);
   
   const {
     search,
@@ -43,7 +44,7 @@ const BlogPostsView: React.FC = () => {
     direction,
     setDirection,
     sortedPosts
-  } = useBlogPostFiltering(blogPosts);
+  } = useBlogPostFiltering(posts);
 
   const {
     bulkLoading,
@@ -67,10 +68,9 @@ const BlogPostsView: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <BlogPostsHeader 
-        onCreateNew={() => setShowCreateModal(true)}
-        totalCount={blogPosts.length}
-        filteredCount={sortedPosts.length}
+      <BlogPostsHeader
+        postsCount={posts.length}
+        onRefresh={loadBlogPosts}
       />
 
       <EnhancedBlogPostsBulkActions
@@ -99,19 +99,19 @@ const BlogPostsView: React.FC = () => {
               setSort={setSort}
               direction={direction}
               setDirection={setDirection}
-              categories={categories}
+              categories={BLOG_CATEGORIES}
             />
 
             <BlogPostsTable
               posts={sortedPosts}
+              instagramStatuses={instagramStatuses}
               selectedIds={selectedIds}
-              onToggleSelection={toggleSelection}
-              onSelectAll={() => selectAll(sortedPosts.map(p => p.id))}
+              onToggleSelect={toggleSelect}
+              onToggleSelectAll={toggleSelectAll}
               onEdit={handleEdit}
+              onInstagramPost={handleInstagramPost}
               onDelete={handleDelete}
               onToggleStatus={handleToggleStatus}
-              isSelected={isSelected}
-              hasSelection={hasSelection}
             />
           </div>
         </CardContent>
@@ -120,8 +120,17 @@ const BlogPostsView: React.FC = () => {
       {editingPost && (
         <EditBlogPostModal
           post={editingPost}
-          onClose={() => setEditingPost(null)}
-          onSaved={handleSavePost}
+          onClose={closeEditModal}
+          onSaved={closeEditModal}
+        />
+      )}
+
+      {instagramPost && (
+        <InstagramPostModal
+          post={instagramPost}
+          isOpen={true}
+          onClose={closeInstagramModal}
+          onSuccess={handleInstagramSuccess}
         />
       )}
     </div>
