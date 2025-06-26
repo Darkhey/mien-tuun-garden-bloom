@@ -40,6 +40,10 @@ class AIImageGenerationService {
   private readonly RETRY_DELAY = 3000; // 3 seconds
   private readonly CONCURRENT_LIMIT = 3; // 3 simultaneous processes
 
+  private delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
   async generateBlogImage(options: ImageGenerationOptions): Promise<GeneratedImage> {
     console.log('[AIImageGeneration] Starting generation for:', options.title);
     
@@ -68,7 +72,7 @@ class AIImageGenerationService {
           
           if (attempt < this.MAX_RETRIES) {
             console.log(`[AIImageGeneration] Waiting ${this.RETRY_DELAY}ms before retry...`);
-            await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
+            await this.delay(this.RETRY_DELAY);
             continue;
           }
           throw lastError;
@@ -79,7 +83,7 @@ class AIImageGenerationService {
           lastError = new Error('Keine Daten von der Edge Function erhalten');
           
           if (attempt < this.MAX_RETRIES) {
-            await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
+            await this.delay(this.RETRY_DELAY);
             continue;
           }
           throw lastError;
@@ -101,7 +105,7 @@ class AIImageGenerationService {
           lastError = new Error('Keine Bild-URL in der Antwort');
           
           if (attempt < this.MAX_RETRIES) {
-            await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
+            await this.delay(this.RETRY_DELAY);
             continue;
           }
           throw lastError;
@@ -126,7 +130,7 @@ class AIImageGenerationService {
         
         if (attempt < this.MAX_RETRIES) {
           console.log(`[AIImageGeneration] Waiting ${this.RETRY_DELAY}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
+          await this.delay(this.RETRY_DELAY);
         }
       }
     }
@@ -181,7 +185,7 @@ class AIImageGenerationService {
           // Add staggered delay to avoid hitting rate limits
           const delay = batchIndex * 1000; // 1 second between starts
           if (delay > 0) {
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await this.delay(delay);
           }
 
           console.log(`[AIImageGeneration] Processing post ${resultIndex + 1}/${posts.length}: "${post.title}"`);
@@ -243,7 +247,7 @@ class AIImageGenerationService {
       // Add delay between batches (except for the last one)
       if (i + this.CONCURRENT_LIMIT < posts.length) {
         console.log('[AIImageGeneration] Waiting 2 seconds before next batch...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await this.delay(2000);
       }
     }
 
