@@ -17,10 +17,14 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const requestId = crypto.randomUUID();
+  console.log(`[${requestId}] Starting image generation request`);
+
   try {
     const { prompt, context } = await req.json();
     
-    console.log('[generate-blog-image] Generating image with prompt:', prompt);
+    console.log(`[${requestId}] Prompt:`, prompt?.substring(0, 100) + '...');
+    console.log(`[${requestId}] Context:`, { title: context?.title, category: context?.category });
 
     if (!prompt || typeof prompt !== 'string') {
       throw new Error('Gültiger Prompt erforderlich');
@@ -32,10 +36,15 @@ serve(async (req) => {
 
     let imageData = null;
     let modelUsed = 'dall-e-2';
+    let imageBase64 = null;
 
-    // Versuche zuerst gpt-image-1 (falls verfügbar)
+    // Enhanced image generation with better error handling
     try {
-      console.log('[generate-blog-image] Trying gpt-image-1 first...');
+      console.log(`[${requestId}] Attempting image generation with gpt-image-1...`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
+      
       const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
         method: 'POST',
         headers: {
@@ -50,71 +59,97 @@ serve(async (req) => {
           quality: 'high',
           output_format: 'png'
         }),
+        signal: controller.signal
       });
 
-      if (imageResponse.ok && imageResponse.status === 200) {
+      clearTimeout(timeoutId);
+
+      if (imageResponse.ok) {
         imageData = await imageResponse.json();
         modelUsed = 'gpt-image-1';
-        console.log('[generate-blog-image] gpt-image-1 succeeded');
+        console.log(`[${requestId}] gpt-image-1 succeeded`);
+        
+        // Handle different response formats
+        if (imageData.data?.[0]?.b64_json) {
+          imageBase64 = imageData.data[0].b64_json;
+        } else if (imageData.data?.[0]?.url) {
+          // Download image from URL and convert to base64
+          const imgResponse = await fetch(imageData.data[0].url);
+          const imgBuffer = await imgResponse.arrayBuffer();
+          imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+        }
       } else {
         const errorText = await imageResponse.text();
-        console.log('[generate-blog-image] gpt-image-1 failed, trying dall-e-2:', errorText);
-        throw new Error('gpt-image-1 not available');
+        console.log(`[${requestId}] gpt-image-1 failed:`, imageResponse.status, errorText);
+        throw new Error(`gpt-image-1 failed: ${imageResponse.status}`);
       }
     } catch (gptImageError) {
-      // Fallback zu dall-e-2
-      console.log('[generate-blog-image] Falling back to dall-e-2...');
+      console.log(`[${requestId}] Falling back to dall-e-2...`);
       
-      const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openAIApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'dall-e-2',
-          prompt: prompt.length > 1000 ? prompt.substring(0, 1000) : prompt, // dall-e-2 hat kürzere Prompt-Limits
-          n: 1,
-          size: '1024x1024',
-          response_format: 'b64_json'
-        }),
-      });
+      // Fallback to dall-e-2 with shorter prompt
+      const fallbackPrompt = prompt.length > 1000 ? prompt.substring(0, 1000) : prompt;
+      
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+        
+        const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'dall-e-2',
+            prompt: fallbackPrompt,
+            n: 1,
+            size: '1024x1024',
+            response_format: 'b64_json'
+          }),
+          signal: controller.signal
+        });
 
-      if (!imageResponse.ok || imageResponse.status !== 200) {
-        const errorText = await imageResponse.text();
-        console.error('[generate-blog-image] Both models failed. dall-e-2 error:', errorText);
-        throw new Error(`Beide Bildmodelle fehlgeschlagen: ${errorText}`);
+        clearTimeout(timeoutId);
+
+        if (!imageResponse.ok) {
+          const errorText = await imageResponse.text();
+          console.error(`[${requestId}] dall-e-2 also failed:`, imageResponse.status, errorText);
+          throw new Error(`dall-e-2 failed: ${imageResponse.status} - ${errorText}`);
+        }
+
+        imageData = await imageResponse.json();
+        modelUsed = 'dall-e-2';
+        imageBase64 = imageData.data[0].b64_json;
+        console.log(`[${requestId}] dall-e-2 succeeded as fallback`);
+      } catch (dalleError) {
+        console.error(`[${requestId}] Both AI models failed:`, dalleError);
+        
+        // Use fallback static image
+        const fallbackImageUrl = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
+        console.log(`[${requestId}] Using fallback image:`, fallbackImageUrl);
+        
+        return new Response(
+          JSON.stringify({ 
+            imageUrl: fallbackImageUrl,
+            filename: 'fallback-image.png',
+            prompt,
+            model: 'fallback',
+            warning: 'AI-Generierung fehlgeschlagen - Fallback-Bild verwendet'
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
       }
-
-      imageData = await imageResponse.json();
-      modelUsed = 'dall-e-2';
-      console.log('[generate-blog-image] dall-e-2 succeeded');
     }
 
-    if (!imageData?.data?.[0]) {
-      throw new Error('Keine Bilddaten von OpenAI erhalten');
+    if (!imageBase64) {
+      throw new Error('Keine Bilddaten erhalten');
     }
 
-    // Handle different response formats
-    let imageBase64;
-    if (modelUsed === 'gpt-image-1' && imageData.data[0].b64_json) {
-      imageBase64 = imageData.data[0].b64_json;
-    } else if (modelUsed === 'dall-e-2' && imageData.data[0].b64_json) {
-      imageBase64 = imageData.data[0].b64_json;
-    } else if (imageData.data[0].url) {
-      // Wenn URL zurückgegeben wird, lade das Bild herunter
-      const imageUrl = imageData.data[0].url;
-      const imageResponse = await fetch(imageUrl);
-      const imageBuffer = await imageResponse.arrayBuffer();
-      imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
-    } else {
-      throw new Error('Keine verwertbaren Bilddaten erhalten');
-    }
-
-    // Upload zu Supabase Storage
+    // Enhanced storage upload with retry and fallback
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
     
-    // Erstelle Dateiname basierend auf Kontext
     const timestamp = Date.now();
     const sanitizedTitle = context?.title?.toLowerCase()
       .replace(/[^a-z0-9]/g, '-')
@@ -122,56 +157,111 @@ serve(async (req) => {
       .substring(0, 50) || 'blog-image';
     const filename = `${sanitizedTitle}-${timestamp}.png`;
 
-    // Konvertiere Base64 zu Uint8Array
-    const byteCharacters = atob(imageBase64);
-    const byteNumbers = new Array(byteCharacters.length);
-    
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    let publicUrl = null;
+    let uploadSuccess = false;
+
+    try {
+      console.log(`[${requestId}] Attempting storage upload...`);
+      
+      // Convert Base64 to Uint8Array with better error handling
+      const byteCharacters = atob(imageBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      
+      const byteArray = new Uint8Array(byteNumbers);
+      console.log(`[${requestId}] Image size: ${byteArray.length} bytes`);
+
+      // Upload to Supabase Storage with retry
+      let uploadAttempts = 0;
+      const maxUploadAttempts = 3;
+      
+      while (uploadAttempts < maxUploadAttempts && !uploadSuccess) {
+        uploadAttempts++;
+        console.log(`[${requestId}] Upload attempt ${uploadAttempts}/${maxUploadAttempts}`);
+        
+        try {
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('blog-images')
+            .upload(`generated/${filename}`, byteArray, {
+              contentType: 'image/png',
+              cacheControl: '3600',
+              upsert: true
+            });
+
+          if (uploadError) {
+            console.error(`[${requestId}] Upload attempt ${uploadAttempts} failed:`, uploadError);
+            if (uploadAttempts === maxUploadAttempts) {
+              throw uploadError;
+            }
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 1000 * uploadAttempts));
+          } else {
+            uploadSuccess = true;
+            console.log(`[${requestId}] Upload successful:`, uploadData);
+            
+            // Get public URL
+            const { data: { publicUrl: storageUrl } } = supabase.storage
+              .from('blog-images')
+              .getPublicUrl(`generated/${filename}`);
+            
+            publicUrl = storageUrl;
+            console.log(`[${requestId}] Public URL generated:`, publicUrl);
+          }
+        } catch (attemptError) {
+          console.error(`[${requestId}] Upload attempt ${uploadAttempts} exception:`, attemptError);
+          if (uploadAttempts === maxUploadAttempts) {
+            throw attemptError;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000 * uploadAttempts));
+        }
+      }
+    } catch (storageError) {
+      console.error(`[${requestId}] Storage upload failed completely:`, storageError);
+      
+      // Fallback: Return base64 data URI
+      publicUrl = `data:image/png;base64,${imageBase64}`;
+      console.log(`[${requestId}] Using base64 data URI as fallback`);
     }
-    
-    const byteArray = new Uint8Array(byteNumbers);
 
-    // Upload zu Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('blog-images')
-      .upload(`generated/${filename}`, byteArray, {
-        contentType: 'image/png',
-        cacheControl: '3600',
-        upsert: true
-      });
+    const result = {
+      imageUrl: publicUrl,
+      filename,
+      prompt,
+      model: modelUsed,
+      uploadedToStorage: uploadSuccess,
+      requestId
+    };
 
-    if (uploadError) {
-      console.error('[generate-blog-image] Upload error:', uploadError);
-      throw new Error(`Storage Upload fehlgeschlagen: ${uploadError.message}`);
-    }
-
-    // Erhalte öffentliche URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('blog-images')
-      .getPublicUrl(`generated/${filename}`);
-
-    console.log('[generate-blog-image] Image uploaded successfully:', publicUrl);
+    console.log(`[${requestId}] Generation completed successfully:`, {
+      model: modelUsed,
+      uploadSuccess,
+      urlLength: publicUrl?.length
+    });
 
     return new Response(
-      JSON.stringify({ 
-        imageUrl: publicUrl,
-        filename,
-        prompt,
-        model: modelUsed
-      }),
+      JSON.stringify(result),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
 
   } catch (error) {
-    console.error('[generate-blog-image] Error:', error);
+    console.error(`[${requestId}] Critical error:`, error);
+    
+    // Enhanced error response with more details
+    const errorResponse = {
+      error: 'Bildgenerierung fehlgeschlagen',
+      details: error.message,
+      requestId,
+      timestamp: new Date().toISOString(),
+      fallbackImage: "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png"
+    };
+
     return new Response(
-      JSON.stringify({ 
-        error: 'Bildgenerierung fehlgeschlagen',
-        details: error.message 
-      }),
+      JSON.stringify(errorResponse),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

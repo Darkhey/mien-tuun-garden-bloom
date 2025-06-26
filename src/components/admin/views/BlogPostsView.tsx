@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { AdminBlogPost } from "@/types/admin";
@@ -177,56 +176,147 @@ const BlogPostsView: React.FC = () => {
     setAbortController(controller);
     setBulkLoading(true);
     setProgress(0);
+    
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+    
     try {
+      console.log(`[BlogPostsView] Starting batch image generation for ${selectedIds.length} posts`);
+      
       const results = await Promise.allSettled(
         selectedIds.map((id, idx) =>
           (async () => {
-            await new Promise(res => setTimeout(res, idx * 1000));
-            if (controller.signal.aborted) throw new Error('aborted');
+            // Enhanced delay for better rate limiting (3-5 seconds)
+            const delay = 3000 + (idx * 2000); // 3s, 5s, 7s, 9s...
+            await new Promise(res => setTimeout(res, delay));
+            
+            if (controller.signal.aborted) {
+              throw new Error('Operation aborted by user');
+            }
+            
+            console.log(`[BlogPostsView] Processing post ${idx + 1}/${selectedIds.length} (ID: ${id})`);
+            
             const { data, error } = await supabase
               .from('blog_posts')
               .select('title, content, category')
               .eq('id', id)
               .single();
 
-            if (error) throw error;
+            if (error) {
+              console.error(`[BlogPostsView] Failed to fetch post ${id}:`, error);
+              throw new Error(`Artikel laden fehlgeschlagen: ${error.message}`);
+            }
 
-            const { url } = await aiImageGenerationService.generateBlogImage({
+            if (controller.signal.aborted) {
+              throw new Error('Operation aborted by user');
+            }
+
+            console.log(`[BlogPostsView] Generating image for: "${data.title}"`);
+            
+            // Enhanced image generation with better error handling
+            const generatedImage = await aiImageGenerationService.generateBlogImage({
               title: data.title,
               content: data.content || '',
               category: data.category
             });
 
-            if (controller.signal.aborted) throw new Error('aborted');
+            if (controller.signal.aborted) {
+              throw new Error('Operation aborted by user');
+            }
 
+            console.log(`[BlogPostsView] Image generated for ${id}:`, {
+              url: generatedImage.url?.substring(0, 50) + '...',
+              model: generatedImage.model,
+              hasWarning: !!generatedImage.warning
+            });
+
+            // Update database with new image
             const { error: updateError } = await supabase
               .from('blog_posts')
-              .update({ featured_image: url })
+              .update({ featured_image: generatedImage.url })
               .eq('id', id);
 
-            if (updateError) throw updateError;
-            if (controller.signal.aborted) throw new Error('aborted');
-            setProgress(Math.round(((idx + 1) / selectedIds.length) * 100));
-            return id;
+            if (updateError) {
+              console.error(`[BlogPostsView] Failed to update post ${id}:`, updateError);
+              throw new Error(`Datenbank-Update fehlgeschlagen: ${updateError.message}`);
+            }
+
+            if (controller.signal.aborted) {
+              throw new Error('Operation aborted by user');
+            }
+
+            // Update progress
+            const progressPercent = Math.round(((idx + 1) / selectedIds.length) * 100);
+            setProgress(progressPercent);
+            
+            console.log(`[BlogPostsView] Successfully processed post ${idx + 1}/${selectedIds.length}`);
+            
+            // Show warning if fallback was used
+            if (generatedImage.warning) {
+              console.warn(`[BlogPostsView] Warning for ${data.title}:`, generatedImage.warning);
+            }
+            
+            return { id, success: true, warning: generatedImage.warning };
           })()
         )
       );
 
-      const failed = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[];
-      if (failed.length) {
+      // Analyze results
+      results.forEach((result, idx) => {
+        if (result.status === 'fulfilled') {
+          successCount++;
+          if (result.value.warning) {
+            console.log(`[BlogPostsView] Post ${idx + 1} completed with warning:`, result.value.warning);
+          }
+        } else {
+          errorCount++;
+          const errorMsg = result.reason?.message || 'Unbekannter Fehler';
+          errors.push(`Post ${idx + 1}: ${errorMsg}`);
+          console.error(`[BlogPostsView] Post ${idx + 1} failed:`, result.reason);
+        }
+      });
+
+      // Enhanced user feedback
+      if (successCount > 0 && errorCount === 0) {
         toast({
-          title: 'Teilweise fehlgeschlagen',
-          description: `${failed.length} Bilder konnten nicht generiert werden`,
+          title: 'Bilder erfolgreich generiert! 🎉',
+          description: `${successCount} Bilder wurden erfolgreich erstellt.`,
+        });
+      } else if (successCount > 0 && errorCount > 0) {
+        toast({
+          title: 'Teilweise erfolgreich',
+          description: `${successCount} Bilder erstellt, ${errorCount} fehlgeschlagen. Details in der Konsole.`,
+          variant: 'default'
+        });
+        
+        // Log detailed errors for debugging
+        console.group('[BlogPostsView] Detailed error report:');
+        errors.forEach(error => console.error(error));
+        console.groupEnd();
+      } else {
+        toast({
+          title: 'Bildgenerierung fehlgeschlagen',
+          description: `Alle ${errorCount} Versuche sind fehlgeschlagen. Prüfen Sie die Konsole für Details.`,
           variant: 'destructive'
         });
-      } else {
-        toast({ title: 'Bilder generiert', description: 'Neue Bilder wurden erstellt.' });
+        
+        console.group('[BlogPostsView] All errors:');
+        errors.forEach(error => console.error(error));
+        console.groupEnd();
       }
 
+      // Reload data and clear selection
       loadBlogPosts();
       clearSelection();
+      
     } catch (err: any) {
-      toast({ title: 'Fehler', description: err.message, variant: 'destructive' });
+      console.error('[BlogPostsView] Batch operation failed:', err);
+      toast({ 
+        title: 'Batch-Operation fehlgeschlagen', 
+        description: err.message || 'Unbekannter Fehler bei der Batch-Verarbeitung', 
+        variant: 'destructive' 
+      });
     } finally {
       setAbortController(null);
       setBulkLoading(false);

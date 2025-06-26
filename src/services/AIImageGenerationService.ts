@@ -13,61 +13,125 @@ export interface GeneratedImage {
   url: string;
   prompt: string;
   model: string;
+  warning?: string;
 }
 
 class AIImageGenerationService {
+  private readonly FALLBACK_IMAGE = "/lovable-uploads/2a3ad273-430b-4675-b1c4-33dbaac0b6cf.png";
+  private readonly MAX_RETRIES = 2;
+  private readonly RETRY_DELAY = 2000; // 2 seconds
+
   async generateBlogImage(options: ImageGenerationOptions): Promise<GeneratedImage> {
-    console.log('[AIImageGeneration] Generating image for blog post:', options.title);
+    console.log('[AIImageGeneration] Starting generation for:', options.title);
     
-    // Erstelle einen optimierten Prompt basierend auf dem Blog-Inhalt
     const prompt = this.createImagePrompt(options);
+    let lastError: Error | null = null;
     
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-blog-image', {
-        body: { 
-          prompt,
-          context: {
-            title: options.title,
-            category: options.category,
-            season: options.season
-          }
-        }
-      });
-
-      if (error) {
-        console.error('[AIImageGeneration] Edge function error:', error);
-        throw new Error(`Bildgenerierung fehlgeschlagen: ${error.message}`);
-      }
-
-      if (!data?.imageUrl) {
-        console.error('[AIImageGeneration] No image URL received:', data);
-        throw new Error('Keine Bild-URL von der KI erhalten');
-      }
-
-      console.log('[AIImageGeneration] Bild erfolgreich generiert:', data.imageUrl);
-      
-      return {
-        url: data.imageUrl,
-        prompt,
-        model: data.model || 'dall-e-2'
-      };
-    } catch (error) {
-      console.error('[AIImageGeneration] Fehler bei Bildgenerierung:', error);
-      
-      // Fallback zu Unsplash wenn AI-Generierung fehlschlägt
+    // Retry mechanism for better reliability
+    for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
       try {
-        console.log('[AIImageGeneration] Versuche Unsplash Fallback...');
-        const fallbackUrl = await this.getUnsplashFallback(options.category || 'garden');
+        console.log(`[AIImageGeneration] Attempt ${attempt}/${this.MAX_RETRIES}`);
+        
+        const { data, error } = await supabase.functions.invoke('generate-blog-image', {
+          body: { 
+            prompt,
+            context: {
+              title: options.title,
+              category: options.category,
+              season: options.season
+            }
+          }
+        });
+
+        if (error) {
+          console.error(`[AIImageGeneration] Edge function error (attempt ${attempt}):`, error);
+          lastError = new Error(`Edge function error: ${error.message}`);
+          
+          if (attempt < this.MAX_RETRIES) {
+            console.log(`[AIImageGeneration] Waiting ${this.RETRY_DELAY}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
+            continue;
+          }
+          throw lastError;
+        }
+
+        if (!data) {
+          console.error(`[AIImageGeneration] No data received (attempt ${attempt})`);
+          lastError = new Error('Keine Daten von der Edge Function erhalten');
+          
+          if (attempt < this.MAX_RETRIES) {
+            await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
+            continue;
+          }
+          throw lastError;
+        }
+
+        // Handle fallback responses
+        if (data.fallbackImage) {
+          console.log('[AIImageGeneration] Received fallback image from edge function');
+          return {
+            url: data.fallbackImage,
+            prompt,
+            model: 'fallback',
+            warning: 'AI-Generierung fehlgeschlagen - Fallback-Bild verwendet'
+          };
+        }
+
+        if (!data.imageUrl) {
+          console.error(`[AIImageGeneration] No image URL in response (attempt ${attempt}):`, data);
+          lastError = new Error('Keine Bild-URL in der Antwort');
+          
+          if (attempt < this.MAX_RETRIES) {
+            await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
+            continue;
+          }
+          throw lastError;
+        }
+
+        console.log('[AIImageGeneration] Generation successful:', {
+          model: data.model,
+          uploadedToStorage: data.uploadedToStorage,
+          hasWarning: !!data.warning
+        });
         
         return {
-          url: fallbackUrl,
+          url: data.imageUrl,
           prompt,
-          model: 'unsplash-fallback'
+          model: data.model || 'unknown',
+          warning: data.warning
         };
-      } catch (fallbackError) {
-        console.error('[AIImageGeneration] Auch Unsplash Fallback fehlgeschlagen:', fallbackError);
-        throw new Error('Bildgenerierung und Fallback beide fehlgeschlagen');
+
+      } catch (error) {
+        console.error(`[AIImageGeneration] Attempt ${attempt} failed:`, error);
+        lastError = error instanceof Error ? error : new Error(String(error));
+        
+        if (attempt < this.MAX_RETRIES) {
+          console.log(`[AIImageGeneration] Waiting ${this.RETRY_DELAY}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY));
+        }
       }
+    }
+
+    // All retries failed - use local fallback
+    console.error('[AIImageGeneration] All attempts failed, using local fallback');
+    
+    try {
+      const fallbackUrl = await this.getUnsplashFallback(options.category || 'garden');
+      return {
+        url: fallbackUrl,
+        prompt,
+        model: 'unsplash-fallback',
+        warning: 'AI-Generierung fehlgeschlagen - Unsplash-Fallback verwendet'
+      };
+    } catch (fallbackError) {
+      console.error('[AIImageGeneration] Even fallback failed:', fallbackError);
+      
+      return {
+        url: this.FALLBACK_IMAGE,
+        prompt,
+        model: 'static-fallback',
+        warning: 'Alle Bildquellen fehlgeschlagen - Standard-Bild verwendet'
+      };
     }
   }
 
@@ -87,27 +151,25 @@ class AIImageGenerationService {
       });
 
       if (error || !data?.images?.[0]) {
-        // Statisches Fallback-Bild
-        return 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=600&fit=crop';
+        throw new Error('Unsplash search failed');
       }
 
       return data.images[0].urls.regular;
     } catch (error) {
-      console.error('[AIImageGeneration] Unsplash search failed:', error);
-      return 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=600&fit=crop';
+      console.error('[AIImageGeneration] Unsplash fallback failed:', error);
+      throw error;
     }
   }
 
   private createImagePrompt(options: ImageGenerationOptions): string {
     const { title, content, category, season, tags } = options;
     
-    // Extrahiere Schlüsselwörter aus dem Inhalt
+    // Extract keywords from content and title
     const keywords = this.extractKeywords(content, title);
     
-    // Basis-Prompt für realistische Garten-/Küchen-Bilder
     let prompt = "Hyperrealistisches, atmosphärisches Foto";
     
-    // Kategorie-spezifische Anpassungen
+    // Category-specific adjustments
     if (category?.toLowerCase().includes('garten') || keywords.some(k => ['garten', 'pflanzen', 'blumen', 'gemüse', 'anbau'].includes(k.toLowerCase()))) {
       prompt += " einer Gartenszene";
     } else if (category?.toLowerCase().includes('koch') || keywords.some(k => ['kochen', 'rezept', 'küche', 'essen'].includes(k.toLowerCase()))) {
@@ -116,7 +178,7 @@ class AIImageGenerationService {
       prompt += " einer natürlichen Szene";
     }
     
-    // Saisonale Anpassungen
+    // Seasonal adjustments
     if (season) {
       const seasonMap = {
         'frühling': 'im Frühling mit frischen grünen Trieben',
@@ -127,23 +189,21 @@ class AIImageGenerationService {
       prompt += ` ${seasonMap[season.toLowerCase()] || ''}`;
     }
     
-    // Füge relevante Schlüsselwörter hinzu
+    // Add relevant keywords
     if (keywords.length > 0) {
       const topKeywords = keywords.slice(0, 3).join(', ');
       prompt += `, fokussiert auf ${topKeywords}`;
     }
     
-    // Stil-Anweisungen für Realismus
+    // Style instructions for realism
     prompt += ". Natürliches Licht, professionelle Fotografie, hohe Schärfe, warme Atmosphäre. Keine Texte oder Overlays. Stil: Lifestyle-Fotografie.";
     
     return prompt;
   }
 
   private extractKeywords(content: string, title: string): string[] {
-    // Kombiniere Titel und Content für Keyword-Extraktion
     const text = `${title} ${content}`.toLowerCase();
     
-    // Relevante Garten- und Küchen-Keywords
     const relevantKeywords = [
       'tomaten', 'salat', 'kräuter', 'basilikum', 'petersilie', 'schnittlauch',
       'kartoffeln', 'möhren', 'zwiebeln', 'knoblauch', 'paprika', 'gurken',
@@ -158,7 +218,6 @@ class AIImageGenerationService {
 
   async uploadImageToSupabase(imageBase64: string, filename: string): Promise<string> {
     try {
-      // Konvertiere Base64 zu Blob
       const base64Data = imageBase64.replace(/^data:image\/[a-z]+;base64,/, '');
       const byteCharacters = atob(base64Data);
       const byteNumbers = new Array(byteCharacters.length);
@@ -170,7 +229,6 @@ class AIImageGenerationService {
       const byteArray = new Uint8Array(byteNumbers);
       const blob = new Blob([byteArray], { type: 'image/png' });
       
-      // Upload zu Supabase Storage
       const { data, error } = await supabase.storage
         .from('blog-images')
         .upload(`generated/${filename}`, blob, {
@@ -182,14 +240,13 @@ class AIImageGenerationService {
         throw error;
       }
 
-      // Erhalte öffentliche URL
       const { data: { publicUrl } } = supabase.storage
         .from('blog-images')
         .getPublicUrl(`generated/${filename}`);
 
       return publicUrl;
     } catch (error) {
-      console.error('[AIImageGeneration] Upload-Fehler:', error);
+      console.error('[AIImageGeneration] Upload error:', error);
       throw new Error(`Bild-Upload fehlgeschlagen: ${error.message}`);
     }
   }
