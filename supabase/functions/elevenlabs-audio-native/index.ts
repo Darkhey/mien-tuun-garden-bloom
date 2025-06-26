@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const corsHeaders = {
@@ -12,36 +11,32 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voice_id, model_id } = await req.json()
+    const { text, voice_id, model_id, name } = await req.json()
 
     if (!text) {
       throw new Error('Text is required')
     }
 
     const elevenLabsApiKey = Deno.env.get('ELEVEN_LABS_API_KEY')
-    
+
     if (!elevenLabsApiKey) {
       throw new Error('ElevenLabs API Key nicht konfiguriert')
     }
 
-    // Call ElevenLabs Audio Native API
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice_id || '21m00Tcm4TlvDq8ikWAM'}`, {
+    const formData = new FormData()
+    formData.append('name', name || 'Audio Native Project')
+    formData.append('auto_convert', 'true')
+    if (voice_id) formData.append('voice_id', voice_id)
+    if (model_id) formData.append('model_id', model_id)
+    const file = new File([text], 'article.txt', { type: 'text/plain' })
+    formData.append('file', file)
+
+    const response = await fetch('https://api.elevenlabs.io/v1/audio-native', {
       method: 'POST',
       headers: {
-        'Accept': 'audio/mpeg',
-        'Content-Type': 'application/json',
         'xi-api-key': elevenLabsApiKey,
       },
-      body: JSON.stringify({
-        text: text,
-        model_id: model_id || 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.8,
-          style: 0.2,
-          use_speaker_boost: true
-        }
-      })
+      body: formData
     })
 
     if (!response.ok) {
@@ -49,23 +44,19 @@ serve(async (req) => {
       throw new Error(`ElevenLabs API Fehler: ${response.status} - ${errorText}`)
     }
 
-    // Stream the audio response
-    const audioStream = response.body
-    
-    return new Response(audioStream, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'audio/mpeg',
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-      },
-    })
+    const data = await response.json()
+
+    return new Response(
+      JSON.stringify(data),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
 
   } catch (error) {
     console.error('ElevenLabs Audio Native Error:', error)
-    
+
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
+      {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }

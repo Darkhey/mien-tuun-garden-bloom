@@ -1,8 +1,9 @@
-
-import React, { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Volume2, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
+import DOMPurify from 'dompurify';
+import { debounce } from 'lodash';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ElevenLabsAudioNativeProps {
   text: string;
@@ -14,111 +15,58 @@ interface ElevenLabsAudioNativeProps {
 const ElevenLabsAudioNative: React.FC<ElevenLabsAudioNativeProps> = ({
   text,
   title,
-  voiceId = '21m00Tcm4TlvDq8ikWAM', // Default German voice
-  className = ""
+  voiceId = '21m00Tcm4TlvDq8ikWAM',
+  className = "",
 }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [htmlSnippet, setHtmlSnippet] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const generateAudio = async () => {
-    if (audioUrl) return audioUrl;
+  const debouncedCreateProject = useCallback(
+    debounce(async (t: string, ti: string, v: string) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const { data, error } = await supabase.functions.invoke('elevenlabs-audio-native', {
+          body: {
+            text: t,
+            voice_id: v,
+            model_id: 'eleven_multilingual_v2',
+            name: ti,
+          }
+        });
 
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/elevenlabs-audio-native', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: text,
-          voice_id: voiceId,
-          model_id: 'eleven_multilingual_v2'
-        }),
-      });
+        if (error) {
+          throw new Error(error.message);
+        }
 
-      if (!response.ok) {
-        throw new Error('Failed to generate audio');
+        setHtmlSnippet((data as any).html_snippet);
+      } catch (err: any) {
+        console.error('Error creating audio native project:', err);
+        setError(err.message ?? 'Unbekannter Fehler');
+      } finally {
+        setIsLoading(false);
       }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      setAudioUrl(url);
-      return url;
-    } catch (error) {
-      console.error('Error generating audio:', error);
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const togglePlayPause = async () => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (!audioUrl) {
-      const url = await generateAudio();
-      if (!url) return;
-      audio.src = url;
-    }
-
-    if (isPlaying) {
-      audio.pause();
-    } else {
-      await audio.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
+    }, 500),
+    []
+  );
 
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const handleEnded = () => setIsPlaying(false);
-    const handlePause = () => setIsPlaying(false);
-    const handlePlay = () => setIsPlaying(true);
-
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('pause', handlePause);
-    audio.addEventListener('play', handlePlay);
-
-    return () => {
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('pause', handlePause);
-      audio.removeEventListener('play', handlePlay);
-    };
-  }, []);
+    debouncedCreateProject(text, title, voiceId);
+  }, [text, title, voiceId, debouncedCreateProject]);
 
   return (
     <Card className={`bg-gradient-to-r from-sage-50 to-accent-50 ${className}`}>
       <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-sage-600 rounded-full flex items-center justify-center">
-            <Volume2 className="h-5 w-5 text-white" />
+        {isLoading && !htmlSnippet ? (
+          <div className="flex items-center gap-2 text-sm text-earth-700">
+            <Loader2 className="h-4 w-4 animate-spin" /> Projekt wird vorbereitet
           </div>
-          <div className="flex-1">
-            <h4 className="font-medium text-earth-800 text-sm">Audio von Marianne</h4>
-            <p className="text-xs text-earth-600">Höre dir den Artikel vor</p>
-          </div>
-          <Button
-            onClick={togglePlayPause}
-            disabled={isLoading}
-            size="sm"
-            className="bg-sage-600 hover:bg-sage-700"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isPlaying ? (
-              <Pause className="h-4 w-4" />
-            ) : (
-              <Play className="h-4 w-4 ml-0.5" />
-            )}
-          </Button>
-        </div>
-        <audio ref={audioRef} preload="none" />
+        ) : error ? (
+          <div className="text-sm text-red-600">{error}</div>
+        ) : (
+          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlSnippet ?? '') }} />
+        )}
       </CardContent>
     </Card>
   );
