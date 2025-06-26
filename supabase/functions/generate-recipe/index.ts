@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -7,6 +8,44 @@ const corsHeaders = {
 };
 
 const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
+const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+
+async function generateWithGemini(prompt: string) {
+  if (!geminiApiKey) {
+    throw new Error("Gemini API Key nicht konfiguriert");
+  }
+
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [{
+        parts: [{
+          text: prompt
+        }]
+      }],
+      generationConfig: {
+        temperature: 0.15,
+        maxOutputTokens: 1400,
+      }
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API Fehler (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+  
+  if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+    throw new Error("Keine Antwort von Gemini erhalten");
+  }
+  
+  return data.candidates[0].content.parts[0].text.trim();
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -75,62 +114,85 @@ ${freeText ? "Hinweise/Wünsche: " + freeText : ""}
 Wähle Zutaten und Zubereitung sinnvoll und saisonal passend. Kompakte, gültige JSON-Antwort!
     `.trim();
 
-    const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${openAIApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: systemPrompt },
-        ],
-        temperature: 0.15,
-        max_tokens: 1400,
-        response_format: { type: "json_object" },
+    let recipe = null;
+    let usedProvider = 'OpenAI';
+
+    // Try OpenAI first
+    if (openAIApiKey) {
+      try {
+        const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openAIApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content: systemPrompt
+              },
+            ],
+            temperature: 0.15,
+            max_tokens: 1400,
+            response_format: { type: "json_object" },
+          }),
+        });
+
+        if (aiResponse.ok) {
+          const data = await aiResponse.json();
+          if (data.choices?.[0]?.message?.content) {
+            recipe = JSON.parse(data.choices[0].message.content);
+            console.log('[generate-recipe] OpenAI erfolgreich verwendet');
+          }
+        } else {
+          const errText = await aiResponse.text();
+          console.warn(`[generate-recipe] OpenAI Fehler ${aiResponse.status}: ${errText.substring(0, 200)}`);
+        }
+      } catch (openaiError) {
+        console.warn('[generate-recipe] OpenAI Request fehlgeschlagen, verwende Gemini Fallback:', openaiError);
+      }
+    }
+
+    // Fallback to Gemini
+    if (!recipe && geminiApiKey) {
+      try {
+        console.log('[generate-recipe] Verwende Gemini Fallback...');
+        const geminiResponse = await generateWithGemini(`${systemPrompt}\n\nBitte erstelle ein JSON-Objekt für das Rezept.`);
+        
+        // Try to extract JSON from Gemini response
+        const jsonMatch = geminiResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          recipe = JSON.parse(jsonMatch[0]);
+          usedProvider = 'Google Gemini';
+          console.log('[generate-recipe] Gemini Fallback erfolgreich verwendet');
+        }
+      } catch (geminiError) {
+        console.error('[generate-recipe] Gemini Fallback fehlgeschlagen:', geminiError);
+      }
+    }
+
+    if (!recipe) {
+      return new Response(
+        JSON.stringify({
+          error: "Beide KI-Services nicht verfügbar",
+          code: "no_ai_service",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        recipe,
+        provider: usedProvider
       }),
-    });
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
 
-    if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      return new Response(
-        JSON.stringify({ error: "OpenAI API Fehler", details: errText }),
-        { status: aiResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const data = await aiResponse.json();
-
-    if (!data.choices?.[0]?.message?.content) {
-      return new Response(
-        JSON.stringify({
-          error: "Keine KI-Antwort erhalten",
-          code: "no_content",
-          openai: data,
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    try {
-      const recipe = JSON.parse(data.choices[0].message.content);
-      return new Response(
-        JSON.stringify({ recipe }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    } catch (jsonErr) {
-      return new Response(
-        JSON.stringify({
-          error: "KI-Antwort konnte nicht als JSON geparst werden",
-          code: "json_parse_error",
-          content: data.choices[0].message.content,
-          details: String(jsonErr?.message ?? jsonErr)
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
   } catch (err) {
+    console.error('[generate-recipe] Fehler:', err);
     return new Response(
       JSON.stringify({
         error: String(err?.message ?? err),

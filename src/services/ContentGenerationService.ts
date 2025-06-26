@@ -1,5 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import { geminiService } from './GeminiService';
 
 export interface ContentQuality {
   score: number;
@@ -20,6 +20,7 @@ export interface GeneratedContent {
   metadata: {
     generationTime: number;
     model: string;
+    provider: string;
     wordCount: number;
     readingTime: number;
     qualityScore: number;
@@ -108,37 +109,70 @@ class ContentGenerationServiceClass {
     excerpt?: string;
     imageUrl?: string;
   }): Promise<GeneratedContent> {
-    console.log('[ContentGeneration] Starting enhanced blog post generation with SEO');
+    console.log('[ContentGeneration] Starting enhanced blog post generation with OpenAI + Gemini fallback');
     
     try {
       const startTime = Date.now();
       
-      // Generiere Content wie bisher
-      const { data, error } = await supabase.functions.invoke('generate-blog-post', {
-        body: {
-          prompt: params.prompt,
-          context: {
+      // Try OpenAI first
+      let content: string | null = null;
+      let usedProvider = 'OpenAI';
+      let usedModel = 'gpt-4o';
+
+      try {
+        const { data, error } = await supabase.functions.invoke('generate-blog-post', {
+          body: {
+            prompt: params.prompt,
+            context: {
+              category: params.category,
+              season: params.season,
+              audiences: params.audiences,
+              contentType: params.contentType,
+              tags: params.tags,
+              excerpt: params.excerpt
+            }
+          }
+        });
+
+        if (error) throw error;
+        if (data?.content) {
+          content = data.content;
+          usedModel = data.metadata?.model || 'gpt-4o';
+        }
+      } catch (openaiError) {
+        console.warn('[ContentGeneration] OpenAI failed, trying Gemini fallback:', openaiError);
+        
+        // Fallback to Gemini
+        try {
+          content = await geminiService.generateBlogPost({
+            prompt: params.prompt,
             category: params.category,
             season: params.season,
             audiences: params.audiences,
             contentType: params.contentType,
-            tags: params.tags,
-            excerpt: params.excerpt
-          }
+            tags: params.tags
+          });
+          usedProvider = 'Google Gemini';
+          usedModel = 'gemini-1.5-flash';
+          console.log('[ContentGeneration] Gemini fallback successful');
+        } catch (geminiError) {
+          console.error('[ContentGeneration] Both OpenAI and Gemini failed:', geminiError);
+          throw new Error('Beide KI-Services sind nicht verfügbar');
         }
-      });
+      }
 
-      if (error) throw error;
-      if (!data?.content) throw new Error('Kein Content generiert');
+      if (!content) {
+        throw new Error('Kein Content generiert');
+      }
 
       // Titel aus Content extrahieren
-      const title = this.extractTitleFromContent(data.content) || 'Neuer Blog-Artikel';
+      const title = this.extractTitleFromContent(content) || 'Neuer Blog-Artikel';
       
       // SEO-Daten automatisch generieren
       const seoService = SEOService.getInstance();
       const seoData = await seoService.generateBlogPostSEO({
         title,
-        content: data.content,
+        content: content,
         excerpt: params.excerpt,
         category: params.category,
         tags: params.tags,
@@ -150,29 +184,30 @@ class ContentGenerationServiceClass {
       if (!featuredImage) {
         try {
           console.log('[ContentGeneration] Generating AI image for blog post');
-          const imageResult = await this.generateBlogImage(title, data.content, params.category);
+          const imageResult = await this.generateBlogImage(title, content, params.category);
           featuredImage = imageResult;
         } catch (imageError) {
           console.warn('[ContentGeneration] Image generation failed:', imageError);
         }
       }
 
-      const quality = this.assessContentQuality(data.content, title);
+      const quality = this.assessContentQuality(content, title);
       const endTime = Date.now();
 
       return {
-        content: data.content,
+        content,
         title,
         quality,
         featuredImage,
-        seoData, // Neue SEO-Daten hinzufügen
+        seoData,
         metadata: {
           generationTime: endTime - startTime,
-          model: data.metadata?.model || 'gpt-4o',
-          wordCount: data.metadata?.wordCount || data.content.split(/\s+/).length,
-          readingTime: data.metadata?.readingTime || Math.ceil(data.content.split(/\s+/).length / 160),
+          model: usedModel,
+          provider: usedProvider,
+          wordCount: content.split(/\s+/).length,
+          readingTime: Math.ceil(content.split(/\s+/).length / 160),
           qualityScore: Math.round(quality.score),
-          seoScore: seoData ? seoService.analyzeSEO({ title, content: data.content, excerpt: params.excerpt }).score : 0
+          seoScore: seoData ? seoService.analyzeSEO({ title, content, excerpt: params.excerpt }).score : 0
         }
       };
     } catch (error: any) {
