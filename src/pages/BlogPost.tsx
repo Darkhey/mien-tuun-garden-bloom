@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from "react-helmet";
 import { useQuery } from '@tanstack/react-query';
@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from '@/integrations/supabase/types';
 import BlogStructuredData from "@/components/blog/BlogStructuredData";
 import BlogPostContent from "@/components/blog/BlogPostContent";
+import BlogPostNavigationSidebar, { Heading } from "@/components/blog/BlogPostNavigationSidebar";
 import BlogPostShareSection from "@/components/blog/BlogPostShareSection";
 import CallToActionSection from "@/components/blog/CallToActionSection";
 import RelatedArticlesSection from "@/components/blog/RelatedArticlesSection";
@@ -47,6 +48,27 @@ const BlogPost = () => {
       return data as Tables<'blog_posts'>;
     },
   });
+
+  const articleRef = useRef<HTMLElement | null>(null);
+  const [headings, setHeadings] = useState<Heading[]>([]);
+
+  useEffect(() => {
+    const extractHeadings = () => {
+      if (!articleRef.current) return;
+      const nodes = Array.from(articleRef.current.querySelectorAll('h2, h3'));
+      const newHeadings = nodes.map(el => ({
+        id: el.id,
+        text: el.textContent || '',
+        level: Number(el.tagName.replace('H', '')),
+      }));
+      setHeadings(newHeadings);
+    };
+
+    if (post) {
+      const raf = requestAnimationFrame(extractHeadings);
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [post]);
 
   if (isLoading) {
     return <div className="text-center py-12">Lädt Artikel...</div>;
@@ -99,7 +121,8 @@ const BlogPost = () => {
         slug={post.slug}
       />
 
-      <article className="max-w-4xl mx-auto px-4 py-8">
+      <div className="relative">
+      <article ref={articleRef} className="max-w-4xl mx-auto px-4 py-8">
         {/* Blog Post Header */}
         <header className="mb-8">
           <div className="mb-4">
@@ -150,11 +173,13 @@ const BlogPost = () => {
           tags={post.tags}
         />
         
-        <BlogComments 
-          blogSlug={post.slug} 
+        <BlogComments
+          blogSlug={post.slug}
           userId={user?.id || null}
         />
       </article>
+      <BlogPostNavigationSidebar headings={headings} />
+      </div>
     </>
   );
 };

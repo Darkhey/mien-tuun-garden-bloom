@@ -1,6 +1,8 @@
 import React from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { slugify } from '@/utils/slugify';
+import { extractText } from '@/utils/textExtraction';
 
 type BlogPostContentProps = {
   content: string;
@@ -11,9 +13,24 @@ const BlogPostContent: React.FC<BlogPostContentProps> = ({ content }) => (
     <ReactMarkdown 
       remarkPlugins={[remarkGfm]}
       components={{
-        h1: ({node, ...props}) => <h1 className="text-3xl md:text-4xl font-serif font-bold text-earth-800 mb-6" {...props} />,
-        h2: ({node, ...props}) => <h2 className="text-2xl md:text-3xl font-serif font-bold text-earth-800 mt-8 mb-4" {...props} />,
-        h3: ({node, ...props}) => <h3 className="text-xl md:text-2xl font-serif font-bold text-earth-800 mt-6 mb-3" {...props} />,
+        h1: ({ node, ...props }) => {
+          const id = slugify(extractText(props.children));
+          return (
+            <h1 id={id} className="text-3xl md:text-4xl font-serif font-bold text-earth-800 mb-6" {...props} />
+          );
+        },
+        h2: ({ node, ...props }) => {
+          const id = slugify(extractText(props.children));
+          return (
+            <h2 id={id} className="text-2xl md:text-3xl font-serif font-bold text-earth-800 mt-8 mb-4" {...props} />
+          );
+        },
+        h3: ({ node, ...props }) => {
+          const id = slugify(extractText(props.children));
+          return (
+            <h3 id={id} className="text-xl md:text-2xl font-serif font-bold text-earth-800 mt-6 mb-3" {...props} />
+          );
+        },
         p: ({node, ...props}) => <p className="text-earth-600 mb-4 leading-relaxed" {...props} />,
         ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-6 text-earth-600" {...props} />,
         ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-6 text-earth-600" {...props} />,
