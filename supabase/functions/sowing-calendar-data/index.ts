@@ -46,6 +46,9 @@ serve(async (req) => {
       case 'getPlantsByMonth':
         return await getPlantsByMonth(supabaseClient, data.month);
       
+      case 'getPlantDetails':
+        return await getPlantDetails(supabaseClient, data.plantName);
+      
       default:
         return new Response(
           JSON.stringify({ error: 'Unknown action' }),
@@ -199,6 +202,58 @@ async function getPlantsByMonth(supabase: any, month: number) {
   
   return new Response(
     JSON.stringify({ plants: data }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
+
+async function getPlantDetails(supabase: any, plantName: string) {
+  // Get all details for a specific plant from multiple tables
+  const [plantData, companionData, tipsData] = await Promise.all([
+    supabase
+      .from('sowing_calendar')
+      .select('*')
+      .eq('name', plantName)
+      .single()
+      .then(({ data, error }) => {
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+      }),
+    supabase
+      .from('companion_plants')
+      .select('*')
+      .eq('plant', plantName)
+      .single()
+      .then(({ data, error }) => {
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+      }),
+    supabase
+      .from('plant_growing_tips')
+      .select('*')
+      .eq('plant', plantName)
+      .single()
+      .then(({ data, error }) => {
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+      })
+  ]);
+  
+  if (!plantData) {
+    return new Response(
+      JSON.stringify({ error: 'Plant not found' }),
+      { 
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  }
+  
+  return new Response(
+    JSON.stringify({
+      plant: plantData,
+      companionPlants: companionData,
+      growingTips: tipsData
+    }),
     { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   );
 }
