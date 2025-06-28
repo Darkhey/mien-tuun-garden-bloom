@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { OptimizationTrackingService, OptimizationResult } from '@/services/OptimizationTrackingService';
+import { optimizationTrackingService, OptimizationResult } from '@/services/OptimizationTrackingService';
 
 interface BlogPost {
   id: string;
@@ -72,7 +71,7 @@ export const useBulkOperations = () => {
           if (updateError) throw updateError;
 
           // Track optimization
-          const result = await OptimizationTrackingService.trackOptimization({
+          const result = await optimizationTrackingService.trackOptimization({
             type: 'title',
             postId: post.id,
             originalValue: post.title,
@@ -154,7 +153,7 @@ export const useBulkOperations = () => {
           if (updateError) throw updateError;
 
           // Track optimization
-          const result = await OptimizationTrackingService.trackOptimization({
+          const result = await optimizationTrackingService.trackOptimization({
             type: 'image',
             postId: post.id,
             originalValue: post.featured_image || 'Kein Bild',
