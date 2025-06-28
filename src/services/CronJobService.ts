@@ -85,6 +85,17 @@ class CronJobService {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session?.user) throw new Error('Not authenticated');
 
+      // Validate cron expression
+      if (!this.validateCronExpression(params.cron_expression)) {
+        throw new Error('Invalid cron expression format');
+      }
+
+      // Calculate next run time
+      const nextRunAt = this.calculateNextRunTime(params.cron_expression);
+      if (!nextRunAt) {
+        throw new Error('Could not calculate next run time');
+      }
+
       const jobData: CronJobInsert = {
         name: params.name,
         description: params.description,
@@ -98,7 +109,8 @@ class CronJobService {
         timeout_seconds: params.timeout_seconds ?? 300,
         tags: params.tags || [],
         dependencies: params.dependencies || [],
-        conditions: params.conditions || {}
+        conditions: params.conditions || {},
+        next_run_at: nextRunAt.toISOString()
       };
 
       const { data, error } = await supabase
@@ -126,6 +138,18 @@ class CronJobService {
       // Ensure job_type is properly typed
       if (updateData.job_type && typeof updateData.job_type === 'string') {
         updateData.job_type = updateData.job_type as Database['public']['Enums']['job_type'];
+      }
+
+      // If cron expression is updated, validate and calculate next run time
+      if (updateData.cron_expression) {
+        if (!this.validateCronExpression(updateData.cron_expression)) {
+          throw new Error('Invalid cron expression format');
+        }
+        
+        const nextRunAt = this.calculateNextRunTime(updateData.cron_expression);
+        if (nextRunAt) {
+          updateData.next_run_at = nextRunAt.toISOString();
+        }
       }
 
       const { data, error } = await supabase
@@ -500,6 +524,46 @@ class CronJobService {
         return nextRun;
       }
       
+      // Simple case: hourly at specific minute
+      if (minute !== '*' && hour === '*' && day === '*' && month === '*' && weekday === '*') {
+        const nextRun = new Date(now);
+        nextRun.setMinutes(parseInt(minute), 0, 0);
+        if (nextRun <= now) {
+          nextRun.setHours(nextRun.getHours() + 1);
+        }
+        return nextRun;
+      }
+      
+      // Simple case: weekly on specific day and time
+      if (minute === '0' && hour !== '*' && day === '*' && month === '*' && weekday !== '*') {
+        const nextRun = new Date(now);
+        nextRun.setHours(parseInt(hour), 0, 0, 0);
+        
+        const currentDay = nextRun.getDay();
+        const targetDay = parseInt(weekday);
+        
+        let daysToAdd = targetDay - currentDay;
+        if (daysToAdd <= 0 || (daysToAdd === 0 && nextRun <= now)) {
+          daysToAdd += 7;
+        }
+        
+        nextRun.setDate(nextRun.getDate() + daysToAdd);
+        return nextRun;
+      }
+      
+      // Simple case: monthly on specific day and time
+      if (minute === '0' && hour !== '*' && day !== '*' && month === '*' && weekday === '*') {
+        const nextRun = new Date(now);
+        nextRun.setHours(parseInt(hour), 0, 0, 0);
+        nextRun.setDate(parseInt(day));
+        
+        if (nextRun <= now) {
+          nextRun.setMonth(nextRun.getMonth() + 1);
+        }
+        
+        return nextRun;
+      }
+      
       // For more complex cases, return tomorrow same time as fallback
       const tomorrow = new Date(now);
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -508,6 +572,173 @@ class CronJobService {
     } catch (error) {
       console.error('Error calculating next run time:', error);
       return null;
+    }
+  }
+
+  // Generate a cron pattern from schedule type
+  generateCronPattern(scheduleType: string, options: Record<string, any> = {}): string {
+    switch (scheduleType) {
+      case 'daily':
+        const hour = options.hour || 9;
+        const minute = options.minute || 0;
+        return `${minute} ${hour} * * *`;
+      
+      case 'weekly':
+        const dayOfWeek = options.dayOfWeek || 1; // Monday
+        const weeklyHour = options.hour || 9;
+        const weeklyMinute = options.minute || 0;
+        return `${weeklyMinute} ${weeklyHour} * * ${dayOfWeek}`;
+      
+      case 'monthly':
+        const dayOfMonth = options.dayOfMonth || 1;
+        const monthlyHour = options.hour || 9;
+        const monthlyMinute = options.minute || 0;
+        return `${monthlyMinute} ${monthlyHour} ${dayOfMonth} * *`;
+      
+      case 'hourly':
+        const hourlyMinute = options.minute || 0;
+        return `${hourlyMinute} * * * *`;
+        
+      case 'custom':
+        return options.pattern || '0 9 * * *';
+      
+      default:
+        return '0 9 * * *'; // Default to daily at 9 AM
+    }
+  }
+
+  // Get human-readable schedule description
+  getHumanReadableSchedule(cronExpression: string): string {
+    try {
+      const parts = cronExpression.split(' ');
+      if (parts.length !== 5) return 'Ungültiger Zeitplan';
+      
+      const [minute, hour, day, month, weekday] = parts;
+      
+      // Daily at specific time
+      if (minute !== '*' && hour !== '*' && day === '*' && month === '*' && weekday === '*') {
+        return `Täglich um ${hour}:${minute.padStart(2, '0')} Uhr`;
+      }
+      
+      // Hourly at specific minute
+      if (minute !== '*' && hour === '*' && day === '*' && month === '*' && weekday === '*') {
+        return `Stündlich bei Minute ${minute}`;
+      }
+      
+      // Weekly on specific day and time
+      if (minute !== '*' && hour !== '*' && day === '*' && month === '*' && weekday !== '*') {
+        const days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+        return `Wöchentlich am ${days[parseInt(weekday)]} um ${hour}:${minute.padStart(2, '0')} Uhr`;
+      }
+      
+      // Monthly on specific day and time
+      if (minute !== '*' && hour !== '*' && day !== '*' && month === '*' && weekday === '*') {
+        return `Monatlich am ${day}. um ${hour}:${minute.padStart(2, '0')} Uhr`;
+      }
+      
+      // Every X minutes
+      if (minute.includes('/') && hour === '*' && day === '*' && month === '*' && weekday === '*') {
+        const interval = minute.split('/')[1];
+        return `Alle ${interval} Minuten`;
+      }
+      
+      return this.parseCronExpression(cronExpression);
+    } catch (error) {
+      console.error('Error getting human-readable schedule:', error);
+      return cronExpression;
+    }
+  }
+
+  // Get available functions for job creation
+  getAvailableFunctions(): { name: string; description: string; category: string }[] {
+    return [
+      { 
+        name: 'generate-blog-post', 
+        description: 'Generiert einen neuen Blog-Artikel mit KI', 
+        category: 'Content-Generierung' 
+      },
+      { 
+        name: 'generate-recipe', 
+        description: 'Erstellt ein neues Rezept mit KI', 
+        category: 'Content-Generierung' 
+      },
+      { 
+        name: 'auto-blog-post', 
+        description: 'Automatisierte Blog-Post-Erstellung', 
+        category: 'Content-Generierung' 
+      },
+      { 
+        name: 'content-automation-executor', 
+        description: 'Führt Content-Automatisierungen aus', 
+        category: 'Automatisierung' 
+      },
+      { 
+        name: 'ai-content-insights', 
+        description: 'Analysiert Content und generiert Insights', 
+        category: 'Analyse' 
+      },
+      { 
+        name: 'fetch-current-trends', 
+        description: 'Holt aktuelle Trends für Content-Planung', 
+        category: 'Analyse' 
+      }
+    ];
+  }
+
+  // Get job health status
+  async getJobHealthStatus(): Promise<{
+    status: 'healthy' | 'warning' | 'critical';
+    issues: string[];
+    lastSuccessfulRun: Date | null;
+  }> {
+    try {
+      const [stats, recentLogs] = await Promise.all([
+        this.getJobStats(),
+        this.getJobLogs(undefined, 20)
+      ]);
+      
+      const issues: string[] = [];
+      let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+      
+      // Check success rate
+      if (stats.successRate < 50) {
+        issues.push(`Niedrige Erfolgsrate (${stats.successRate}%)`);
+        status = 'critical';
+      } else if (stats.successRate < 80) {
+        issues.push(`Mäßige Erfolgsrate (${stats.successRate}%)`);
+        status = 'warning';
+      }
+      
+      // Check for recent failures
+      const recentFailures = recentLogs.filter(log => log.status === 'failed');
+      if (recentFailures.length > 5) {
+        issues.push(`${recentFailures.length} fehlgeschlagene Ausführungen in letzter Zeit`);
+        status = status === 'healthy' ? 'warning' : status;
+      }
+      
+      // Check for inactive jobs
+      const inactiveJobs = stats.totalJobs - stats.activeJobs;
+      if (inactiveJobs > 0 && stats.totalJobs > 0) {
+        issues.push(`${inactiveJobs} inaktive Jobs (${Math.round((inactiveJobs / stats.totalJobs) * 100)}%)`);
+        status = status === 'healthy' ? 'warning' : status;
+      }
+      
+      // Find last successful run
+      const lastSuccessful = recentLogs.find(log => log.status === 'completed');
+      const lastSuccessfulRun = lastSuccessful ? new Date(lastSuccessful.completed_at || lastSuccessful.started_at) : null;
+      
+      return {
+        status,
+        issues,
+        lastSuccessfulRun
+      };
+    } catch (error) {
+      console.error('Error getting job health status:', error);
+      return {
+        status: 'critical',
+        issues: ['Fehler beim Abrufen des Job-Status'],
+        lastSuccessfulRun: null
+      };
     }
   }
 }

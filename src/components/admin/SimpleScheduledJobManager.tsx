@@ -4,11 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Clock, Play, Trash2, Plus, Settings, AlertCircle, Pause, RefreshCw, Calendar, Database, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Clock, Play, Trash2, Plus, Settings, AlertCircle, Pause, RefreshCw, Calendar, Database, CheckCircle, XCircle, Loader2, Info } from "lucide-react";
 import { scheduledJobService, JobConfig, JobExecution } from "@/services/ScheduledJobService";
 import { cronJobService } from "@/services/CronJobService";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose
+} from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const SimpleScheduledJobManager: React.FC = () => {
   const [jobs, setJobs] = useState<JobConfig[]>([]);
@@ -17,16 +28,25 @@ const SimpleScheduledJobManager: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [executingJobId, setExecutingJobId] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [showJobDetails, setShowJobDetails] = useState(false);
   const [newJob, setNewJob] = useState({
     name: '',
     description: '',
     job_type: 'content_generation' as const,
     function_name: 'generate-blog-post',
     schedule: 'daily',
-    enabled: true
+    hour: '9',
+    minute: '0',
+    dayOfWeek: '1',
+    dayOfMonth: '1',
+    enabled: true,
+    custom_pattern: '0 9 * * *'
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+
+  const availableFunctions = cronJobService.getAvailableFunctions();
 
   useEffect(() => {
     loadData();
@@ -106,6 +126,14 @@ const SimpleScheduledJobManager: React.FC = () => {
     
     if (!newJob.function_name.trim()) {
       errors.function_name = "Funktion ist erforderlich";
+    }
+    
+    if (newJob.schedule === 'custom' && !newJob.custom_pattern.trim()) {
+      errors.custom_pattern = "Benutzerdefiniertes Muster ist erforderlich";
+    }
+    
+    if (newJob.schedule === 'custom' && !cronJobService.validateCronExpression(newJob.custom_pattern)) {
+      errors.custom_pattern = "Ungültiges Cron-Muster";
     }
     
     setValidationErrors(errors);
@@ -223,7 +251,28 @@ const SimpleScheduledJobManager: React.FC = () => {
     }
 
     try {
-      const cronExpression = cronJobService.generateCronPattern(newJob.schedule);
+      let cronExpression = '';
+      
+      if (newJob.schedule === 'custom') {
+        cronExpression = newJob.custom_pattern;
+      } else {
+        const options: Record<string, any> = {};
+        
+        if (newJob.schedule === 'daily' || newJob.schedule === 'weekly' || newJob.schedule === 'monthly') {
+          options.hour = parseInt(newJob.hour);
+          options.minute = parseInt(newJob.minute);
+        }
+        
+        if (newJob.schedule === 'weekly') {
+          options.dayOfWeek = parseInt(newJob.dayOfWeek);
+        }
+        
+        if (newJob.schedule === 'monthly') {
+          options.dayOfMonth = parseInt(newJob.dayOfMonth);
+        }
+        
+        cronExpression = cronJobService.generateCronPattern(newJob.schedule, options);
+      }
       
       if (!cronJobService.validateCronExpression(cronExpression)) {
         toast({
@@ -252,7 +301,12 @@ const SimpleScheduledJobManager: React.FC = () => {
         job_type: 'content_generation',
         function_name: 'generate-blog-post',
         schedule: 'daily',
-        enabled: true
+        hour: '9',
+        minute: '0',
+        dayOfWeek: '1',
+        dayOfMonth: '1',
+        enabled: true,
+        custom_pattern: '0 9 * * *'
       });
       setValidationErrors({});
 
@@ -304,6 +358,77 @@ const SimpleScheduledJobManager: React.FC = () => {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
     return `${minutes}m ${seconds}s`;
+  };
+
+  const formatDateTime = (dateString?: string): string => {
+    if (!dateString) return 'N/A';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return dateString;
+    }
+  };
+
+  const handleViewJobDetails = (jobId: string) => {
+    setSelectedJobId(jobId);
+    setShowJobDetails(true);
+  };
+
+  const getSelectedJob = () => {
+    return jobs.find(job => job.id === selectedJobId);
+  };
+
+  const getJobExecutions = () => {
+    return executions.filter(exec => exec.cron_job_id === selectedJobId);
+  };
+
+  const getFunctionDescription = (functionName: string): string => {
+    const func = availableFunctions.find(f => f.name === functionName);
+    return func ? func.description : functionName;
+  };
+
+  const getNextRunTime = (job: JobConfig): string => {
+    if (!job.next_run_at) {
+      return 'Nicht geplant';
+    }
+    
+    try {
+      const nextRun = new Date(job.next_run_at);
+      const now = new Date();
+      
+      // If next run is in the past
+      if (nextRun < now) {
+        return 'Überfällig';
+      }
+      
+      // Calculate time difference
+      const diffMs = nextRun.getTime() - now.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      
+      if (diffMins < 60) {
+        return `In ${diffMins} Minuten`;
+      }
+      
+      const diffHours = Math.floor(diffMins / 60);
+      if (diffHours < 24) {
+        return `In ${diffHours} Stunden`;
+      }
+      
+      const diffDays = Math.floor(diffHours / 24);
+      return `In ${diffDays} Tagen`;
+    } catch (error) {
+      console.error('Error calculating next run time:', error);
+      return formatDateTime(job.next_run_at);
+    }
   };
 
   return (
@@ -386,11 +511,11 @@ const SimpleScheduledJobManager: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="generate-blog-post">Blog-Artikel generieren</SelectItem>
-                    <SelectItem value="generate-recipe">Rezept generieren</SelectItem>
-                    <SelectItem value="auto-blog-post">Auto Blog-Post</SelectItem>
-                    <SelectItem value="content-automation-executor">Content Automation</SelectItem>
-                    <SelectItem value="ai-content-insights">Content Insights</SelectItem>
+                    {availableFunctions.map(func => (
+                      <SelectItem key={func.name} value={func.name}>
+                        {func.name} - {func.description}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {validationErrors.function_name && (
@@ -398,12 +523,205 @@ const SimpleScheduledJobManager: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* Schedule options based on selected schedule type */}
+            {newJob.schedule === 'daily' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Stunde</label>
+                  <Select value={newJob.hour} onValueChange={(value) => setNewJob({...newJob, hour: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 24}, (_, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          {i.toString().padStart(2, '0')}:00
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Minute</label>
+                  <Select value={newJob.minute} onValueChange={(value) => setNewJob({...newJob, minute: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 60}, (_, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          {i.toString().padStart(2, '0')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {newJob.schedule === 'weekly' && (
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Tag</label>
+                  <Select value={newJob.dayOfWeek} onValueChange={(value) => setNewJob({...newJob, dayOfWeek: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Sonntag</SelectItem>
+                      <SelectItem value="1">Montag</SelectItem>
+                      <SelectItem value="2">Dienstag</SelectItem>
+                      <SelectItem value="3">Mittwoch</SelectItem>
+                      <SelectItem value="4">Donnerstag</SelectItem>
+                      <SelectItem value="5">Freitag</SelectItem>
+                      <SelectItem value="6">Samstag</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Stunde</label>
+                  <Select value={newJob.hour} onValueChange={(value) => setNewJob({...newJob, hour: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 24}, (_, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          {i.toString().padStart(2, '0')}:00
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Minute</label>
+                  <Select value={newJob.minute} onValueChange={(value) => setNewJob({...newJob, minute: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 60}, (_, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          {i.toString().padStart(2, '0')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {newJob.schedule === 'monthly' && (
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Tag des Monats</label>
+                  <Select value={newJob.dayOfMonth} onValueChange={(value) => setNewJob({...newJob, dayOfMonth: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 31}, (_, i) => (
+                        <SelectItem key={i} value={(i + 1).toString()}>
+                          {i + 1}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Stunde</label>
+                  <Select value={newJob.hour} onValueChange={(value) => setNewJob({...newJob, hour: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 24}, (_, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          {i.toString().padStart(2, '0')}:00
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Minute</label>
+                  <Select value={newJob.minute} onValueChange={(value) => setNewJob({...newJob, minute: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({length: 60}, (_, i) => (
+                        <SelectItem key={i} value={i.toString()}>
+                          {i.toString().padStart(2, '0')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {newJob.schedule === 'hourly' && (
+              <div>
+                <label className="text-sm font-medium">Minute</label>
+                <Select value={newJob.minute} onValueChange={(value) => setNewJob({...newJob, minute: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({length: 60}, (_, i) => (
+                      <SelectItem key={i} value={i.toString()}>
+                        {i.toString().padStart(2, '0')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {newJob.schedule === 'custom' && (
+              <div>
+                <label className="text-sm font-medium">Benutzerdefiniertes Cron-Muster</label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={newJob.custom_pattern}
+                    onChange={(e) => setNewJob({...newJob, custom_pattern: e.target.value})}
+                    placeholder="0 9 * * *"
+                    className={validationErrors.custom_pattern ? "border-red-500" : ""}
+                  />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Info className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Cron-Format: Minute Stunde Tag Monat Wochentag</p>
+                        <p>Beispiel: 0 9 * * * = Täglich um 9:00 Uhr</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                {validationErrors.custom_pattern && (
+                  <p className="text-xs text-red-500 mt-1">{validationErrors.custom_pattern}</p>
+                )}
+                {newJob.custom_pattern && cronJobService.validateCronExpression(newJob.custom_pattern) && (
+                  <p className="text-xs text-green-600 mt-1">
+                    {cronJobService.parseCronExpression(newJob.custom_pattern)}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div>
               <label className="text-sm font-medium">Beschreibung</label>
-              <Input
+              <Textarea
                 value={newJob.description}
                 onChange={(e) => setNewJob({...newJob, description: e.target.value})}
                 placeholder="Beschreibung (optional)"
+                rows={3}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -516,15 +834,19 @@ const SimpleScheduledJobManager: React.FC = () => {
                       <span>Zeitplan: {parseCronPattern(job.cron_expression)}</span>
                       <span>Funktion: {job.function_name}</span>
                       <span>Status: {job.status}</span>
-                      {job.last_run_at && (
-                        <span>Letzte Ausführung: {new Date(job.last_run_at).toLocaleString('de-DE')}</span>
-                      )}
                       {job.next_run_at && (
-                        <span>Nächste Ausführung: {new Date(job.next_run_at).toLocaleString('de-DE')}</span>
+                        <span>Nächste Ausführung: {getNextRunTime(job)}</span>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleViewJobDetails(job.id!)}
+                    >
+                      <Info className="h-4 w-4" />
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -574,9 +896,18 @@ const SimpleScheduledJobManager: React.FC = () => {
                               <span className="text-gray-500">{formatDuration(exec.duration_ms)}</span>
                             )}
                             {exec.error_message && (
-                              <span className="text-red-500 text-xs" title={exec.error_message}>
-                                <AlertCircle className="h-3 w-3" />
-                              </span>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-red-500 text-xs cursor-help">
+                                      <AlertCircle className="h-3 w-3" />
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="max-w-xs text-xs">{exec.error_message}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                           </div>
                         </div>
@@ -601,63 +932,180 @@ const SimpleScheduledJobManager: React.FC = () => {
         )}
       </div>
 
-      {/* Recent Executions */}
-      {executions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Letzte Ausführungen
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {executions.slice(0, 5).map((execution) => {
-                const job = jobs.find(j => j.id === execution.cron_job_id);
-                return (
-                  <div key={execution.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {execution.status === 'completed' ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : execution.status === 'failed' ? (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      ) : execution.status === 'running' ? (
-                        <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
-                      ) : (
-                        <Clock className="h-5 w-5 text-gray-400" />
-                      )}
-                      <div>
-                        <div className="font-medium">{job?.name || `Job ${execution.cron_job_id?.slice(-8)}`}</div>
-                        <div className="text-sm text-gray-600">
-                          {new Date(execution.started_at).toLocaleString('de-DE')}
-                        </div>
-                      </div>
+      {/* Job Details Dialog */}
+      <Dialog open={showJobDetails} onOpenChange={setShowJobDetails}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Job Details</DialogTitle>
+            <DialogDescription>
+              Detaillierte Informationen und Ausführungsverlauf
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedJobId && (
+            <div className="space-y-6">
+              {/* Job Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Allgemeine Informationen</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Name:</span>
+                      <span className="font-medium">{getSelectedJob()?.name}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={getExecutionStatusBadgeVariant(execution.status)}>
-                        {execution.status}
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Typ:</span>
+                      <span>{getSelectedJob()?.job_type}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Status:</span>
+                      <Badge variant={getStatusBadgeVariant(getSelectedJob()?.status || '')}>
+                        {getSelectedJob()?.status}
                       </Badge>
-                      {execution.duration_ms && (
-                        <span className="text-sm text-gray-500">
-                          {formatDuration(execution.duration_ms)}
-                        </span>
-                      )}
-                      {execution.error_message && (
-                        <span 
-                          className="text-red-500 text-xs cursor-help" 
-                          title={execution.error_message}
-                        >
-                          <AlertCircle className="h-4 w-4" />
-                        </span>
-                      )}
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Aktiviert:</span>
+                      <span>{getSelectedJob()?.enabled ? 'Ja' : 'Nein'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Funktion:</span>
+                      <span>{getSelectedJob()?.function_name}</span>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Zeitplan</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Cron-Ausdruck:</span>
+                      <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+                        {getSelectedJob()?.cron_expression}
+                      </code>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Menschenlesbar:</span>
+                      <span>{parseCronPattern(getSelectedJob()?.cron_expression || '')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Letzte Ausführung:</span>
+                      <span>{getSelectedJob()?.last_run_at ? formatDateTime(getSelectedJob()?.last_run_at) : 'Nie'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Nächste Ausführung:</span>
+                      <span>{getSelectedJob()?.next_run_at ? formatDateTime(getSelectedJob()?.next_run_at) : 'Nicht geplant'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description */}
+              {getSelectedJob()?.description && (
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Beschreibung</h3>
+                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded">
+                    {getSelectedJob()?.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Function Details */}
+              <div>
+                <h3 className="text-sm font-medium mb-2">Funktionsdetails</h3>
+                <div className="bg-gray-50 p-3 rounded">
+                  <p className="text-sm mb-2">
+                    <span className="font-medium">Funktion:</span> {getSelectedJob()?.function_name}
+                  </p>
+                  <p className="text-sm mb-2">
+                    <span className="font-medium">Beschreibung:</span> {getFunctionDescription(getSelectedJob()?.function_name || '')}
+                  </p>
+                  {getSelectedJob()?.function_payload && Object.keys(getSelectedJob()?.function_payload).length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-1">Parameter:</p>
+                      <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32">
+                        {JSON.stringify(getSelectedJob()?.function_payload, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Execution History */}
+              <div>
+                <h3 className="text-sm font-medium mb-2">Ausführungsverlauf</h3>
+                {getJobExecutions().length > 0 ? (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {getJobExecutions().map(exec => (
+                      <div key={exec.id} className="bg-gray-50 p-3 rounded flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            {exec.status === 'completed' ? (
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                            ) : exec.status === 'failed' ? (
+                              <XCircle className="h-4 w-4 text-red-500" />
+                            ) : exec.status === 'running' ? (
+                              <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                            ) : (
+                              <Clock className="h-4 w-4 text-gray-400" />
+                            )}
+                            <span className="text-sm font-medium">
+                              {formatDateTime(exec.started_at)}
+                            </span>
+                          </div>
+                          {exec.error_message && (
+                            <p className="text-xs text-red-500 mt-1 ml-6">
+                              Fehler: {exec.error_message}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={getExecutionStatusBadgeVariant(exec.status)}>
+                            {exec.status}
+                          </Badge>
+                          {exec.duration_ms && (
+                            <span className="text-xs text-gray-500">
+                              {formatDuration(exec.duration_ms)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Keine Ausführungen gefunden</p>
+                )}
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => handleToggleJob(selectedJobId!, !getSelectedJob()?.enabled)}
+                >
+                  {getSelectedJob()?.enabled ? 'Deaktivieren' : 'Aktivieren'}
+                </Button>
+                <Button
+                  onClick={() => handleExecuteJob(selectedJobId!)}
+                  disabled={!getSelectedJob()?.enabled || executingJobId === selectedJobId}
+                >
+                  {executingJobId === selectedJobId ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Wird ausgeführt...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Jetzt ausführen
+                    </>
+                  )}
+                </Button>
+                <DialogClose asChild>
+                  <Button variant="secondary">Schließen</Button>
+                </DialogClose>
+              </DialogFooter>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Help Information */}
       <Alert className="bg-blue-50 border-blue-200">

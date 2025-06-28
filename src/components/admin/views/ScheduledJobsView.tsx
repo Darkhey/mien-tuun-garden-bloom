@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Play, Pause, AlertTriangle, CheckCircle, RefreshCw, Loader2 } from "lucide-react";
+import { Calendar, Clock, Play, Pause, AlertTriangle, CheckCircle, RefreshCw, Loader2, BarChart3, Activity } from "lucide-react";
 import SimpleScheduledJobManager from "../SimpleScheduledJobManager";
 import { scheduledJobService } from "@/services/ScheduledJobService";
 import { cronJobService } from "@/services/CronJobService";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Progress } from "@/components/ui/progress";
 
 const ScheduledJobsView: React.FC = () => {
   const [stats, setStats] = useState({
@@ -18,6 +19,15 @@ const ScheduledJobsView: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<{
+    status: 'healthy' | 'warning' | 'critical';
+    issues: string[];
+    lastSuccessfulRun: Date | null;
+  }>({
+    status: 'healthy',
+    issues: [],
+    lastSuccessfulRun: null
+  });
 
   useEffect(() => {
     loadJobStats();
@@ -28,9 +38,10 @@ const ScheduledJobsView: React.FC = () => {
       setLoading(true);
       console.log("[ScheduledJobs] Loading job statistics...");
       
-      const [scheduledStats, cronStats] = await Promise.all([
+      const [scheduledStats, cronStats, healthStatus] = await Promise.all([
         scheduledJobService.getJobStats(),
-        cronJobService.getJobStats()
+        cronJobService.getJobStats(),
+        cronJobService.getJobHealthStatus()
       ]);
 
       setStats({
@@ -41,7 +52,10 @@ const ScheduledJobsView: React.FC = () => {
         successRate: cronStats.successRate
       });
 
+      setHealthStatus(healthStatus);
+
       console.log("[ScheduledJobs] Statistics loaded:", stats);
+      console.log("[ScheduledJobs] Health status:", healthStatus);
     } catch (error) {
       console.error("[ScheduledJobs] Error loading statistics:", error);
     } finally {
@@ -90,6 +104,34 @@ const ScheduledJobsView: React.FC = () => {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
     return `${minutes}m ${seconds}s`;
+  };
+
+  const getHealthStatusColor = (status: 'healthy' | 'warning' | 'critical') => {
+    switch (status) {
+      case 'healthy': return 'bg-green-500';
+      case 'warning': return 'bg-yellow-500';
+      case 'critical': return 'bg-red-500';
+    }
+  };
+
+  const getLastSuccessfulRunText = (date: Date | null) => {
+    if (!date) return 'Keine erfolgreiche Ausführung';
+    
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 60) {
+      return `Vor ${diffMins} Minuten`;
+    }
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) {
+      return `Vor ${diffHours} Stunden`;
+    }
+    
+    const diffDays = Math.floor(diffHours / 24);
+    return `Vor ${diffDays} Tagen`;
   };
 
   return (
@@ -164,55 +206,133 @@ const ScheduledJobsView: React.FC = () => {
         </Card>
       </div>
 
-      {/* System Status */}
+      {/* System Health Status */}
       {!loading && stats.cronJobs > 0 && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Play className="h-5 w-5" />
-              System Status
+              <Activity className="h-5 w-5" />
+              System-Gesundheit
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${stats.activeJobs > 0 ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                  <div>
-                    <h4 className="font-medium">Automatisierung</h4>
-                    <p className="text-sm text-gray-600">
-                      {stats.activeJobs > 0 ? 'Aktiv' : 'Inaktiv'}
-                    </p>
-                  </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${getHealthStatusColor(healthStatus.status)}`}></div>
+                <div>
+                  <h4 className="font-medium">
+                    {healthStatus.status === 'healthy' ? 'System gesund' : 
+                     healthStatus.status === 'warning' ? 'Warnungen vorhanden' : 
+                     'Kritische Probleme'}
+                  </h4>
+                  <p className="text-sm text-gray-600">
+                    {healthStatus.status === 'healthy' ? 'Alle Jobs funktionieren normal' : 
+                     healthStatus.status === 'warning' ? 'Einige Jobs benötigen Aufmerksamkeit' : 
+                     'Dringende Maßnahmen erforderlich'}
+                  </p>
                 </div>
-                <div className="text-right">
+                <div className="ml-auto text-right">
                   <div className="text-sm font-medium">
-                    {stats.activeJobs} aktive Jobs
+                    Letzte erfolgreiche Ausführung
                   </div>
                   <div className="text-xs text-gray-500">
-                    von {stats.cronJobs} gesamt
+                    {healthStatus.lastSuccessfulRun ? getLastSuccessfulRunText(healthStatus.lastSuccessfulRun) : 'Keine'}
                   </div>
                 </div>
               </div>
+
+              {/* Success Rate Progress */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Erfolgsrate</span>
+                  <span>{stats.successRate}%</span>
+                </div>
+                <Progress value={stats.successRate} className="h-2" />
+              </div>
+
+              {/* Issues List */}
+              {healthStatus.issues.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium mb-2">Erkannte Probleme:</h4>
+                  <ul className="space-y-1">
+                    {healthStatus.issues.map((issue, index) => (
+                      <li key={index} className="flex items-start gap-2 text-sm">
+                        <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-700">{issue}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* System Performance */}
+      {!loading && stats.cronJobs > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              System-Performance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Job-Auslastung</h4>
+                <div className="flex items-center gap-2">
+                  <Progress 
+                    value={stats.activeJobs / (stats.cronJobs || 1) * 100} 
+                    className="h-2 flex-1" 
+                  />
+                  <span className="text-xs text-gray-500 w-12 text-right">
+                    {Math.round(stats.activeJobs / (stats.cronJobs || 1) * 100)}%
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {stats.activeJobs} von {stats.cronJobs} Jobs aktiv
+                </p>
+              </div>
               
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${stats.successRate >= 80 ? 'bg-green-500' : stats.successRate >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
-                  <div>
-                    <h4 className="font-medium">System-Gesundheit</h4>
-                    <p className="text-sm text-gray-600">
-                      {stats.successRate >= 80 ? 'Ausgezeichnet' : stats.successRate >= 50 ? 'Gut' : 'Probleme'}
-                    </p>
-                  </div>
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">Ausführungserfolg</h4>
+                <div className="flex items-center gap-2">
+                  <Progress 
+                    value={stats.successRate} 
+                    className="h-2 flex-1" 
+                  />
+                  <span className="text-xs text-gray-500 w-12 text-right">
+                    {stats.successRate}%
+                  </span>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium">
-                    {stats.successRate}% Erfolgsrate
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    letzte 10 Ausführungen
-                  </div>
+                <p className="text-xs text-gray-500">
+                  Basierend auf den letzten 10 Ausführungen
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">System-Gesundheit</h4>
+                <div className="flex items-center gap-2">
+                  <Progress 
+                    value={
+                      healthStatus.status === 'healthy' ? 100 :
+                      healthStatus.status === 'warning' ? 50 : 20
+                    } 
+                    className={`h-2 flex-1 ${
+                      healthStatus.status === 'healthy' ? 'bg-green-500' :
+                      healthStatus.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                  />
+                  <span className="text-xs text-gray-500 w-12 text-right">
+                    {healthStatus.status === 'healthy' ? 'Gut' :
+                     healthStatus.status === 'warning' ? 'Mittel' : 'Schlecht'}
+                  </span>
                 </div>
+                <p className="text-xs text-gray-500">
+                  {healthStatus.issues.length} Probleme erkannt
+                </p>
               </div>
             </div>
           </CardContent>
@@ -267,12 +387,33 @@ const ScheduledJobsView: React.FC = () => {
       )}
 
       {/* Warning if issues detected */}
-      {!loading && stats.successRate < 50 && (
-        <Alert className="border-orange-200 bg-orange-50 mb-6">
-          <AlertTriangle className="h-4 w-4 text-orange-600" />
-          <AlertDescription className="text-orange-700">
-            <p className="font-medium">Achtung: Probleme mit der Job-Ausführung erkannt</p>
-            <p className="text-sm mt-1">Die Erfolgsrate der letzten Ausführungen ist niedrig. Überprüfen Sie die Fehlerprotokolle und stellen Sie sicher, dass alle erforderlichen Ressourcen verfügbar sind.</p>
+      {!loading && healthStatus.status === 'critical' && (
+        <Alert className="border-red-200 bg-red-50 mb-6">
+          <AlertTriangle className="h-4 w-4 text-red-600" />
+          <AlertTitle className="text-red-700">Kritische Probleme erkannt</AlertTitle>
+          <AlertDescription className="text-red-700">
+            <p className="text-sm mt-1">Die folgenden kritischen Probleme wurden erkannt:</p>
+            <ul className="list-disc list-inside text-sm mt-2 space-y-1">
+              {healthStatus.issues.map((issue, index) => (
+                <li key={index}>{issue}</li>
+              ))}
+            </ul>
+            <p className="text-sm mt-2 font-medium">Bitte beheben Sie diese Probleme umgehend, um Datenverlust oder Systemausfälle zu vermeiden.</p>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!loading && healthStatus.status === 'warning' && (
+        <Alert className="border-yellow-200 bg-yellow-50 mb-6">
+          <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          <AlertTitle className="text-yellow-700">Warnungen erkannt</AlertTitle>
+          <AlertDescription className="text-yellow-700">
+            <p className="text-sm mt-1">Die folgenden Warnungen wurden erkannt:</p>
+            <ul className="list-disc list-inside text-sm mt-2 space-y-1">
+              {healthStatus.issues.map((issue, index) => (
+                <li key={index}>{issue}</li>
+              ))}
+            </ul>
           </AlertDescription>
         </Alert>
       )}
