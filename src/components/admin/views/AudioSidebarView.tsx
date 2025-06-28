@@ -4,10 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Mic, Play, Download, RefreshCw } from "lucide-react";
+import { Loader2, Mic, Download, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import ElevenLabsAudioPlayer from '@/components/blog/ElevenLabsAudioPlayer';
 
 const AudioSidebarView: React.FC = () => {
   const [text, setText] = useState('');
@@ -154,7 +153,7 @@ const AudioSidebarView: React.FC = () => {
         <Card className="border border-gray-200 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Play className="h-5 w-5 text-green-600" />
+              <Mic className="h-5 w-5 text-green-600" />
               Generiertes Audio
             </CardTitle>
           </CardHeader>
@@ -164,12 +163,8 @@ const AudioSidebarView: React.FC = () => {
               
               {audioProject.audio_urls?.map((audio: any, index: number) => (
                 <div key={index} className="mb-4">
-                  <ElevenLabsAudioPlayer 
-                    audioUrl={audio.audio_url}
-                    title={audio.audio_name || `Audio ${index + 1}`}
-                  />
-                  
-                  <div className="flex justify-end mt-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium">{audio.audio_name || `Audio ${index + 1}`}</div>
                     <Button 
                       size="sm" 
                       variant="outline" 
