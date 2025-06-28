@@ -43,13 +43,18 @@ export interface CreateScheduledTaskParams {
 
 class CronJobService {
   async getAllJobs(): Promise<CronJob[]> {
-    const { data, error } = await supabase
-      .from('cron_jobs')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('cron_jobs')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return data || [];
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching all jobs:', error);
+      throw new Error(`Failed to fetch jobs: ${error.message}`);
+    }
   }
 
   async getCronJobs(): Promise<CronJob[]> {
@@ -57,47 +62,57 @@ class CronJobService {
   }
 
   async getJobById(id: string): Promise<CronJob | null> {
-    const { data, error } = await supabase
-      .from('cron_jobs')
-      .select('*')
-      .eq('id', id)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('cron_jobs')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw error;
+      if (error) {
+        if (error.code === 'PGRST116') return null;
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error(`Error fetching job with ID ${id}:`, error);
+      throw new Error(`Failed to fetch job: ${error.message}`);
     }
-    return data;
   }
 
   async createJob(params: CreateCronJobParams): Promise<CronJob> {
-    const { data: session } = await supabase.auth.getSession();
-    if (!session.session?.user) throw new Error('Not authenticated');
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session?.user) throw new Error('Not authenticated');
 
-    const jobData: CronJobInsert = {
-      name: params.name,
-      description: params.description,
-      cron_expression: params.cron_expression,
-      job_type: params.job_type,
-      function_name: params.function_name,
-      function_payload: params.function_payload || {},
-      created_by: session.session.user.id,
-      enabled: params.enabled ?? true,
-      retry_count: params.retry_count ?? 3,
-      timeout_seconds: params.timeout_seconds ?? 300,
-      tags: params.tags || [],
-      dependencies: params.dependencies || [],
-      conditions: params.conditions || {}
-    };
+      const jobData: CronJobInsert = {
+        name: params.name,
+        description: params.description,
+        cron_expression: params.cron_expression,
+        job_type: params.job_type,
+        function_name: params.function_name,
+        function_payload: params.function_payload || {},
+        created_by: session.session.user.id,
+        enabled: params.enabled ?? true,
+        retry_count: params.retry_count ?? 3,
+        timeout_seconds: params.timeout_seconds ?? 300,
+        tags: params.tags || [],
+        dependencies: params.dependencies || [],
+        conditions: params.conditions || {}
+      };
 
-    const { data, error } = await supabase
-      .from('cron_jobs')
-      .insert(jobData)
-      .select()
-      .single();
+      const { data, error } = await supabase
+        .from('cron_jobs')
+        .insert(jobData)
+        .select()
+        .single();
 
-    if (error) throw error;
-    return data;
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating job:', error);
+      throw new Error(`Failed to create job: ${error.message}`);
+    }
   }
 
   async createCronJob(params: CreateCronJobParams): Promise<CronJob> {
@@ -105,31 +120,68 @@ class CronJobService {
   }
 
   async updateJob(id: string, updates: Partial<CreateCronJobParams>): Promise<CronJob> {
-    const updateData: any = { ...updates };
-    
-    // Ensure job_type is properly typed
-    if (updateData.job_type && typeof updateData.job_type === 'string') {
-      updateData.job_type = updateData.job_type as Database['public']['Enums']['job_type'];
+    try {
+      const updateData: any = { ...updates };
+      
+      // Ensure job_type is properly typed
+      if (updateData.job_type && typeof updateData.job_type === 'string') {
+        updateData.job_type = updateData.job_type as Database['public']['Enums']['job_type'];
+      }
+
+      const { data, error } = await supabase
+        .from('cron_jobs')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error(`Error updating job with ID ${id}:`, error);
+      throw new Error(`Failed to update job: ${error.message}`);
     }
-
-    const { data, error } = await supabase
-      .from('cron_jobs')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
   }
 
   async deleteJob(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('cron_jobs')
-      .delete()
-      .eq('id', id);
+    try {
+      // First check if the job exists
+      const { data: job, error: checkError } = await supabase
+        .from('cron_jobs')
+        .select('id, name')
+        .eq('id', id)
+        .single();
+        
+      if (checkError) {
+        if (checkError.code === 'PGRST116') {
+          throw new Error(`Job with ID ${id} not found`);
+        }
+        throw checkError;
+      }
+      
+      // Delete associated execution logs first to avoid foreign key constraints
+      const { error: logsError } = await supabase
+        .from('job_execution_logs')
+        .delete()
+        .eq('cron_job_id', id);
+        
+      if (logsError) {
+        console.warn(`Warning: Could not delete execution logs for job ${id}:`, logsError);
+      }
 
-    if (error) throw error;
+      // Now delete the job
+      const { error } = await supabase
+        .from('cron_jobs')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      
+      console.log(`Job "${job.name}" (${id}) successfully deleted`);
+    } catch (error) {
+      console.error(`Error deleting job with ID ${id}:`, error);
+      throw new Error(`Failed to delete job: ${error.message}`);
+    }
   }
 
   async deleteCronJob(id: string): Promise<void> {
@@ -137,15 +189,23 @@ class CronJobService {
   }
 
   async toggleJob(id: string, enabled: boolean): Promise<CronJob> {
-    const { data, error } = await supabase
-      .from('cron_jobs')
-      .update({ enabled })
-      .eq('id', id)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('cron_jobs')
+        .update({ 
+          enabled,
+          status: enabled ? 'active' : 'inactive'
+        })
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (error) throw error;
-    return data;
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error(`Error toggling job with ID ${id}:`, error);
+      throw new Error(`Failed to toggle job: ${error.message}`);
+    }
   }
 
   async toggleCronJob(id: string, enabled: boolean): Promise<CronJob> {
@@ -157,7 +217,7 @@ class CronJobService {
       // First check if the job is enabled
       const { data: job, error: jobError } = await supabase
         .from('cron_jobs')
-        .select('enabled, name')
+        .select('enabled, name, function_name')
         .eq('id', id)
         .single();
 
@@ -172,6 +232,8 @@ class CronJobService {
           error: `Job "${job.name}" ist deaktiviert. Bitte aktivieren Sie den Job zuerst.` 
         };
       }
+
+      console.log(`Executing job "${job.name}" (${id}) with function: ${job.function_name}`);
 
       const { data, error } = await supabase.functions.invoke('cron-executor', {
         body: { jobId: id, action: 'execute' }
@@ -201,129 +263,164 @@ class CronJobService {
   }
 
   async getJobLogs(jobId?: string, limit = 50): Promise<JobExecutionLog[]> {
-    let query = supabase
-      .from('job_execution_logs')
-      .select('*')
-      .order('started_at', { ascending: false })
-      .limit(limit);
-
-    if (jobId) {
-      query = query.eq('cron_job_id', jobId);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
-  }
-
-  async getJobTemplates(): Promise<JobTemplate[]> {
-    const { data, error } = await supabase
-      .from('job_templates')
-      .select('*')
-      .order('category', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
-  }
-
-  async createJobFromTemplate(templateId: string, customParams?: Partial<CreateCronJobParams>): Promise<CronJob> {
-    const template = await this.getTemplateById(templateId);
-    if (!template) throw new Error('Template not found');
-
-    const defaultPayload = typeof template.default_payload === 'object' && template.default_payload !== null 
-      ? template.default_payload as Record<string, any>
-      : {};
-
-    const jobParams: CreateCronJobParams = {
-      name: customParams?.name || template.name,
-      description: customParams?.description || template.description || '',
-      cron_expression: customParams?.cron_expression || template.default_cron_expression,
-      job_type: template.job_type,
-      function_name: template.function_name,
-      function_payload: { ...defaultPayload, ...(customParams?.function_payload || {}) },
-      ...customParams
-    };
-
-    return this.createJob(jobParams);
-  }
-
-  async getTemplateById(id: string): Promise<JobTemplate | null> {
-    const { data, error } = await supabase
-      .from('job_templates')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null;
-      throw error;
-    }
-    return data;
-  }
-
-  async getScheduledTasks(): Promise<ScheduledTask[]> {
-    const { data, error } = await supabase
-      .from('scheduled_tasks')
-      .select('*')
-      .order('scheduled_for', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
-  }
-
-  async createScheduledTask(params: CreateScheduledTaskParams): Promise<ScheduledTask> {
-    const { data: session } = await supabase.auth.getSession();
-    if (!session.session?.user) throw new Error('Not authenticated');
-
-    const taskData: ScheduledTaskInsert = {
-      name: params.name,
-      description: params.description,
-      function_name: params.function_name,
-      function_payload: params.function_payload || {},
-      scheduled_for: params.scheduled_for,
-      priority: params.priority || 0,
-      created_by: session.session.user.id,
-      status: 'pending'
-    };
-
-    const { data, error } = await supabase
-      .from('scheduled_tasks')
-      .insert(taskData)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  }
-
-  async getJobStats(): Promise<CronJobStats> {
-    const [jobsResult, logsResult] = await Promise.all([
-      supabase.from('cron_jobs').select('*'),
-      supabase
+    try {
+      let query = supabase
         .from('job_execution_logs')
         .select('*')
         .order('started_at', { ascending: false })
-        .limit(10)
-    ]);
+        .limit(limit);
 
-    if (jobsResult.error) throw jobsResult.error;
-    if (logsResult.error) throw logsResult.error;
+      if (jobId) {
+        query = query.eq('cron_job_id', jobId);
+      }
 
-    const jobs = jobsResult.data || [];
-    const logs = logsResult.data || [];
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching job logs:', error);
+      throw new Error(`Failed to fetch job logs: ${error.message}`);
+    }
+  }
 
-    const totalJobs = jobs.length;
-    const activeJobs = jobs.filter(job => job.enabled && job.status === 'active').length;
-    
-    const completedLogs = logs.filter(log => log.status === 'completed');
-    const successRate = logs.length > 0 ? (completedLogs.length / logs.length) * 100 : 0;
+  async getJobTemplates(): Promise<JobTemplate[]> {
+    try {
+      const { data, error } = await supabase
+        .from('job_templates')
+        .select('*')
+        .order('category', { ascending: true });
 
-    return {
-      totalJobs,
-      activeJobs,
-      successRate: Math.round(successRate),
-      lastExecutions: logs
-    };
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching job templates:', error);
+      throw new Error(`Failed to fetch job templates: ${error.message}`);
+    }
+  }
+
+  async createJobFromTemplate(templateId: string, customParams?: Partial<CreateCronJobParams>): Promise<CronJob> {
+    try {
+      const template = await this.getTemplateById(templateId);
+      if (!template) throw new Error('Template not found');
+
+      const defaultPayload = typeof template.default_payload === 'object' && template.default_payload !== null 
+        ? template.default_payload as Record<string, any>
+        : {};
+
+      const jobParams: CreateCronJobParams = {
+        name: customParams?.name || template.name,
+        description: customParams?.description || template.description || '',
+        cron_expression: customParams?.cron_expression || template.default_cron_expression,
+        job_type: template.job_type,
+        function_name: template.function_name,
+        function_payload: { ...defaultPayload, ...(customParams?.function_payload || {}) },
+        ...customParams
+      };
+
+      return this.createJob(jobParams);
+    } catch (error) {
+      console.error('Error creating job from template:', error);
+      throw new Error(`Failed to create job from template: ${error.message}`);
+    }
+  }
+
+  async getTemplateById(id: string): Promise<JobTemplate | null> {
+    try {
+      const { data, error } = await supabase
+        .from('job_templates')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') return null;
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error(`Error fetching template with ID ${id}:`, error);
+      throw new Error(`Failed to fetch template: ${error.message}`);
+    }
+  }
+
+  async getScheduledTasks(): Promise<ScheduledTask[]> {
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_tasks')
+        .select('*')
+        .order('scheduled_for', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching scheduled tasks:', error);
+      throw new Error(`Failed to fetch scheduled tasks: ${error.message}`);
+    }
+  }
+
+  async createScheduledTask(params: CreateScheduledTaskParams): Promise<ScheduledTask> {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session.session?.user) throw new Error('Not authenticated');
+
+      const taskData: ScheduledTaskInsert = {
+        name: params.name,
+        description: params.description,
+        function_name: params.function_name,
+        function_payload: params.function_payload || {},
+        scheduled_for: params.scheduled_for,
+        priority: params.priority || 0,
+        created_by: session.session.user.id,
+        status: 'pending'
+      };
+
+      const { data, error } = await supabase
+        .from('scheduled_tasks')
+        .insert(taskData)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating scheduled task:', error);
+      throw new Error(`Failed to create scheduled task: ${error.message}`);
+    }
+  }
+
+  async getJobStats(): Promise<CronJobStats> {
+    try {
+      const [jobsResult, logsResult] = await Promise.all([
+        supabase.from('cron_jobs').select('*'),
+        supabase
+          .from('job_execution_logs')
+          .select('*')
+          .order('started_at', { ascending: false })
+          .limit(10)
+      ]);
+
+      if (jobsResult.error) throw jobsResult.error;
+      if (logsResult.error) throw logsResult.error;
+
+      const jobs = jobsResult.data || [];
+      const logs = logsResult.data || [];
+
+      const totalJobs = jobs.length;
+      const activeJobs = jobs.filter(job => job.enabled && job.status === 'active').length;
+      
+      const completedLogs = logs.filter(log => log.status === 'completed');
+      const successRate = logs.length > 0 ? (completedLogs.length / logs.length) * 100 : 0;
+
+      return {
+        totalJobs,
+        activeJobs,
+        successRate: Math.round(successRate),
+        lastExecutions: logs
+      };
+    } catch (error) {
+      console.error('Error fetching job statistics:', error);
+      throw new Error(`Failed to fetch job statistics: ${error.message}`);
+    }
   }
 
   async getJobStatistics(): Promise<CronJobStats> {
@@ -331,24 +428,87 @@ class CronJobService {
   }
 
   parseCronExpression(expression: string): string {
-    // Simple cron expression parser
+    try {
+      // Simple cron expression parser
+      const parts = expression.split(' ');
+      if (parts.length !== 5) return 'Invalid expression';
+      
+      const [minute, hour, day, month, weekday] = parts;
+      
+      if (minute === '0' && hour !== '*') {
+        return `Täglich um ${hour}:00 Uhr`;
+      }
+      if (minute === '0' && hour === '0' && weekday !== '*') {
+        const days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+        return `Jeden ${days[parseInt(weekday)]} um Mitternacht`;
+      }
+      if (minute === '0' && hour === '0' && day === '1') {
+        return 'Monatlich am ersten Tag';
+      }
+      
+      return expression;
+    } catch (error) {
+      console.error('Error parsing cron expression:', error);
+      return expression;
+    }
+  }
+
+  // Validate cron expression
+  validateCronExpression(expression: string): boolean {
+    // Basic validation for cron expression format
     const parts = expression.split(' ');
-    if (parts.length !== 5) return 'Invalid expression';
+    if (parts.length !== 5) return false;
     
+    // Check each part for valid format
     const [minute, hour, day, month, weekday] = parts;
     
-    if (minute === '0' && hour !== '*') {
-      return `Täglich um ${hour}:00 Uhr`;
-    }
-    if (minute === '0' && hour === '0' && weekday !== '*') {
-      const days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-      return `Jeden ${days[parseInt(weekday)]} um Mitternacht`;
-    }
-    if (minute === '0' && hour === '0' && day === '1') {
-      return 'Monatlich am ersten Tag';
-    }
+    // Simple regex patterns for each part
+    const minutePattern = /^(\*|([0-5]?[0-9])(-([0-5]?[0-9]))?(\/([0-5]?[0-9]))?(,([0-5]?[0-9])(-([0-5]?[0-9]))?(\/([0-5]?[0-9]))?)*)?$/;
+    const hourPattern = /^(\*|([01]?[0-9]|2[0-3])(-([01]?[0-9]|2[0-3]))?(\/([01]?[0-9]|2[0-3]))?(,([01]?[0-9]|2[0-3])(-([01]?[0-9]|2[0-3]))?(\/([01]?[0-9]|2[0-3]))?)*)?$/;
+    const dayPattern = /^(\*|([0-2]?[1-9]|3[01])(-([0-2]?[1-9]|3[01]))?(\/([0-2]?[1-9]|3[01]))?(,([0-2]?[1-9]|3[01])(-([0-2]?[1-9]|3[01]))?(\/([0-2]?[1-9]|3[01]))?)*)?$/;
+    const monthPattern = /^(\*|([0]?[1-9]|1[0-2])(-([0]?[1-9]|1[0-2]))?(\/([0]?[1-9]|1[0-2]))?(,([0]?[1-9]|1[0-2])(-([0]?[1-9]|1[0-2]))?(\/([0]?[1-9]|1[0-2]))?)*)?$/;
+    const weekdayPattern = /^(\*|[0-6](-[0-6])?(\/[0-6])?(,[0-6](-[0-6])?(\/[0-6])?)*)?$/;
     
-    return expression;
+    return (
+      minutePattern.test(minute) &&
+      hourPattern.test(hour) &&
+      dayPattern.test(day) &&
+      monthPattern.test(month) &&
+      weekdayPattern.test(weekday)
+    );
+  }
+
+  // Calculate next run time based on cron expression
+  calculateNextRunTime(cronExpression: string): Date | null {
+    try {
+      if (!this.validateCronExpression(cronExpression)) {
+        return null;
+      }
+      
+      // This is a simplified implementation
+      // In a real-world scenario, you would use a library like cron-parser
+      const now = new Date();
+      const [minute, hour, day, month, weekday] = cronExpression.split(' ');
+      
+      // Simple case: daily at specific hour
+      if (minute === '0' && hour !== '*' && day === '*' && month === '*' && weekday === '*') {
+        const nextRun = new Date(now);
+        nextRun.setHours(parseInt(hour), 0, 0, 0);
+        if (nextRun <= now) {
+          nextRun.setDate(nextRun.getDate() + 1);
+        }
+        return nextRun;
+      }
+      
+      // For more complex cases, return tomorrow same time as fallback
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(9, 0, 0, 0); // Default to 9 AM
+      return tomorrow;
+    } catch (error) {
+      console.error('Error calculating next run time:', error);
+      return null;
+    }
   }
 }
 
