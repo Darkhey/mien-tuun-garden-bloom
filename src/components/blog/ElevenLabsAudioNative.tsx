@@ -4,6 +4,7 @@ import { Loader2 } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { debounce } from 'lodash';
 import { supabase } from '@/integrations/supabase/client';
+import ElevenLabsAudioPlayer from './ElevenLabsAudioPlayer';
 
 interface ElevenLabsAudioNativeProps {
   text: string;
@@ -18,7 +19,7 @@ const ElevenLabsAudioNative: React.FC<ElevenLabsAudioNativeProps> = ({
   voiceId = '21m00Tcm4TlvDq8ikWAM',
   className = "",
 }) => {
-  const [htmlSnippet, setHtmlSnippet] = useState<string | null>(null);
+  const [audioData, setAudioData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +41,7 @@ const ElevenLabsAudioNative: React.FC<ElevenLabsAudioNativeProps> = ({
           throw new Error(error.message);
         }
 
-        setHtmlSnippet((data as any).html_snippet);
+        setAudioData(data);
       } catch (err: any) {
         console.error('Error creating audio native project:', err);
         setError(err.message ?? 'Unbekannter Fehler');
@@ -58,14 +59,19 @@ const ElevenLabsAudioNative: React.FC<ElevenLabsAudioNativeProps> = ({
   return (
     <Card className={`bg-gradient-to-r from-sage-50 to-accent-50 ${className}`}>
       <CardContent className="p-4">
-        {isLoading && !htmlSnippet ? (
+        {isLoading && !audioData ? (
           <div className="flex items-center gap-2 text-sm text-earth-700">
-            <Loader2 className="h-4 w-4 animate-spin" /> Projekt wird vorbereitet
+            <Loader2 className="h-4 w-4 animate-spin" /> Audiodatei wird vorbereitet
           </div>
         ) : error ? (
           <div className="text-sm text-red-600">{error}</div>
+        ) : audioData?.audio_urls && audioData.audio_urls.length > 0 ? (
+          <ElevenLabsAudioPlayer 
+            audioUrl={audioData.audio_urls[0].audio_url} 
+            title={title || audioData.name} 
+          />
         ) : (
-          <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(htmlSnippet ?? '') }} />
+          <div className="text-sm text-earth-700">Audio wird geladen...</div>
         )}
       </CardContent>
     </Card>

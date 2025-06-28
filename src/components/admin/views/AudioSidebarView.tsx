@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, Mic, Play, Volume2, Download, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import ElevenLabsAudioPlayer from '@/components/blog/ElevenLabsAudioPlayer';
 
 const AudioSidebarView: React.FC = () => {
   const [text, setText] = useState('');
@@ -90,7 +91,7 @@ const AudioSidebarView: React.FC = () => {
         </div>
       </div>
 
-      <Card>
+      <Card className="border border-gray-200 shadow-sm">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mic className="h-5 w-5 text-blue-600" />
@@ -154,7 +155,7 @@ const AudioSidebarView: React.FC = () => {
       </Card>
 
       {audioProject && (
-        <Card>
+        <Card className="border border-gray-200 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Play className="h-5 w-5 text-green-600" />
@@ -165,38 +166,26 @@ const AudioSidebarView: React.FC = () => {
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-medium mb-2">{audioProject.name || 'Audio Projekt'}</h3>
               
-              {audioProject.audio_native_player_html && (
-                <div 
-                  className="mb-4"
-                  dangerouslySetInnerHTML={{ __html: audioProject.audio_native_player_html }}
-                />
-              )}
-              
-              <div className="flex flex-wrap gap-2">
-                {audioProject.audio_urls?.map((audio: any, index: number) => (
-                  <div key={index} className="flex flex-col gap-2 p-3 border rounded-lg">
-                    <div className="text-sm font-medium">{audio.audio_name || `Audio ${index + 1}`}</div>
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handlePlayAudio(audio.audio_url)}
-                      >
-                        <Play className="h-4 w-4 mr-1" />
-                        Abspielen
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => handleDownloadAudio(audio.audio_url, audio.audio_name || 'audio.mp3')}
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </Button>
-                    </div>
+              {audioProject.audio_urls?.map((audio: any, index: number) => (
+                <div key={index} className="mb-4">
+                  <ElevenLabsAudioPlayer 
+                    audioUrl={audio.audio_url}
+                    title={audio.audio_name || `Audio ${index + 1}`}
+                  />
+                  
+                  <div className="flex justify-end mt-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => handleDownloadAudio(audio.audio_url, audio.audio_name || 'audio.mp3')}
+                      className="flex items-center gap-1"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </Button>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
             
             <Button 

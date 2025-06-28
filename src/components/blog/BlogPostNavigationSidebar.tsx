@@ -17,8 +17,8 @@ const BlogPostNavigationSidebar: React.FC<BlogPostNavigationSidebarProps> = ({
 
   return (
     <aside className="hidden xl:block fixed top-32 right-8 w-64 text-sm">
-      <nav className="sticky top-32" aria-label="Article navigation">
-        <h2 className="text-lg font-serif font-bold mb-4 text-earth-800">
+      <nav className="sticky top-32 bg-white border border-sage-200 rounded-xl shadow-sm p-4 transition-all duration-300 hover:shadow-md" aria-label="Article navigation">
+        <h2 className="text-lg font-serif font-bold mb-4 text-earth-800 border-b border-sage-100 pb-2">
           Inhalt
         </h2>
         <ul className="space-y-2">
@@ -26,7 +26,7 @@ const BlogPostNavigationSidebar: React.FC<BlogPostNavigationSidebarProps> = ({
             <li key={h.id} className={h.level === 3 ? "ml-4" : ""}>
               <a
                 href={`#${h.id}`}
-                className="text-sage-700 hover:text-sage-900"
+                className="text-sage-700 hover:text-sage-900 transition-colors duration-200 block py-1 px-2 rounded-md hover:bg-sage-50"
               >
                 {h.text}
               </a>
