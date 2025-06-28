@@ -2,6 +2,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -20,7 +21,7 @@ const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "18rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
-const SIDEBAR_WIDTH_ICON = "4rem"
+const SIDEBAR_WIDTH_ICON = "3.75rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContext = {
@@ -191,37 +192,52 @@ const Sidebar = React.forwardRef<
 
     if (isMobile) {
       return (
-        <div className="fixed inset-0 z-50 bg-black/50" style={{ display: openMobile ? 'block' : 'none' }}>
-          <div
-            data-sidebar="sidebar"
-            data-mobile="true"
-            className={cn(
-              "fixed inset-y-0 left-0 z-50 w-[--sidebar-width] bg-white shadow-xl p-0 text-sidebar-foreground transition-transform",
-              openMobile ? "translate-x-0" : "-translate-x-full",
-              className
-            )}
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              } as React.CSSProperties
-            }
-            {...props}
-          >
-            <div className="flex h-full w-full flex-col">{children}</div>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute top-4 right-4" 
+        <AnimatePresence>
+          {openMobile && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 bg-black/50"
               onClick={() => setOpenMobile(false)}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x">
-                <path d="M18 6 6 18"/>
-                <path d="m6 6 12 12"/>
-              </svg>
-              <span className="sr-only">Close</span>
-            </Button>
-          </div>
-        </div>
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "-100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                data-sidebar="sidebar"
+                data-mobile="true"
+                className={cn(
+                  "fixed inset-y-0 left-0 z-50 w-[--sidebar-width] bg-white shadow-xl p-0 text-sidebar-foreground",
+                  className
+                )}
+                style={
+                  {
+                    "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
+                  } as React.CSSProperties
+                }
+                onClick={(e) => e.stopPropagation()}
+                {...props}
+              >
+                <div className="flex h-full w-full flex-col">{children}</div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute top-4 right-4" 
+                  onClick={() => setOpenMobile(false)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x">
+                    <path d="M18 6 6 18"/>
+                    <path d="m6 6 12 12"/>
+                  </svg>
+                  <span className="sr-only">Close</span>
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       )
     }
 
@@ -242,30 +258,48 @@ const Sidebar = React.forwardRef<
             "group-data-[side=right]:rotate-180",
             variant === "floating" || variant === "inset"
               ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
+              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]",
+            "group-hover:w-[--sidebar-width]", // Expand on hover
+            className
           )}
         />
-        <div
+        <motion.div
+          initial={false}
+          animate={{ 
+            width: state === "collapsed" ? SIDEBAR_WIDTH_ICON : SIDEBAR_WIDTH,
+            left: side === "left" 
+              ? state === "collapsed" && collapsible === "offcanvas" 
+                ? `calc(var(--sidebar-width) * -1)` 
+                : 0
+              : "auto",
+            right: side === "right" 
+              ? state === "collapsed" && collapsible === "offcanvas" 
+                ? `calc(var(--sidebar-width) * -1)` 
+                : 0
+              : "auto"
+          }}
+          transition={{ 
+            type: "spring", 
+            damping: 25, 
+            stiffness: 300 
+          }}
           className={cn(
-            "duration-300 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-in-out md:flex",
-            side === "left"
-              ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-              : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-            // Adjust the padding for floating and inset variants.
+            "fixed inset-y-0 z-10 hidden h-svh flex-col bg-white md:flex",
+            side === "left" ? "left-0" : "right-0",
             variant === "floating" || variant === "inset"
-              ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+              ? "p-2"
+              : "border-r border-gray-200",
             className
           )}
           {...props}
         >
           <div
             data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-white rounded-xl border border-gray-200 shadow-sm group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
+            className="flex h-full w-full flex-col bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
           >
             {children}
           </div>
-        </div>
+        </motion.div>
       </div>
     )
   }
@@ -446,14 +480,15 @@ const SidebarGroupLabel = React.forwardRef<
   React.ComponentProps<"div"> & { asChild?: boolean }
 >(({ className, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "div"
+  const { state } = useSidebar()
 
   return (
     <Comp
       ref={ref}
       data-sidebar="group-label"
       className={cn(
-        "duration-200 flex h-8 shrink-0 items-center rounded-md px-3 text-xs font-medium text-gray-500 outline-none ring-sidebar-ring transition-[margin,opa] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
-        "group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0",
+        "duration-200 flex h-8 shrink-0 items-center rounded-md px-3 text-xs font-medium text-gray-500 outline-none ring-sidebar-ring transition-[margin,opacity] ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+        state === "collapsed" ? "opacity-0" : "opacity-100",
         className
       )}
       {...props}
@@ -525,7 +560,7 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-md p-3 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-2 active:bg-gray-100 active:text-gray-900 disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-gray-100 data-[active=true]:font-medium data-[active=true]:text-gray-900 data-[state=open]:hover:bg-gray-100 data-[state=open]:hover:text-gray-900 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-gray-500",
+  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-md p-3 text-left text-sm outline-none ring-sidebar-ring transition-all hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-2 active:bg-gray-100 active:text-gray-900 disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-gray-100 data-[active=true]:font-medium data-[active=true]:text-gray-900 data-[state=open]:hover:bg-gray-100 data-[state=open]:hover:text-gray-900 [&>span:last-child]:truncate [&>svg]:size-5 [&>svg]:shrink-0 [&>svg]:text-gray-500",
   {
     variants: {
       variant: {
@@ -536,7 +571,7 @@ const sidebarMenuButtonVariants = cva(
       size: {
         default: "h-10 text-sm",
         sm: "h-9 text-xs",
-        lg: "h-12 text-sm group-data-[collapsible=icon]:!p-0",
+        lg: "h-12 text-sm",
       },
     },
     defaultVariants: {
@@ -575,7 +610,11 @@ const SidebarMenuButton = React.forwardRef<
         data-sidebar="menu-button"
         data-size={size}
         data-active={isActive}
-        className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
+        className={cn(
+          sidebarMenuButtonVariants({ variant, size }), 
+          state === "collapsed" ? "justify-center" : "justify-start",
+          className
+        )}
         {...props}
       />
     )

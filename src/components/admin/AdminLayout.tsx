@@ -40,6 +40,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
   onViewChange = () => {}
 }) => {
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const { data: user } = useQuery({
     queryKey: ['user'],
@@ -85,6 +86,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                           onClick={() => onViewChange(item.id)}
                           isActive={activeView === item.id}
                           className="w-full justify-start"
+                          tooltip={item.title}
                         >
                           <Icon className="h-5 w-5" />
                           <span>{item.title}</span>
@@ -98,6 +100,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                       onClick={() => onViewChange(group.id)}
                       isActive={activeView === group.id}
                       className="w-full justify-start"
+                      tooltip={group.title}
                     >
                       <group.icon className="h-5 w-5" />
                       <span>{group.title}</span>
@@ -144,7 +147,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50 w-full">
-      <SidebarProvider>
+      <SidebarProvider open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <div className="flex min-h-screen w-full">
           <AppSidebar />
           <main className="flex-1 flex flex-col overflow-hidden">
