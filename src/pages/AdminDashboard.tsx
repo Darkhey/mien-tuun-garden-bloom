@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +8,7 @@ import KIBlogCreatorView from '@/components/admin/views/KIBlogCreatorView';
 import BlogPodcastView from '@/components/admin/views/BlogPodcastView';
 import ContentStrategyView from '@/components/admin/views/ContentStrategyView';
 import ScheduledJobsView from '@/components/admin/views/ScheduledJobsView';
+import AudioSidebarView from '@/components/admin/views/AudioSidebarView';
 import AdminLayout from '@/components/admin/AdminLayout';
 
 const AdminDashboard = () => {
@@ -43,6 +43,8 @@ const AdminDashboard = () => {
         return <ContentStrategyView />;
       case 'scheduled-jobs':
         return <ScheduledJobsView />;
+      case 'audio-generator':
+        return <AudioSidebarView />;
       default:
         return <BlogPostsView />;
     }

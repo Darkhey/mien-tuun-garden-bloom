@@ -1,4 +1,3 @@
-
 import {
   BookOpen,
   Calendar,
@@ -10,7 +9,8 @@ import {
   Mic,
   TestTube,
   TrendingUp,
-  Clock
+  Clock,
+  Volume2
 } from 'lucide-react';
 
 export interface AdminMenuItem {
@@ -75,6 +75,12 @@ export const adminMenuItems: AdminMenuItem[] = [
         title: 'Geplante Jobs',
         icon: Clock,
         path: '/admin/scheduled-jobs'
+      },
+      {
+        id: 'audio-generator',
+        title: 'Audio Generator',
+        icon: Volume2,
+        path: '/admin/audio-generator'
       }
     ]
   },
