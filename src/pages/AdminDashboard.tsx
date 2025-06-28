@@ -9,6 +9,7 @@ import BlogPodcastView from '@/components/admin/views/BlogPodcastView';
 import ContentStrategyView from '@/components/admin/views/ContentStrategyView';
 import ScheduledJobsView from '@/components/admin/views/ScheduledJobsView';
 import AudioSidebarView from '@/components/admin/views/AudioSidebarView';
+import SowingCalendarManager from '@/components/admin/SowingCalendarManager';
 import AdminLayout from '@/components/admin/AdminLayout';
 
 const AdminDashboard = () => {
@@ -45,6 +46,8 @@ const AdminDashboard = () => {
         return <ScheduledJobsView />;
       case 'audio-generator':
         return <AudioSidebarView />;
+      case 'sowing-calendar':
+        return <SowingCalendarManager />;
       default:
         return <BlogPostsView />;
     }

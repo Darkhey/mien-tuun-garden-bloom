@@ -10,7 +10,8 @@ import {
   TestTube,
   TrendingUp,
   Clock,
-  Volume2
+  Volume2,
+  Sprout
 } from 'lucide-react';
 
 export interface AdminMenuItem {
@@ -56,6 +57,19 @@ export const adminMenuItems: AdminMenuItem[] = [
         title: 'Blog Testing',
         icon: TestTube,
         path: '/admin/blog-testing'
+      }
+    ]
+  },
+  {
+    id: 'garden',
+    title: 'Garten-Verwaltung',
+    icon: Sprout,
+    children: [
+      {
+        id: 'sowing-calendar',
+        title: 'Aussaatkalender',
+        icon: Calendar,
+        path: '/admin/sowing-calendar'
       }
     ]
   },
