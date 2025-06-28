@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,7 +26,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, User, Flower } from "lucide-react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -59,12 +58,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
     <Sidebar>
       <SidebarHeader className="border-b px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">A</span>
+          <div className="w-10 h-10 bg-gradient-to-br from-sage-500 to-accent-500 rounded-lg flex items-center justify-center">
+            <Flower className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="font-semibold text-lg">Admin Dashboard</h2>
-            <p className="text-sm text-muted-foreground">Mien Tuun</p>
+            <h2 className="font-semibold text-lg text-gray-800">Admin Dashboard</h2>
+            <p className="text-sm text-gray-500">Mien Tuun</p>
           </div>
         </div>
       </SidebarHeader>
@@ -72,7 +71,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       <SidebarContent>
         {adminMenuItems.map((group, groupIndex) => (
           <SidebarGroup key={group.id}>
-            <SidebarGroupLabel className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-3">
+            <SidebarGroupLabel className="text-xs font-medium text-gray-500 uppercase tracking-wider px-3">
               {group.title}
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -87,7 +86,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                           isActive={activeView === item.id}
                           className="w-full justify-start"
                         >
-                          <Icon className="h-4 w-4" />
+                          <Icon className="h-5 w-5" />
                           <span>{item.title}</span>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -100,7 +99,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
                       isActive={activeView === group.id}
                       className="w-full justify-start"
                     >
-                      <group.icon className="h-4 w-4" />
+                      <group.icon className="h-5 w-5" />
                       <span>{group.title}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -114,26 +113,26 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({
       <SidebarFooter className="border-t p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start gap-2 h-auto p-2">
-              <Avatar className="h-8 w-8">
+            <Button variant="ghost" className="w-full justify-start gap-3 h-auto p-2 hover:bg-gray-100">
+              <Avatar className="h-10 w-10">
                 <AvatarImage src={`https://avatar.vercel.sh/${user?.email}.png`} />
                 <AvatarFallback>
-                  <User className="h-4 w-4" />
+                  <User className="h-5 w-5" />
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-start text-sm">
-                <span className="font-medium">{user?.email?.split('@')[0] || 'Admin'}</span>
-                <span className="text-muted-foreground text-xs">{user?.email}</span>
+                <span className="font-medium text-gray-800">{user?.email?.split('@')[0] || 'Admin'}</span>
+                <span className="text-gray-500 text-xs">{user?.email}</span>
               </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer">
               <Settings className="h-4 w-4 mr-2" />
               Einstellungen
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
+            <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
               <LogOut className="h-4 w-4 mr-2" />
               Abmelden
             </DropdownMenuItem>
