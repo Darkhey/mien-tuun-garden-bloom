@@ -96,7 +96,7 @@ const ElevenLabsAudioPlayer: React.FC<ElevenLabsAudioPlayerProps> = ({
   };
 
   return (
-    <Card className={`bg-gradient-to-r from-sage-50 to-accent-50 ${className}`}>
+    <Card className={`bg-white border border-sage-200 shadow-sm ${className}`}>
       <CardContent className="p-4">
         <audio
           ref={audioRef}

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Mic, Play, Volume2, Download, RefreshCw } from "lucide-react";
+import { Loader2, Mic, Play, Download, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ElevenLabsAudioPlayer from '@/components/blog/ElevenLabsAudioPlayer';
@@ -66,10 +66,6 @@ const AudioSidebarView: React.FC = () => {
     }
   };
 
-  const handlePlayAudio = (audioUrl: string) => {
-    window.open(audioUrl, '_blank');
-  };
-
   const handleDownloadAudio = (audioUrl: string, fileName: string) => {
     const link = document.createElement('a');
     link.href = audioUrl;
@@ -83,7 +79,7 @@ const AudioSidebarView: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-blue-100 rounded-lg">
-          <Volume2 className="h-6 w-6 text-blue-600" />
+          <Mic className="h-6 w-6 text-blue-600" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">ElevenLabs Audio Generator</h1>
@@ -146,7 +142,7 @@ const AudioSidebarView: React.FC = () => {
               </>
             ) : (
               <>
-                <Volume2 className="h-4 w-4 mr-2" />
+                <Mic className="h-4 w-4 mr-2" />
                 Audio generieren
               </>
             )}
@@ -162,7 +158,7 @@ const AudioSidebarView: React.FC = () => {
               Generiertes Audio
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="font-medium mb-2">{audioProject.name || 'Audio Projekt'}</h3>
               
@@ -195,7 +191,7 @@ const AudioSidebarView: React.FC = () => {
                 setTitle('');
                 setAudioProject(null);
               }}
-              className="w-full"
+              className="w-full mt-4"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Neues Audio erstellen

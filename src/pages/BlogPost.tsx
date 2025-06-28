@@ -15,7 +15,7 @@ import RelatedArticlesSection from "@/components/blog/RelatedArticlesSection";
 import BlogComments from "@/components/blog/BlogComments";
 import { useToast } from "@/hooks/use-toast";
 import { generateUniqueSlug } from "@/utils/slugHelpers";
-import ElevenLabsAudioNative from "@/components/blog/ElevenLabsAudioNative";
+import ElevenLabsAudioPlayer from "@/components/blog/ElevenLabsAudioPlayer";
 import { Calendar, User, Tag } from "lucide-react";
 
 const BlogPost = () => {
@@ -86,6 +86,13 @@ const BlogPost = () => {
   if (error || !post) {
     return <div className="text-center py-12">Artikel nicht gefunden.</div>;
   }
+
+  // Get audio URL from podcast if available
+  const getAudioUrl = () => {
+    // This would be implemented to fetch the podcast audio URL
+    // For now, we'll return a placeholder
+    return "https://example.com/audio.mp3";
+  };
 
   // Extract plain text from content for audio generation
   const getPlainTextFromContent = (content: string) => {
@@ -172,12 +179,11 @@ const BlogPost = () => {
             </div>
           </header>
 
-          {/* ElevenLabs Audio Native Player */}
+          {/* ElevenLabs Audio Player */}
           <div className="mb-8">
-            <ElevenLabsAudioNative
-              text={audioText}
-              title={post.title}
-              voiceId="21m00Tcm4TlvDq8ikWAM"
+            <ElevenLabsAudioPlayer
+              audioUrl={getAudioUrl()}
+              title={`Höre diesen Artikel: ${post.title}`}
             />
           </div>
 

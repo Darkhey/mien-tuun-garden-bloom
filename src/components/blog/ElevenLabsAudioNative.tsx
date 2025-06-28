@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
-import DOMPurify from 'dompurify';
 import { debounce } from 'lodash';
 import { supabase } from '@/integrations/supabase/client';
 import ElevenLabsAudioPlayer from './ElevenLabsAudioPlayer';
@@ -57,7 +56,7 @@ const ElevenLabsAudioNative: React.FC<ElevenLabsAudioNativeProps> = ({
   }, [text, title, voiceId, debouncedCreateProject]);
 
   return (
-    <Card className={`bg-gradient-to-r from-sage-50 to-accent-50 ${className}`}>
+    <Card className={`bg-white border border-sage-200 shadow-sm ${className}`}>
       <CardContent className="p-4">
         {isLoading && !audioData ? (
           <div className="flex items-center gap-2 text-sm text-earth-700">
