@@ -28,137 +28,270 @@ class SowingCalendarService {
 
   async getAllPlants(): Promise<PlantData[]> {
     return this.getCachedOrFetch('all-plants', async () => {
-      const { data, error } = await supabase
-        .from('sowing_calendar')
-        .select('*')
-        .order('name');
-      
-      if (error) {
-        console.error('Error fetching plants:', error);
+      try {
+        const { data, error } = await supabase
+          .from('sowing_calendar')
+          .select('*')
+          .order('name');
+        
+        if (error) {
+          console.error('Error fetching plants:', error);
+          return this.getFallbackPlants();
+        }
+        
+        return data as PlantData[];
+      } catch (error) {
+        console.error('Error in getAllPlants:', error);
         return this.getFallbackPlants();
       }
-      
-      return data as PlantData[];
     });
   }
 
   async getPlantById(id: string): Promise<PlantData | null> {
     return this.getCachedOrFetch(`plant-${id}`, async () => {
-      const { data, error } = await supabase
-        .from('sowing_calendar')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (error) {
-        console.error(`Error fetching plant with ID ${id}:`, error);
+      try {
+        const { data, error } = await supabase
+          .from('sowing_calendar')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error) {
+          console.error(`Error fetching plant with ID ${id}:`, error);
+          return null;
+        }
+        
+        return data as PlantData;
+      } catch (error) {
+        console.error(`Error in getPlantById:`, error);
         return null;
       }
-      
-      return data as PlantData;
+    });
+  }
+
+  async getPlantByName(name: string): Promise<PlantData | null> {
+    return this.getCachedOrFetch(`plant-name-${name}`, async () => {
+      try {
+        const { data, error } = await supabase
+          .from('sowing_calendar')
+          .select('*')
+          .eq('name', name)
+          .single();
+        
+        if (error) {
+          console.error(`Error fetching plant with name ${name}:`, error);
+          return null;
+        }
+        
+        return data as PlantData;
+      } catch (error) {
+        console.error(`Error in getPlantByName:`, error);
+        return null;
+      }
     });
   }
 
   async getCompanionPlants(plantName: string): Promise<CompanionPlantData | null> {
     return this.getCachedOrFetch(`companion-${plantName}`, async () => {
-      const { data, error } = await supabase
-        .from('companion_plants')
-        .select('*')
-        .eq('plant', plantName)
-        .single();
-      
-      if (error) {
-        console.error(`Error fetching companion plants for ${plantName}:`, error);
+      try {
+        const { data, error } = await supabase
+          .from('companion_plants')
+          .select('*')
+          .eq('plant', plantName)
+          .single();
+        
+        if (error) {
+          console.error(`Error fetching companion plants for ${plantName}:`, error);
+          return this.getFallbackCompanionPlants(plantName);
+        }
+        
+        return data as CompanionPlantData;
+      } catch (error) {
+        console.error(`Error in getCompanionPlants:`, error);
         return this.getFallbackCompanionPlants(plantName);
       }
-      
-      return data as CompanionPlantData;
     });
   }
 
   async getPlantGrowingTips(plantName: string): Promise<PlantGrowingTips | null> {
     return this.getCachedOrFetch(`tips-${plantName}`, async () => {
-      const { data, error } = await supabase
-        .from('plant_growing_tips')
-        .select('*')
-        .eq('plant', plantName)
-        .single();
-      
-      if (error) {
-        console.error(`Error fetching growing tips for ${plantName}:`, error);
+      try {
+        const { data, error } = await supabase
+          .from('plant_growing_tips')
+          .select('*')
+          .eq('plant', plantName)
+          .single();
+        
+        if (error) {
+          console.error(`Error fetching growing tips for ${plantName}:`, error);
+          return this.getFallbackGrowingTips(plantName);
+        }
+        
+        return data as PlantGrowingTips;
+      } catch (error) {
+        console.error(`Error in getPlantGrowingTips:`, error);
         return this.getFallbackGrowingTips(plantName);
       }
-      
-      return data as PlantGrowingTips;
     });
   }
 
   async searchPlants(query: string): Promise<PlantData[]> {
     return this.getCachedOrFetch(`search-${query}`, async () => {
-      const { data, error } = await supabase
-        .from('sowing_calendar')
-        .select('*')
-        .ilike('name', `%${query}%`)
-        .order('name');
-      
-      if (error) {
-        console.error(`Error searching plants for "${query}":`, error);
+      try {
+        const { data, error } = await supabase
+          .from('sowing_calendar')
+          .select('*')
+          .ilike('name', `%${query}%`)
+          .order('name');
+        
+        if (error) {
+          console.error(`Error searching plants for "${query}":`, error);
+          return [];
+        }
+        
+        return data as PlantData[];
+      } catch (error) {
+        console.error(`Error in searchPlants:`, error);
         return [];
       }
-      
-      return data as PlantData[];
     });
   }
 
   async getPlantsByType(type: string): Promise<PlantData[]> {
     return this.getCachedOrFetch(`type-${type}`, async () => {
-      const { data, error } = await supabase
-        .from('sowing_calendar')
-        .select('*')
-        .eq('type', type)
-        .order('name');
-      
-      if (error) {
-        console.error(`Error fetching plants of type ${type}:`, error);
+      try {
+        const { data, error } = await supabase
+          .from('sowing_calendar')
+          .select('*')
+          .eq('type', type)
+          .order('name');
+        
+        if (error) {
+          console.error(`Error fetching plants of type ${type}:`, error);
+          return [];
+        }
+        
+        return data as PlantData[];
+      } catch (error) {
+        console.error(`Error in getPlantsByType:`, error);
         return [];
       }
-      
-      return data as PlantData[];
     });
   }
 
   async getPlantsBySeason(season: string): Promise<PlantData[]> {
     return this.getCachedOrFetch(`season-${season}`, async () => {
-      const { data, error } = await supabase
-        .from('sowing_calendar')
-        .select('*')
-        .contains('season', [season])
-        .order('name');
-      
-      if (error) {
-        console.error(`Error fetching plants for season ${season}:`, error);
+      try {
+        const { data, error } = await supabase
+          .from('sowing_calendar')
+          .select('*')
+          .contains('season', [season])
+          .order('name');
+        
+        if (error) {
+          console.error(`Error fetching plants for season ${season}:`, error);
+          return [];
+        }
+        
+        return data as PlantData[];
+      } catch (error) {
+        console.error(`Error in getPlantsBySeason:`, error);
         return [];
       }
-      
-      return data as PlantData[];
     });
   }
 
   async getPlantsByMonth(month: number): Promise<PlantData[]> {
     return this.getCachedOrFetch(`month-${month}`, async () => {
-      const { data, error } = await supabase
-        .from('sowing_calendar')
-        .select('*')
-        .or(`directSow.cs.{${month}},indoor.cs.{${month}},plantOut.cs.{${month}},harvest.cs.{${month}}`)
-        .order('name');
-      
-      if (error) {
-        console.error(`Error fetching plants for month ${month}:`, error);
+      try {
+        const { data, error } = await supabase
+          .from('sowing_calendar')
+          .select('*')
+          .or(`direct_sow.cs.{${month}},indoor.cs.{${month}},plant_out.cs.{${month}},harvest.cs.{${month}}`)
+          .order('name');
+        
+        if (error) {
+          console.error(`Error fetching plants for month ${month}:`, error);
+          return [];
+        }
+        
+        return data as PlantData[];
+      } catch (error) {
+        console.error(`Error in getPlantsByMonth:`, error);
         return [];
       }
-      
-      return data as PlantData[];
     });
+  }
+
+  async addPlant(plant: PlantData): Promise<PlantData> {
+    try {
+      const { data, error } = await supabase
+        .from('sowing_calendar')
+        .insert([plant])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error adding plant:', error);
+        throw new Error(`Failed to add plant: ${error.message}`);
+      }
+      
+      // Clear cache to ensure fresh data
+      this.clearCache();
+      
+      return data as PlantData;
+    } catch (error) {
+      console.error('Error in addPlant:', error);
+      throw error;
+    }
+  }
+
+  async updatePlant(id: string, plant: Partial<PlantData>): Promise<PlantData> {
+    try {
+      const { data, error } = await supabase
+        .from('sowing_calendar')
+        .update(plant)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error(`Error updating plant with ID ${id}:`, error);
+        throw new Error(`Failed to update plant: ${error.message}`);
+      }
+      
+      // Clear cache to ensure fresh data
+      this.clearCache();
+      
+      return data as PlantData;
+    } catch (error) {
+      console.error('Error in updatePlant:', error);
+      throw error;
+    }
+  }
+
+  async deletePlant(id: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('sowing_calendar')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error(`Error deleting plant with ID ${id}:`, error);
+        throw new Error(`Failed to delete plant: ${error.message}`);
+      }
+      
+      // Clear cache to ensure fresh data
+      this.clearCache();
+    } catch (error) {
+      console.error('Error in deletePlant:', error);
+      throw error;
+    }
+  }
+
+  clearCache(): void {
+    this.cache.clear();
   }
 
   // Fallback methods for when the database is not available
@@ -266,6 +399,7 @@ const COMPANION_PLANTS: Record<string, CompanionPlantData> = {
 
 const PLANT_GROWING_TIPS: Record<string, PlantGrowingTips> = {
   "Tomaten": {
+    plant: "Tomaten",
     temperature: "18-25°C optimal, mindestens 15°C nachts",
     watering: "Gleichmäßig feucht, aber nicht nass. Morgens gießen.",
     light: "6-8 Stunden direktes Sonnenlicht täglich",
@@ -282,6 +416,7 @@ const PLANT_GROWING_TIPS: Record<string, PlantGrowingTips> = {
     ]
   },
   "Basilikum": {
+    plant: "Basilikum",
     temperature: "20-25°C, sehr wärmebedürftig",
     watering: "Mäßig, nicht über Blätter gießen",
     light: "Volle Sonne, geschützter Standort",

@@ -19,12 +19,14 @@ interface SowingCalendarTableProps {
   plants: PlantData[];
   categories: SowingCategory[];
   categoryFilter: Record<string, boolean>;
+  onPlantSelect?: (plantName: string) => void;
 }
 
 const SowingCalendarTable: React.FC<SowingCalendarTableProps> = ({ 
   plants, 
   categories,
-  categoryFilter 
+  categoryFilter,
+  onPlantSelect
 }) => {
   const renderMonthDots = (plant: PlantData, col: number) => {
     return (
@@ -82,7 +84,8 @@ const SowingCalendarTable: React.FC<SowingCalendarTableProps> = ({
                 key={plant.id} 
                 className={`hover:bg-sage-25 transition-colors duration-150 border-sage-100 ${
                   index % 2 === 0 ? 'bg-white' : 'bg-sage-25/30'
-                }`}
+                } cursor-pointer`}
+                onClick={() => onPlantSelect?.(plant.name)}
               >
                 <TableCell className="sticky left-0 bg-inherit border-r border-sage-200 z-10">
                   <TooltipProvider>

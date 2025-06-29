@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Leaf, Sprout } from "lucide-react";
+import { Calendar, Leaf, Sprout, Database, Plant } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 import SowingCalendarTable from './SowingCalendarTable';
 import SowingCalendarFilters from './SowingCalendarFilters';
 import SowingCalendarLegend from './SowingCalendarLegend';
 import CompanionPlantFinder from './CompanionPlantFinder';
 import PlantGrowingTipsCard from './PlantGrowingTipsCard';
+import TrefleIntegration from './TrefleIntegration';
 import sowingCalendarService from '@/services/SowingCalendarService';
 import type { PlantData, SowingCategory } from '@/types/sowing';
 
@@ -41,6 +43,7 @@ const ModularSowingCalendar: React.FC = () => {
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
   const [loadingTips, setLoadingTips] = useState(false);
   const [plantTips, setPlantTips] = useState(null);
+  const { toast } = useToast();
 
   // Load plants on mount
   useEffect(() => {
@@ -140,6 +143,30 @@ const ModularSowingCalendar: React.FC = () => {
     setActiveTab('tipps');
   };
 
+  // Handle adding a new plant from Trefle
+  const handleAddPlant = async (plant: PlantData) => {
+    try {
+      // Add plant to database
+      await sowingCalendarService.addPlant(plant);
+      
+      // Refresh plants list
+      const updatedPlants = await sowingCalendarService.getAllPlants();
+      setPlants(updatedPlants);
+      
+      toast({
+        title: "Pflanze hinzugefügt",
+        description: `${plant.name} wurde erfolgreich zum Aussaatkalender hinzugefügt.`,
+      });
+    } catch (error) {
+      console.error('Error adding plant:', error);
+      toast({
+        title: "Fehler",
+        description: `Fehler beim Hinzufügen der Pflanze: ${error.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -161,7 +188,7 @@ const ModularSowingCalendar: React.FC = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
+        <TabsList className="grid w-full grid-cols-4 mb-8">
           <TabsTrigger value="kalender" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Aussaatkalender
@@ -173,6 +200,10 @@ const ModularSowingCalendar: React.FC = () => {
           <TabsTrigger value="tipps" className="flex items-center gap-2">
             <Sprout className="h-4 w-4" />
             Aussaat-Tipps
+          </TabsTrigger>
+          <TabsTrigger value="trefle" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Trefle API
           </TabsTrigger>
         </TabsList>
 
@@ -199,6 +230,7 @@ const ModularSowingCalendar: React.FC = () => {
               plants={filteredPlants}
               categories={CATEGORIES}
               categoryFilter={categoryFilter}
+              onPlantSelect={handlePlantSelect}
             />
 
             <SowingCalendarLegend categories={CATEGORIES} />
@@ -215,6 +247,10 @@ const ModularSowingCalendar: React.FC = () => {
             tips={plantTips}
             loading={loadingTips}
           />
+        </TabsContent>
+
+        <TabsContent value="trefle">
+          <TrefleIntegration onAddPlant={handleAddPlant} />
         </TabsContent>
       </Tabs>
     </div>
