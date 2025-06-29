@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 import colors from "./src/theme/colors";
 
@@ -104,6 +103,14 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'collapsible-down': {
+					from: { height: '0' },
+					to: { height: 'var(--radix-collapsible-content-height)' }
+				},
+				'collapsible-up': {
+					from: { height: 'var(--radix-collapsible-content-height)' },
+					to: { height: '0' }
 				}
 			},
 			animation: {
@@ -111,7 +118,9 @@ export default {
 				'scale-in': 'scale-in 0.3s ease-out',
 				'slide-up': 'slide-up 0.4s ease-out',
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'collapsible-down': 'collapsible-down 0.2s ease-out',
+				'collapsible-up': 'collapsible-up 0.2s ease-out'
 			}
 		}
 	},
