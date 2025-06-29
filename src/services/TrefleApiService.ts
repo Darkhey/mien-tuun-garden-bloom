@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { TreflePlant, TreflePlantDetails, TrefleSearchResponse, TrefleFilterOptions } from '@/types/trefle';
+import sowingCalendarService from './SowingCalendarService';
 
 class TrefleApiService {
   private static instance: TrefleApiService;
@@ -78,6 +79,12 @@ class TrefleApiService {
       console.error('Error syncing plants to database:', error);
       throw new Error(`Failed to sync plants: ${error.message}`);
     }
+  }
+
+  async addPlantByIdToDatabase(plantId: number) {
+    const details = await this.getPlantDetails(plantId);
+    const mapped = this.mapToSowingCalendarFormat(details);
+    return sowingCalendarService.addPlant(mapped);
   }
 
   // Helper method to map Trefle data to our sowing calendar format
