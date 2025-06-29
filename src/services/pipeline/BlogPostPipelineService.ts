@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { contentGenerationService } from '../ContentGenerationService';
+import { contentGenerationService, GeneratedContent } from '../ContentGenerationService';
 
 export interface PipelineStage {
   id: string;
@@ -14,6 +14,21 @@ export interface PipelineExecution {
   createdAt: Date;
 }
 
+export interface BlogPostPipelineConfig {
+  category?: string;
+  season?: string;
+  targetAudience?: string;
+  contentType?: string;
+  autoPublish?: boolean;
+  qualityThreshold?: number;
+  seoTargets?: {
+    minWordCount: number;
+    maxWordCount: number;
+    keywordDensity: { min: number; max: number };
+    readabilityTarget: number;
+  };
+}
+
 class BlogPostPipelineService {
   private static instance: BlogPostPipelineService;
   public executions: Map<string, PipelineExecution> = new Map();
@@ -25,7 +40,7 @@ class BlogPostPipelineService {
     return BlogPostPipelineService.instance;
   }
 
-  async executePipeline(prompt: string, config: any): Promise<string> {
+  async executePipeline(prompt: string, config: BlogPostPipelineConfig): Promise<string> {
     const id = crypto.randomUUID();
     const execution: PipelineExecution = {
       id,
@@ -49,25 +64,34 @@ class BlogPostPipelineService {
     };
 
     try {
-      let generated: { content: string; title: string; featuredImage?: string };
+      let generated: GeneratedContent | null = null;
       await runStage('content_generation', async () => {
         generated = await contentGenerationService.generateBlogPost({
           prompt,
           category: config.category,
           season: config.season,
-          audiences: [config.targetAudience],
-          contentType: [config.contentType]
-        }) as any;
+          audiences: config.targetAudience ? [config.targetAudience] : undefined,
+          contentType: config.contentType ? [config.contentType] : undefined
+        });
       });
 
       await runStage('database_storage', async () => {
+        if (!generated) {
+          throw new Error('No content generated');
+        }
+
+        const cleanContent = generated.content.replace(/<[^>]*>/g, '');
+        const excerpt = cleanContent.length <= 160
+          ? cleanContent
+          : cleanContent.slice(0, 160).replace(/\s+\S*$/, '');
+
         const { error } = await supabase
           .from('blog_posts')
           .insert([
             {
               title: generated!.title,
               content: generated!.content,
-              excerpt: generated!.content.slice(0, 160),
+              excerpt,
               status: config.autoPublish ? 'veröffentlicht' : 'entwurf',
               featured_image: generated!.featuredImage || null
             }
@@ -76,7 +100,7 @@ class BlogPostPipelineService {
           .single();
 
         if (error) {
-          throw new Error('Database error');
+          throw new Error(`Database error: ${error.message}`);
         }
       });
 
