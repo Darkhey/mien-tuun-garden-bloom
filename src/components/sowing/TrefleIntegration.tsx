@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, Plant, Search, AlertTriangle, Download } from "lucide-react";
+import { Database, Plane as Plant, Search, AlertTriangle, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import TreflePlantSearch from './TreflePlantSearch';
 import TreflePlantDetails from './TreflePlantDetails';

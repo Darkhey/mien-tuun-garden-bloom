@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Loader2, Plant, Info } from "lucide-react";
+import { Search, Loader2, Plane as Plant, Info } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { trefleApiService } from '@/services/TrefleApiService';
 import { TreflePlant } from '@/types/trefle';

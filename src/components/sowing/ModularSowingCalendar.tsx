@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Leaf, Sprout, Database, Plant } from "lucide-react";
+import { Calendar, Leaf, Sprout, Database, Plane as Plant } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import SowingCalendarTable from './SowingCalendarTable';
