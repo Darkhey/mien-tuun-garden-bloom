@@ -96,6 +96,12 @@ export const adminMenuItems: AdminMenuItem[] = [
         icon: Volume2,
         path: '/admin/audio-generator'
       }
+      ,{
+        id: 'timeline',
+        title: 'Aufgaben-Timeline',
+        icon: Calendar,
+        path: '/admin/timeline'
+      }
     ]
   },
   {
