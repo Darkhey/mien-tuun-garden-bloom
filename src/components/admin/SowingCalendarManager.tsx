@@ -9,8 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Plus, Edit, Trash2, Save, X, Calendar, Search, Leaf, Sprout } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as baseSupabase } from "@/integrations/supabase/client";
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PlantData, CompanionPlantData, PlantGrowingTips } from '@/types/sowing';
+import type { ExtendedDatabase, SowingCalendarRow, CompanionPlantRow, PlantGrowingTipsRow } from '@/types/supabase-extra';
+
+const supabase = baseSupabase as SupabaseClient<ExtendedDatabase>;
 
 const SowingCalendarManager: React.FC = () => {
   const [plants, setPlants] = useState<PlantData[]>([]);
@@ -39,18 +43,41 @@ const SowingCalendarManager: React.FC = () => {
         .from('sowing_calendar')
         .select('*')
         .order('name');
-      
+
       if (plantsError) throw plantsError;
-      setPlants(plantsData || []);
+      const mappedPlants = (plantsData as SowingCalendarRow[] || []).map(row => ({
+        id: row.id,
+        name: row.name,
+        type: row.type as PlantData['type'],
+        season: row.season,
+        directSow: row.direct_sow,
+        indoor: row.indoor,
+        plantOut: row.plant_out,
+        harvest: row.harvest,
+        difficulty: row.difficulty as PlantData['difficulty'],
+        notes: row.notes || '',
+        description: row.description || '',
+        imageUrl: row.image_url || undefined,
+        companionPlants: row.companion_plants || [],
+        avoidPlants: row.avoid_plants || [],
+        growingTips: row.growing_tips || [],
+        commonProblems: row.common_problems || []
+      }));
+      setPlants(mappedPlants);
 
       // Load companion plants
       const { data: companionData, error: companionError } = await supabase
         .from('companion_plants')
         .select('*')
         .order('plant');
-      
+
       if (companionError) throw companionError;
-      setCompanionPlants(companionData || []);
+      const mappedCompanions = (companionData as CompanionPlantRow[] || []).map(row => ({
+        plant: row.plant,
+        good: row.good,
+        bad: row.bad
+      }));
+      setCompanionPlants(mappedCompanions);
 
       // Load growing tips
       const { data: tipsData, error: tipsError } = await supabase
@@ -59,7 +86,17 @@ const SowingCalendarManager: React.FC = () => {
         .order('plant');
       
       if (tipsError) throw tipsError;
-      setGrowingTips(tipsData || []);
+      const mappedTips = (tipsData as PlantGrowingTipsRow[] || []).map(row => ({
+        plant: row.plant,
+        temperature: row.temperature || '',
+        watering: row.watering || '',
+        light: row.light || '',
+        timing: row.timing || '',
+        difficulty: row.difficulty as PlantGrowingTips['difficulty'],
+        specificTips: row.specific_tips || [],
+        commonMistakes: row.common_mistakes || []
+      }));
+      setGrowingTips(mappedTips);
     } catch (err) {
       console.error('Error loading data:', err);
       toast({
@@ -86,10 +123,10 @@ const SowingCalendarManager: React.FC = () => {
       difficulty: 'Mittel',
       notes: '',
       description: '',
-      companion_plants: [],
-      avoid_plants: [],
-      growing_tips: [],
-      common_problems: []
+      companionPlants: [],
+      avoidPlants: [],
+      growingTips: [],
+      commonProblems: []
     });
     setIsCreating(true);
     setActiveTab('plants');
@@ -148,10 +185,10 @@ const SowingCalendarManager: React.FC = () => {
             difficulty: editingPlant.difficulty,
             notes: editingPlant.notes,
             description: editingPlant.description,
-            companion_plants: editingPlant.companion_plants,
-            avoid_plants: editingPlant.avoid_plants,
-            growing_tips: editingPlant.growing_tips,
-            common_problems: editingPlant.common_problems
+            companion_plants: editingPlant.companionPlants,
+            avoid_plants: editingPlant.avoidPlants,
+            growing_tips: editingPlant.growingTips,
+            common_problems: editingPlant.commonProblems
           }]);
         
         if (error) throw error;
@@ -175,10 +212,10 @@ const SowingCalendarManager: React.FC = () => {
             difficulty: editingPlant.difficulty,
             notes: editingPlant.notes,
             description: editingPlant.description,
-            companion_plants: editingPlant.companion_plants,
-            avoid_plants: editingPlant.avoid_plants,
-            growing_tips: editingPlant.growing_tips,
-            common_problems: editingPlant.common_problems
+            companion_plants: editingPlant.companionPlants,
+            avoid_plants: editingPlant.avoidPlants,
+            growing_tips: editingPlant.growingTips,
+            common_problems: editingPlant.commonProblems
           })
           .eq('id', editingPlant.id);
         
@@ -273,7 +310,7 @@ const SowingCalendarManager: React.FC = () => {
           title: "Erfolg",
           description: "Neue Beetnachbarn wurden erstellt"
         });
-      } else {
+        } else {
         // Update existing companion relationship
         const { error } = await supabase
           .from('companion_plants')
@@ -363,7 +400,7 @@ const SowingCalendarManager: React.FC = () => {
         // Create new growing tips
         const { error } = await supabase
           .from('plant_growing_tips')
-          .insert([{
+          .insert([{ 
             plant: editingTips.plant,
             temperature: editingTips.temperature,
             watering: editingTips.watering,
@@ -692,8 +729,8 @@ const SowingCalendarManager: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Gute Beetnachbarn (kommagetrennt)</label>
                     <Textarea
-                      value={(editingPlant.companion_plants || []).join(', ')}
-                      onChange={(e) => handleStringArrayInputChange('companion_plants', e.target.value)}
+                      value={(editingPlant.companionPlants || []).join(', ')}
+                      onChange={(e) => handleStringArrayInputChange('companionPlants', e.target.value)}
                       rows={2}
                     />
                   </div>
@@ -701,8 +738,8 @@ const SowingCalendarManager: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Schlechte Beetnachbarn (kommagetrennt)</label>
                     <Textarea
-                      value={(editingPlant.avoid_plants || []).join(', ')}
-                      onChange={(e) => handleStringArrayInputChange('avoid_plants', e.target.value)}
+                      value={(editingPlant.avoidPlants || []).join(', ')}
+                      onChange={(e) => handleStringArrayInputChange('avoidPlants', e.target.value)}
                       rows={2}
                     />
                   </div>
@@ -710,8 +747,8 @@ const SowingCalendarManager: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Anbautipps (kommagetrennt)</label>
                     <Textarea
-                      value={(editingPlant.growing_tips || []).join(', ')}
-                      onChange={(e) => handleStringArrayInputChange('growing_tips', e.target.value)}
+                      value={(editingPlant.growingTips || []).join(', ')}
+                      onChange={(e) => handleStringArrayInputChange('growingTips', e.target.value)}
                       rows={2}
                     />
                   </div>
@@ -719,8 +756,8 @@ const SowingCalendarManager: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Häufige Probleme (kommagetrennt)</label>
                     <Textarea
-                      value={(editingPlant.common_problems || []).join(', ')}
-                      onChange={(e) => handleStringArrayInputChange('common_problems', e.target.value)}
+                      value={(editingPlant.commonProblems || []).join(', ')}
+                      onChange={(e) => handleStringArrayInputChange('commonProblems', e.target.value)}
                       rows={2}
                     />
                   </div>
