@@ -6,9 +6,17 @@ import ProfileForm from "../components/ProfileForm";
 import GardenBedManager from "../components/GardenBedManager";
 import { Loader2 } from "lucide-react";
 
+interface Profile {
+  id: string;
+  display_name: string;
+  avatar_url?: string | null;
+  is_premium?: boolean;
+  custom_role?: string | null;
+}
+
 const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -53,13 +61,13 @@ const ProfilePage: React.FC = () => {
           );
           setProfile(null);
         } else {
-          setProfile(inserted);
+          setProfile(inserted as Profile);
         }
         setLoading(false);
         return;
       }
 
-      setProfile(data);
+      setProfile(data as Profile);
       setLoading(false);
     };
     init();

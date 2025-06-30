@@ -70,6 +70,10 @@ class GardenBedService {
   }
 
   async deleteBed(id: string): Promise<void> {
+    if (!id?.trim()) {
+      throw new Error('Bed ID is required');
+    }
+
     const { error } = await supabase
       .from('garden_beds')
       .delete()
@@ -102,29 +106,14 @@ class GardenBedService {
       throw new Error('Bed ID and Plant ID are required');
     }
 
-    const { data, error } = await supabase
-      .from('garden_beds')
-      .select('plants')
-      .eq('id', bedId)
-      .single();
+    const { data: updated, error } = await supabase.rpc('remove_plant_from_bed', {
+      bed_id: bedId,
+      plant_id: plantId
+    });
+
     if (error) {
-      console.error('Error loading bed:', error);
+      console.error('Error updating bed plants:', error);
       throw new Error(error.message);
-    }
-
-    const plants: string[] = data?.plants || [];
-    const filtered = plants.filter((p) => p !== plantId);
-
-    const { data: updated, error: updateError } = await supabase
-      .from('garden_beds')
-      .update({ plants: filtered })
-      .eq('id', bedId)
-      .select()
-      .single();
-
-    if (updateError) {
-      console.error('Error updating bed plants:', updateError);
-      throw new Error(updateError.message);
     }
     return updated as GardenBed;
   }

@@ -39,8 +39,8 @@ const GardenBedManager: React.FC = () => {
   const handleCreate = async () => {
     if (!userId) return;
 
-    if (!name.trim() || !description.trim()) {
-      setCreateError('Name und Beschreibung sind erforderlich');
+    if (!name.trim()) {
+      setCreateError('Name ist erforderlich');
       return;
     }
 

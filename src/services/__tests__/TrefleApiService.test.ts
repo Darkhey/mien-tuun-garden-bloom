@@ -60,7 +60,7 @@ describe('TrefleApiService mapToSowingCalendarFormat', () => {
     const plantWithMissingData = { ...mockPlant, growth: {} };
     const result = trefleApiService.mapToSowingCalendarFormat(plantWithMissingData);
     expect(result.season).toEqual([]);
-    expect(result.difficulty).toBe('Mittel');
+    expect(result.difficulty).toBe('Einfach');
   });
 
   it('classifies flower plants correctly', () => {
