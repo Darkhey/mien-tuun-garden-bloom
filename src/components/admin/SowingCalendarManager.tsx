@@ -36,30 +36,30 @@ const SowingCalendarManager: React.FC = () => {
     try {
       // Load plants
       const { data: plantsData, error: plantsError } = await supabase
-        .from('sowing_calendar')
+        .from('sowing_calendar' as any)
         .select('*')
         .order('name');
       
       if (plantsError) throw plantsError;
-      setPlants(plantsData || []);
+      setPlants((plantsData as any) || []);
 
       // Load companion plants
       const { data: companionData, error: companionError } = await supabase
-        .from('companion_plants')
+        .from('companion_plants' as any)
         .select('*')
         .order('plant');
       
       if (companionError) throw companionError;
-      setCompanionPlants(companionData || []);
+      setCompanionPlants((companionData as any) || []);
 
       // Load growing tips
       const { data: tipsData, error: tipsError } = await supabase
-        .from('plant_growing_tips')
+        .from('plant_growing_tips' as any)
         .select('*')
         .order('plant');
       
       if (tipsError) throw tipsError;
-      setGrowingTips(tipsData || []);
+      setGrowingTips((tipsData as any) || []);
     } catch (err) {
       console.error('Error loading data:', err);
       toast({
@@ -86,10 +86,10 @@ const SowingCalendarManager: React.FC = () => {
       difficulty: 'Mittel',
       notes: '',
       description: '',
-      companion_plants: [],
-      avoid_plants: [],
-      growing_tips: [],
-      common_problems: []
+      companionPlants: [],
+      avoidPlants: [],
+      growingTips: [],
+      commonProblems: []
     });
     setIsCreating(true);
     setActiveTab('plants');
@@ -106,7 +106,7 @@ const SowingCalendarManager: React.FC = () => {
     
     try {
       const { error } = await supabase
-        .from('sowing_calendar')
+        .from('sowing_calendar' as any)
         .delete()
         .eq('id', id);
       
@@ -136,7 +136,7 @@ const SowingCalendarManager: React.FC = () => {
       if (isCreating) {
         // Create new plant
         const { error } = await supabase
-          .from('sowing_calendar')
+          .from('sowing_calendar' as any)
           .insert([{
             name: editingPlant.name,
             type: editingPlant.type,
@@ -148,10 +148,10 @@ const SowingCalendarManager: React.FC = () => {
             difficulty: editingPlant.difficulty,
             notes: editingPlant.notes,
             description: editingPlant.description,
-            companion_plants: editingPlant.companion_plants,
-            avoid_plants: editingPlant.avoid_plants,
-            growing_tips: editingPlant.growing_tips,
-            common_problems: editingPlant.common_problems
+            companion_plants: editingPlant.companionPlants,
+            avoid_plants: editingPlant.avoidPlants,
+            growing_tips: editingPlant.growingTips,
+            common_problems: editingPlant.commonProblems
           }]);
         
         if (error) throw error;
@@ -163,7 +163,7 @@ const SowingCalendarManager: React.FC = () => {
       } else {
         // Update existing plant
         const { error } = await supabase
-          .from('sowing_calendar')
+          .from('sowing_calendar' as any)
           .update({
             name: editingPlant.name,
             type: editingPlant.type,
@@ -175,10 +175,10 @@ const SowingCalendarManager: React.FC = () => {
             difficulty: editingPlant.difficulty,
             notes: editingPlant.notes,
             description: editingPlant.description,
-            companion_plants: editingPlant.companion_plants,
-            avoid_plants: editingPlant.avoid_plants,
-            growing_tips: editingPlant.growing_tips,
-            common_problems: editingPlant.common_problems
+            companion_plants: editingPlant.companionPlants,
+            avoid_plants: editingPlant.avoidPlants,
+            growing_tips: editingPlant.growingTips,
+            common_problems: editingPlant.commonProblems
           })
           .eq('id', editingPlant.id);
         
@@ -226,7 +226,7 @@ const SowingCalendarManager: React.FC = () => {
     
     try {
       const { error } = await supabase
-        .from('companion_plants')
+        .from('companion_plants' as any)
         .delete()
         .eq('plant', plant);
       
@@ -260,7 +260,7 @@ const SowingCalendarManager: React.FC = () => {
       if (isCreating) {
         // Create new companion relationship
         const { error } = await supabase
-          .from('companion_plants')
+          .from('companion_plants' as any)
           .insert([{
             plant: editingCompanion.plant,
             good: goodJson,
@@ -273,10 +273,10 @@ const SowingCalendarManager: React.FC = () => {
           title: "Erfolg",
           description: "Neue Beetnachbarn wurden erstellt"
         });
-      } else {
+        } else {
         // Update existing companion relationship
         const { error } = await supabase
-          .from('companion_plants')
+          .from('companion_plants' as any)
           .update({
             good: goodJson,
             bad: badJson
@@ -332,7 +332,7 @@ const SowingCalendarManager: React.FC = () => {
     
     try {
       const { error } = await supabase
-        .from('plant_growing_tips')
+        .from('plant_growing_tips' as any)
         .delete()
         .eq('plant', plant);
       
@@ -362,7 +362,7 @@ const SowingCalendarManager: React.FC = () => {
       if (isCreating) {
         // Create new growing tips
         const { error } = await supabase
-          .from('plant_growing_tips')
+          .from('plant_growing_tips' as any)
           .insert([{
             plant: editingTips.plant,
             temperature: editingTips.temperature,
@@ -383,7 +383,7 @@ const SowingCalendarManager: React.FC = () => {
       } else {
         // Update existing growing tips
         const { error } = await supabase
-          .from('plant_growing_tips')
+          .from('plant_growing_tips' as any)
           .update({
             temperature: editingTips.temperature,
             watering: editingTips.watering,
@@ -692,8 +692,8 @@ const SowingCalendarManager: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Gute Beetnachbarn (kommagetrennt)</label>
                     <Textarea
-                      value={(editingPlant.companion_plants || []).join(', ')}
-                      onChange={(e) => handleStringArrayInputChange('companion_plants', e.target.value)}
+                      value={(editingPlant.companionPlants || []).join(', ')}
+                      onChange={(e) => handleStringArrayInputChange('companionPlants', e.target.value)}
                       rows={2}
                     />
                   </div>
@@ -701,8 +701,8 @@ const SowingCalendarManager: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Schlechte Beetnachbarn (kommagetrennt)</label>
                     <Textarea
-                      value={(editingPlant.avoid_plants || []).join(', ')}
-                      onChange={(e) => handleStringArrayInputChange('avoid_plants', e.target.value)}
+                      value={(editingPlant.avoidPlants || []).join(', ')}
+                      onChange={(e) => handleStringArrayInputChange('avoidPlants', e.target.value)}
                       rows={2}
                     />
                   </div>
@@ -710,8 +710,8 @@ const SowingCalendarManager: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Anbautipps (kommagetrennt)</label>
                     <Textarea
-                      value={(editingPlant.growing_tips || []).join(', ')}
-                      onChange={(e) => handleStringArrayInputChange('growing_tips', e.target.value)}
+                      value={(editingPlant.growingTips || []).join(', ')}
+                      onChange={(e) => handleStringArrayInputChange('growingTips', e.target.value)}
                       rows={2}
                     />
                   </div>
@@ -719,8 +719,8 @@ const SowingCalendarManager: React.FC = () => {
                   <div>
                     <label className="block text-sm font-medium mb-1">Häufige Probleme (kommagetrennt)</label>
                     <Textarea
-                      value={(editingPlant.common_problems || []).join(', ')}
-                      onChange={(e) => handleStringArrayInputChange('common_problems', e.target.value)}
+                      value={(editingPlant.commonProblems || []).join(', ')}
+                      onChange={(e) => handleStringArrayInputChange('commonProblems', e.target.value)}
                       rows={2}
                     />
                   </div>
