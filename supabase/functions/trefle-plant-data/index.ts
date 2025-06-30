@@ -6,7 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const TREFLE_API_TOKEN = Deno.env.get("TREFLE_API_TOKEN");
+// Updated to match the actual secret name in Supabase
+const TREFLE_API_TOKEN = Deno.env.get("TREFLE_API");
 const TREFLE_API_BASE = "https://trefle.io/api/v1";
 
 // Cache for API responses to reduce API calls
@@ -20,6 +21,7 @@ serve(async (req) => {
 
   try {
     if (!TREFLE_API_TOKEN) {
+      console.error("[trefle-plant-data] Trefle API token not configured - expected secret name: TREFLE_API");
       throw new Error("Trefle API token not configured");
     }
 

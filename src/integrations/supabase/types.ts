@@ -57,7 +57,6 @@ export type Database = {
           content: string
           created_at: string
           id: string
-          parent_id: string | null
           user_id: string
         }
         Insert: {
@@ -65,7 +64,6 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
-          parent_id?: string | null
           user_id: string
         }
         Update: {
@@ -73,7 +71,6 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
-          parent_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -830,7 +827,6 @@ export type Database = {
           created_at: string
           id: string
           recipe_id: string
-          parent_id: string | null
           user_id: string
         }
         Insert: {
@@ -838,7 +834,6 @@ export type Database = {
           created_at?: string
           id?: string
           recipe_id: string
-          parent_id?: string | null
           user_id: string
         }
         Update: {
@@ -846,7 +841,6 @@ export type Database = {
           created_at?: string
           id?: string
           recipe_id?: string
-          parent_id?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1140,6 +1134,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_next_run_time: {
+        Args: { cron_expression: string }
+        Returns: string
+      }
+      check_job_health: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       check_table_exists: {
         Args: { p_table_name: string }
         Returns: boolean
