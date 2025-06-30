@@ -24,6 +24,7 @@ export interface CompanionPlantData {
 }
 
 export interface PlantGrowingTips {
+  plant?: string;
   temperature: string;
   watering: string;
   light: string;

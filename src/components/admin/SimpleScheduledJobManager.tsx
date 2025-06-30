@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Clock, Play, Trash2, Plus, Settings, AlertCircle, Pause, RefreshCw, Calendar, Database, CheckCircle, XCircle, Loader2, Info } from "lucide-react";
 import { scheduledJobService, JobConfig, JobExecution } from "@/services/ScheduledJobService";
 import { cronJobService } from "@/services/CronJobService";
+import type { CronJobFunctionPayload } from "@/types/jobs";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
@@ -71,13 +72,13 @@ const SimpleScheduledJobManager: React.FC = () => {
         cron_expression: job.cron_expression,
         job_type: job.job_type as any,
         function_name: job.function_name,
-        function_payload: job.function_payload as Record<string, any>,
+        function_payload: job.function_payload as CronJobFunctionPayload,
         status: job.status as any,
         enabled: job.enabled,
         schedule_pattern: job.cron_expression,
         schedule_type: 'cron',
         is_active: job.enabled,
-        target_table: (job.function_payload as any)?.target_table || '',
+        target_table: (job.function_payload as CronJobFunctionPayload)?.target_table || '',
         last_run_at: job.last_run_at,
         next_run_at: job.next_run_at
       }));

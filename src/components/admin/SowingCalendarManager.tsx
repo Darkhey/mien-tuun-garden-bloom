@@ -9,8 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Plus, Edit, Trash2, Save, X, Calendar, Search, Leaf, Sprout } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase as baseSupabase } from "@/integrations/supabase/client";
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { PlantData, CompanionPlantData, PlantGrowingTips } from '@/types/sowing';
+import type { ExtendedDatabase, SowingCalendarRow, CompanionPlantRow, PlantGrowingTipsRow } from '@/types/supabase-extra';
+
+const supabase = baseSupabase as SupabaseClient<ExtendedDatabase>;
 
 const SowingCalendarManager: React.FC = () => {
   const [plants, setPlants] = useState<PlantData[]>([]);
@@ -36,30 +40,63 @@ const SowingCalendarManager: React.FC = () => {
     try {
       // Load plants
       const { data: plantsData, error: plantsError } = await supabase
-        .from('sowing_calendar' as any)
+        .from('sowing_calendar')
         .select('*')
         .order('name');
-      
+
       if (plantsError) throw plantsError;
-      setPlants((plantsData as any) || []);
+      const mappedPlants = (plantsData as SowingCalendarRow[] || []).map(row => ({
+        id: row.id,
+        name: row.name,
+        type: row.type as PlantData['type'],
+        season: row.season,
+        directSow: row.direct_sow,
+        indoor: row.indoor,
+        plantOut: row.plant_out,
+        harvest: row.harvest,
+        difficulty: row.difficulty as PlantData['difficulty'],
+        notes: row.notes || '',
+        description: row.description || '',
+        imageUrl: row.image_url || undefined,
+        companionPlants: row.companion_plants || [],
+        avoidPlants: row.avoid_plants || [],
+        growingTips: row.growing_tips || [],
+        commonProblems: row.common_problems || []
+      }));
+      setPlants(mappedPlants);
 
       // Load companion plants
       const { data: companionData, error: companionError } = await supabase
-        .from('companion_plants' as any)
+        .from('companion_plants')
         .select('*')
         .order('plant');
-      
+
       if (companionError) throw companionError;
-      setCompanionPlants((companionData as any) || []);
+      const mappedCompanions = (companionData as CompanionPlantRow[] || []).map(row => ({
+        plant: row.plant,
+        good: row.good,
+        bad: row.bad
+      }));
+      setCompanionPlants(mappedCompanions);
 
       // Load growing tips
       const { data: tipsData, error: tipsError } = await supabase
-        .from('plant_growing_tips' as any)
+        .from('plant_growing_tips')
         .select('*')
         .order('plant');
       
       if (tipsError) throw tipsError;
-      setGrowingTips((tipsData as any) || []);
+      const mappedTips = (tipsData as PlantGrowingTipsRow[] || []).map(row => ({
+        plant: row.plant,
+        temperature: row.temperature || '',
+        watering: row.watering || '',
+        light: row.light || '',
+        timing: row.timing || '',
+        difficulty: row.difficulty as PlantGrowingTips['difficulty'],
+        specificTips: row.specific_tips || [],
+        commonMistakes: row.common_mistakes || []
+      }));
+      setGrowingTips(mappedTips);
     } catch (err) {
       console.error('Error loading data:', err);
       toast({
@@ -106,7 +143,7 @@ const SowingCalendarManager: React.FC = () => {
     
     try {
       const { error } = await supabase
-        .from('sowing_calendar' as any)
+        .from('sowing_calendar')
         .delete()
         .eq('id', id);
       
@@ -136,7 +173,7 @@ const SowingCalendarManager: React.FC = () => {
       if (isCreating) {
         // Create new plant
         const { error } = await supabase
-          .from('sowing_calendar' as any)
+          .from('sowing_calendar')
           .insert([{
             name: editingPlant.name,
             type: editingPlant.type,
@@ -163,7 +200,7 @@ const SowingCalendarManager: React.FC = () => {
       } else {
         // Update existing plant
         const { error } = await supabase
-          .from('sowing_calendar' as any)
+          .from('sowing_calendar')
           .update({
             name: editingPlant.name,
             type: editingPlant.type,
@@ -226,7 +263,7 @@ const SowingCalendarManager: React.FC = () => {
     
     try {
       const { error } = await supabase
-        .from('companion_plants' as any)
+        .from('companion_plants')
         .delete()
         .eq('plant', plant);
       
@@ -260,7 +297,7 @@ const SowingCalendarManager: React.FC = () => {
       if (isCreating) {
         // Create new companion relationship
         const { error } = await supabase
-          .from('companion_plants' as any)
+          .from('companion_plants')
           .insert([{
             plant: editingCompanion.plant,
             good: goodJson,
@@ -276,7 +313,7 @@ const SowingCalendarManager: React.FC = () => {
         } else {
         // Update existing companion relationship
         const { error } = await supabase
-          .from('companion_plants' as any)
+          .from('companion_plants')
           .update({
             good: goodJson,
             bad: badJson
@@ -332,7 +369,7 @@ const SowingCalendarManager: React.FC = () => {
     
     try {
       const { error } = await supabase
-        .from('plant_growing_tips' as any)
+        .from('plant_growing_tips')
         .delete()
         .eq('plant', plant);
       
@@ -362,8 +399,8 @@ const SowingCalendarManager: React.FC = () => {
       if (isCreating) {
         // Create new growing tips
         const { error } = await supabase
-          .from('plant_growing_tips' as any)
-          .insert([{
+          .from('plant_growing_tips')
+          .insert([{ 
             plant: editingTips.plant,
             temperature: editingTips.temperature,
             watering: editingTips.watering,
@@ -383,7 +420,7 @@ const SowingCalendarManager: React.FC = () => {
       } else {
         // Update existing growing tips
         const { error } = await supabase
-          .from('plant_growing_tips' as any)
+          .from('plant_growing_tips')
           .update({
             temperature: editingTips.temperature,
             watering: editingTips.watering,
