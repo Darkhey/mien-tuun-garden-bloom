@@ -1129,6 +1129,138 @@ export type Database = {
         }
         Relationships: []
       }
+      sowing_calendar: {
+        Row: {
+          id: string
+          name: string
+          type: string
+          season: string[]
+          direct_sow: number[] | null
+          indoor: number[] | null
+          plant_out: number[] | null
+          harvest: number[] | null
+          difficulty: string
+          notes: string | null
+          description: string | null
+          image_url: string | null
+          companion_plants: string[] | null
+          avoid_plants: string[] | null
+          growing_tips: string[] | null
+          common_problems: string[] | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          type: string
+          season: string[]
+          direct_sow?: number[] | null
+          indoor?: number[] | null
+          plant_out?: number[] | null
+          harvest?: number[] | null
+          difficulty: string
+          notes?: string | null
+          description?: string | null
+          image_url?: string | null
+          companion_plants?: string[] | null
+          avoid_plants?: string[] | null
+          growing_tips?: string[] | null
+          common_problems?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          type?: string
+          season?: string[]
+          direct_sow?: number[] | null
+          indoor?: number[] | null
+          plant_out?: number[] | null
+          harvest?: number[] | null
+          difficulty?: string
+          notes?: string | null
+          description?: string | null
+          image_url?: string | null
+          companion_plants?: string[] | null
+          avoid_plants?: string[] | null
+          growing_tips?: string[] | null
+          common_problems?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      companion_plants: {
+        Row: {
+          id: string
+          plant: string
+          good: Json | null
+          bad: Json | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          plant: string
+          good?: Json | null
+          bad?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          plant?: string
+          good?: Json | null
+          bad?: Json | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      plant_growing_tips: {
+        Row: {
+          id: string
+          plant: string
+          temperature: string | null
+          watering: string | null
+          light: string | null
+          timing: string | null
+          difficulty: string
+          specific_tips: string[] | null
+          common_mistakes: string[] | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          plant: string
+          temperature?: string | null
+          watering?: string | null
+          light?: string | null
+          timing?: string | null
+          difficulty: string
+          specific_tips?: string[] | null
+          common_mistakes?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          plant?: string
+          temperature?: string | null
+          watering?: string | null
+          light?: string | null
+          timing?: string | null
+          difficulty?: string
+          specific_tips?: string[] | null
+          common_mistakes?: string[] | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
