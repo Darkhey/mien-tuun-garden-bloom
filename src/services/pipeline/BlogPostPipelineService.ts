@@ -94,7 +94,7 @@ class BlogPostPipelineService {
               excerpt,
               status: config.autoPublish ? 'veröffentlicht' : 'entwurf',
               featured_image: generated!.featuredImage || null
-            }
+            } as any
           ])
           .select()
           .single();

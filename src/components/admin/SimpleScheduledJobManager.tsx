@@ -77,7 +77,7 @@ const SimpleScheduledJobManager: React.FC = () => {
         schedule_pattern: job.cron_expression,
         schedule_type: 'cron',
         is_active: job.enabled,
-        target_table: job.function_payload?.target_table || '',
+        target_table: (job.function_payload as any)?.target_table || '',
         last_run_at: job.last_run_at,
         next_run_at: job.next_run_at
       }));

@@ -39,7 +39,7 @@ class SowingCalendarService {
           return this.getFallbackPlants();
         }
         
-        return data as PlantData[];
+        return data as unknown as PlantData[];
       } catch (error) {
         console.error('Error in getAllPlants:', error);
         return this.getFallbackPlants();
@@ -61,7 +61,7 @@ class SowingCalendarService {
           return null;
         }
         
-        return data as PlantData;
+        return data as unknown as PlantData;
       } catch (error) {
         console.error(`Error in getPlantById:`, error);
         return null;
@@ -83,7 +83,7 @@ class SowingCalendarService {
           return null;
         }
         
-        return data as PlantData;
+        return data as unknown as PlantData;
       } catch (error) {
         console.error(`Error in getPlantByName:`, error);
         return null;
@@ -105,7 +105,7 @@ class SowingCalendarService {
           return this.getFallbackCompanionPlants(plantName);
         }
         
-        return data as CompanionPlantData;
+        return data as unknown as CompanionPlantData;
       } catch (error) {
         console.error(`Error in getCompanionPlants:`, error);
         return this.getFallbackCompanionPlants(plantName);
@@ -127,7 +127,7 @@ class SowingCalendarService {
           return this.getFallbackGrowingTips(plantName);
         }
         
-        return data as PlantGrowingTips;
+        return data as unknown as PlantGrowingTips;
       } catch (error) {
         console.error(`Error in getPlantGrowingTips:`, error);
         return this.getFallbackGrowingTips(plantName);
@@ -149,7 +149,7 @@ class SowingCalendarService {
           return [];
         }
         
-        return data as PlantData[];
+        return data as unknown as PlantData[];
       } catch (error) {
         console.error(`Error in searchPlants:`, error);
         return [];
@@ -171,7 +171,7 @@ class SowingCalendarService {
           return [];
         }
         
-        return data as PlantData[];
+        return data as unknown as PlantData[];
       } catch (error) {
         console.error(`Error in getPlantsByType:`, error);
         return [];
@@ -193,7 +193,7 @@ class SowingCalendarService {
           return [];
         }
         
-        return data as PlantData[];
+        return data as unknown as PlantData[];
       } catch (error) {
         console.error(`Error in getPlantsBySeason:`, error);
         return [];
@@ -215,7 +215,7 @@ class SowingCalendarService {
           return [];
         }
         
-        return data as PlantData[];
+        return data as unknown as PlantData[];
       } catch (error) {
         console.error(`Error in getPlantsByMonth:`, error);
         return [];
@@ -239,7 +239,7 @@ class SowingCalendarService {
       // Clear cache to ensure fresh data
       this.clearCache();
       
-      return data as PlantData;
+      return data as unknown as PlantData;
     } catch (error) {
       console.error('Error in addPlant:', error);
       throw error;
@@ -263,7 +263,7 @@ class SowingCalendarService {
       // Clear cache to ensure fresh data
       this.clearCache();
       
-      return data as PlantData;
+      return data as unknown as PlantData;
     } catch (error) {
       console.error('Error in updatePlant:', error);
       throw error;
