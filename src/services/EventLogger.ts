@@ -18,21 +18,6 @@ class EventLogger {
     info: console.info
   };
 
-  private handleError = (e: ErrorEvent) => {
-    this.log(`error ${e.message} at ${e.filename}:${e.lineno}`, 'error');
-  };
-
-  private handleRejection = (e: PromiseRejectionEvent) => {
-    const reason = e.reason instanceof Error ? e.reason.message : e.reason;
-    this.log(`unhandledrejection ${reason}`, 'error');
-  };
-
-  private unhandledRejectionListener = (event: any) => {
-    if (event instanceof PromiseRejectionEvent) {
-      this.handleRejection(event);
-    }
-  };
-
   private constructor() {
     this.patchConsole();
     this.patchFetch();
@@ -51,22 +36,22 @@ class EventLogger {
     if (typeof window === 'undefined') return;
     
     console.log = (...args) => {
-      this.log(`console.log ${args.join(' ')}`, 'log');
+      this.log(`console.log ${this.sanitizeLogMessage(args.join(' '))}`, 'log');
       this.originalConsole.log(...args);
     };
 
     console.warn = (...args) => {
-      this.log(`console.warn ${args.join(' ')}`, 'warn');
+      this.log(`console.warn ${this.sanitizeLogMessage(args.join(' '))}`, 'warn');
       this.originalConsole.warn(...args);
     };
 
     console.error = (...args) => {
-      this.log(`console.error ${args.join(' ')}`, 'error');
+      this.log(`console.error ${this.sanitizeLogMessage(args.join(' '))}`, 'error');
       this.originalConsole.error(...args);
     };
 
     console.info = (...args) => {
-      this.log(`console.info ${args.join(' ')}`, 'info');
+      this.log(`console.info ${this.sanitizeLogMessage(args.join(' '))}`, 'info');
       this.originalConsole.info(...args);
     };
   }
@@ -90,8 +75,18 @@ class EventLogger {
 
   private patchErrors() {
     if (typeof window === 'undefined') return;
-    window.addEventListener('error', this.handleError);
-    window.addEventListener('unhandledrejection', this.unhandledRejectionListener);
+    
+    const handleError = (e: ErrorEvent) => {
+      this.log(`error ${e.message} at ${e.filename}:${e.lineno}`, 'error');
+    };
+
+    const handleRejection = (e: PromiseRejectionEvent) => {
+      const reason = e.reason instanceof Error ? e.reason.message : e.reason;
+      this.log(`unhandledrejection ${reason}`, 'error');
+    };
+
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
   }
 
   private patchReactEvents() {
@@ -124,16 +119,13 @@ class EventLogger {
     setInterval(checkNavigation, 100);
   }
 
-  cleanup() {
-    if (typeof window === 'undefined') return;
-    window.removeEventListener('error', this.handleError);
-    window.removeEventListener('unhandledrejection', this.unhandledRejectionListener);
-    
-    // Restore original console
-    console.log = this.originalConsole.log;
-    console.warn = this.originalConsole.warn;
-    console.error = this.originalConsole.error;
-    console.info = this.originalConsole.info;
+  private sanitizeLogMessage(message: string): string {
+    // Remove sensitive information from logs
+    return message
+      .replace(/password[=:]\s*\S+/gi, 'password=***')
+      .replace(/token[=:]\s*\S+/gi, 'token=***')
+      .replace(/key[=:]\s*\S+/gi, 'key=***')
+      .replace(/secret[=:]\s*\S+/gi, 'secret=***');
   }
 
   log(message: string, level: 'log' | 'warn' | 'error' | 'info' = 'log') {
@@ -161,6 +153,16 @@ class EventLogger {
   subscribe(callback: () => void) {
     this.emitter.addEventListener('log', callback);
     return () => this.emitter.removeEventListener('log', callback);
+  }
+
+  cleanup() {
+    if (typeof window === 'undefined') return;
+    
+    // Restore original console
+    console.log = this.originalConsole.log;
+    console.warn = this.originalConsole.warn;
+    console.error = this.originalConsole.error;
+    console.info = this.originalConsole.info;
   }
 }
 

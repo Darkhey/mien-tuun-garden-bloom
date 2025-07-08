@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.3 (519615d)"
+  }
   public: {
     Tables: {
       automation_pipelines: {
@@ -402,6 +407,240 @@ export type Database = {
         }
         Relationships: []
       }
+      box_comments: {
+        Row: {
+          box_id: string
+          comment: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          box_id: string
+          comment: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          box_id?: string
+          comment?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "box_comments_box_id_fkey"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "boxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      box_contents: {
+        Row: {
+          ai_detected: boolean | null
+          box_id: string
+          category: string | null
+          created_at: string | null
+          description: string | null
+          fragile: boolean | null
+          id: string
+          item_name: string
+          manually_added: boolean | null
+          quantity: number | null
+          updated_at: string | null
+          value_estimate: number | null
+        }
+        Insert: {
+          ai_detected?: boolean | null
+          box_id: string
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          fragile?: boolean | null
+          id?: string
+          item_name: string
+          manually_added?: boolean | null
+          quantity?: number | null
+          updated_at?: string | null
+          value_estimate?: number | null
+        }
+        Update: {
+          ai_detected?: boolean | null
+          box_id?: string
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          fragile?: boolean | null
+          id?: string
+          item_name?: string
+          manually_added?: boolean | null
+          quantity?: number | null
+          updated_at?: string | null
+          value_estimate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "box_contents_box_id_fkey"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "boxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      box_locations: {
+        Row: {
+          box_id: string
+          created_at: string | null
+          id: string
+          location_name: string
+          position_details: string | null
+          room: string | null
+          shelf: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          box_id: string
+          created_at?: string | null
+          id?: string
+          location_name: string
+          position_details?: string | null
+          room?: string | null
+          shelf?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          box_id?: string
+          created_at?: string | null
+          id?: string
+          location_name?: string
+          position_details?: string | null
+          room?: string | null
+          shelf?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "box_locations_box_id_fkey"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "boxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      box_photos: {
+        Row: {
+          ai_analysis: Json | null
+          box_id: string
+          created_at: string | null
+          id: string
+          photo_path: string | null
+          photo_url: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          box_id: string
+          created_at?: string | null
+          id?: string
+          photo_path?: string | null
+          photo_url: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          box_id?: string
+          created_at?: string | null
+          id?: string
+          photo_path?: string | null
+          photo_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "box_photos_box_id_fkey"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "boxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boxes: {
+        Row: {
+          box_number: string
+          category: Database["public"]["Enums"]["box_category"] | null
+          created_at: string | null
+          description: string | null
+          destination_household_id: string | null
+          dimensions_cm: string | null
+          household_id: string
+          id: string
+          name: string | null
+          room: string | null
+          source_household_id: string | null
+          status: Database["public"]["Enums"]["box_status"] | null
+          updated_at: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          box_number: string
+          category?: Database["public"]["Enums"]["box_category"] | null
+          created_at?: string | null
+          description?: string | null
+          destination_household_id?: string | null
+          dimensions_cm?: string | null
+          household_id: string
+          id?: string
+          name?: string | null
+          room?: string | null
+          source_household_id?: string | null
+          status?: Database["public"]["Enums"]["box_status"] | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          box_number?: string
+          category?: Database["public"]["Enums"]["box_category"] | null
+          created_at?: string | null
+          description?: string | null
+          destination_household_id?: string | null
+          dimensions_cm?: string | null
+          household_id?: string
+          id?: string
+          name?: string | null
+          room?: string | null
+          source_household_id?: string | null
+          status?: Database["public"]["Enums"]["box_status"] | null
+          updated_at?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boxes_destination_household_id_fkey"
+            columns: ["destination_household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boxes_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boxes_source_household_id_fkey"
+            columns: ["source_household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_automation_configs: {
         Row: {
           config: Json
@@ -533,6 +772,71 @@ export type Database = {
           tags?: string[] | null
           timeout_seconds?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      household_members: {
+        Row: {
+          household_id: string
+          id: string
+          joined_at: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          household_id: string
+          id?: string
+          joined_at?: string | null
+          role?: string
+          user_id: string
+        }
+        Update: {
+          household_id?: string
+          id?: string
+          joined_at?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_members_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      households: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          invitation_code: string | null
+          move_date: string | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          invitation_code?: string | null
+          move_date?: string | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          invitation_code?: string | null
+          move_date?: string | null
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1129,138 +1433,6 @@ export type Database = {
         }
         Relationships: []
       }
-      sowing_calendar: {
-        Row: {
-          id: string
-          name: string
-          type: string
-          season: string[]
-          direct_sow: number[] | null
-          indoor: number[] | null
-          plant_out: number[] | null
-          harvest: number[] | null
-          difficulty: string
-          notes: string | null
-          description: string | null
-          image_url: string | null
-          companion_plants: string[] | null
-          avoid_plants: string[] | null
-          growing_tips: string[] | null
-          common_problems: string[] | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          name: string
-          type: string
-          season: string[]
-          direct_sow?: number[] | null
-          indoor?: number[] | null
-          plant_out?: number[] | null
-          harvest?: number[] | null
-          difficulty: string
-          notes?: string | null
-          description?: string | null
-          image_url?: string | null
-          companion_plants?: string[] | null
-          avoid_plants?: string[] | null
-          growing_tips?: string[] | null
-          common_problems?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          name?: string
-          type?: string
-          season?: string[]
-          direct_sow?: number[] | null
-          indoor?: number[] | null
-          plant_out?: number[] | null
-          harvest?: number[] | null
-          difficulty?: string
-          notes?: string | null
-          description?: string | null
-          image_url?: string | null
-          companion_plants?: string[] | null
-          avoid_plants?: string[] | null
-          growing_tips?: string[] | null
-          common_problems?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      companion_plants: {
-        Row: {
-          id: string
-          plant: string
-          good: Json | null
-          bad: Json | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          plant: string
-          good?: Json | null
-          bad?: Json | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          plant?: string
-          good?: Json | null
-          bad?: Json | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      plant_growing_tips: {
-        Row: {
-          id: string
-          plant: string
-          temperature: string | null
-          watering: string | null
-          light: string | null
-          timing: string | null
-          difficulty: string
-          specific_tips: string[] | null
-          common_mistakes: string[] | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          plant: string
-          temperature?: string | null
-          watering?: string | null
-          light?: string | null
-          timing?: string | null
-          difficulty: string
-          specific_tips?: string[] | null
-          common_mistakes?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          plant?: string
-          temperature?: string | null
-          watering?: string | null
-          light?: string | null
-          timing?: string | null
-          difficulty?: string
-          specific_tips?: string[] | null
-          common_mistakes?: string[] | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -1269,6 +1441,10 @@ export type Database = {
       calculate_next_run_time: {
         Args: { cron_expression: string }
         Returns: string
+      }
+      check_invitation_code: {
+        Args: { code: string }
+        Returns: boolean
       }
       check_job_health: {
         Args: Record<PropertyKey, never>
@@ -1297,6 +1473,23 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      box_category:
+        | "küche"
+        | "wohnzimmer"
+        | "schlafzimmer"
+        | "badezimmer"
+        | "keller"
+        | "dachboden"
+        | "büro"
+        | "kinderzimmer"
+        | "sonstiges"
+      box_status:
+        | "leer"
+        | "teilweise_gepackt"
+        | "voll"
+        | "versiegelt"
+        | "transportiert"
+        | "ausgepackt"
       cron_job_status: "active" | "inactive" | "paused" | "error"
       job_execution_status:
         | "pending"
@@ -1318,21 +1511,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -1350,14 +1547,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -1373,14 +1572,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
@@ -1396,14 +1597,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
@@ -1411,14 +1614,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
@@ -1427,6 +1632,25 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      box_category: [
+        "küche",
+        "wohnzimmer",
+        "schlafzimmer",
+        "badezimmer",
+        "keller",
+        "dachboden",
+        "büro",
+        "kinderzimmer",
+        "sonstiges",
+      ],
+      box_status: [
+        "leer",
+        "teilweise_gepackt",
+        "voll",
+        "versiegelt",
+        "transportiert",
+        "ausgepackt",
+      ],
       cron_job_status: ["active", "inactive", "paused", "error"],
       job_execution_status: [
         "pending",
