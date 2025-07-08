@@ -641,6 +641,33 @@ export type Database = {
           },
         ]
       }
+      companion_plants: {
+        Row: {
+          bad: Json
+          created_at: string | null
+          good: Json
+          id: string
+          plant: string
+          updated_at: string | null
+        }
+        Insert: {
+          bad?: Json
+          created_at?: string | null
+          good?: Json
+          id?: string
+          plant: string
+          updated_at?: string | null
+        }
+        Update: {
+          bad?: Json
+          created_at?: string | null
+          good?: Json
+          id?: string
+          plant?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       content_automation_configs: {
         Row: {
           config: Json
@@ -1095,6 +1122,48 @@ export type Database = {
           },
         ]
       }
+      plant_growing_tips: {
+        Row: {
+          common_mistakes: string[]
+          created_at: string | null
+          difficulty: string
+          id: string
+          light: string
+          plant: string
+          specific_tips: string[]
+          temperature: string
+          timing: string
+          updated_at: string | null
+          watering: string
+        }
+        Insert: {
+          common_mistakes?: string[]
+          created_at?: string | null
+          difficulty: string
+          id?: string
+          light: string
+          plant: string
+          specific_tips?: string[]
+          temperature: string
+          timing: string
+          updated_at?: string | null
+          watering: string
+        }
+        Update: {
+          common_mistakes?: string[]
+          created_at?: string | null
+          difficulty?: string
+          id?: string
+          light?: string
+          plant?: string
+          specific_tips?: string[]
+          temperature?: string
+          timing?: string
+          updated_at?: string | null
+          watering?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1412,6 +1481,69 @@ export type Database = {
           target_user_id?: string | null
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      sowing_calendar: {
+        Row: {
+          avoid_plants: string[] | null
+          common_problems: string[] | null
+          companion_plants: string[] | null
+          created_at: string | null
+          description: string | null
+          difficulty: string
+          direct_sow: number[]
+          growing_tips: string[] | null
+          harvest: number[]
+          id: string
+          image_url: string | null
+          indoor: number[]
+          name: string
+          notes: string | null
+          plant_out: number[]
+          season: string[]
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          avoid_plants?: string[] | null
+          common_problems?: string[] | null
+          companion_plants?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          difficulty: string
+          direct_sow?: number[]
+          growing_tips?: string[] | null
+          harvest?: number[]
+          id?: string
+          image_url?: string | null
+          indoor?: number[]
+          name: string
+          notes?: string | null
+          plant_out?: number[]
+          season?: string[]
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          avoid_plants?: string[] | null
+          common_problems?: string[] | null
+          companion_plants?: string[] | null
+          created_at?: string | null
+          description?: string | null
+          difficulty?: string
+          direct_sow?: number[]
+          growing_tips?: string[] | null
+          harvest?: number[]
+          id?: string
+          image_url?: string | null
+          indoor?: number[]
+          name?: string
+          notes?: string | null
+          plant_out?: number[]
+          season?: string[]
+          type?: string
+          updated_at?: string | null
         }
         Relationships: []
       }

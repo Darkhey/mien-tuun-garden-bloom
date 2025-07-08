@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ const SowingCalendarManager: React.FC = () => {
     try {
       // Load plants
       const { data: plantsData, error: plantsError } = await supabase
-        .from<any>('sowing_calendar')
+        .from('sowing_calendar')
         .select('*')
         .order('name');
       
@@ -45,7 +46,7 @@ const SowingCalendarManager: React.FC = () => {
 
       // Load companion plants
       const { data: companionData, error: companionError } = await supabase
-        .from<any>('companion_plants')
+        .from('companion_plants')
         .select('*')
         .order('plant');
       
@@ -54,7 +55,7 @@ const SowingCalendarManager: React.FC = () => {
 
       // Load growing tips
       const { data: tipsData, error: tipsError } = await supabase
-        .from<any>('plant_growing_tips')
+        .from('plant_growing_tips')
         .select('*')
         .order('plant');
       
@@ -106,7 +107,7 @@ const SowingCalendarManager: React.FC = () => {
     
     try {
       const { error } = await supabase
-        .from<any>('sowing_calendar')
+        .from('sowing_calendar')
         .delete()
         .eq('id', id);
       
@@ -136,7 +137,7 @@ const SowingCalendarManager: React.FC = () => {
       if (isCreating) {
         // Create new plant
         const { error } = await supabase
-          .from<any>('sowing_calendar')
+          .from('sowing_calendar')
           .insert([{ 
             name: editingPlant.name,
             type: editingPlant.type,
@@ -163,7 +164,7 @@ const SowingCalendarManager: React.FC = () => {
       } else {
         // Update existing plant
         const { error } = await supabase
-          .from<any>('sowing_calendar')
+          .from('sowing_calendar')
           .update({
             name: editingPlant.name,
             type: editingPlant.type,
@@ -226,7 +227,7 @@ const SowingCalendarManager: React.FC = () => {
     
     try {
       const { error } = await supabase
-        .from<any>('companion_plants')
+        .from('companion_plants')
         .delete()
         .eq('plant', plant);
       
@@ -260,7 +261,7 @@ const SowingCalendarManager: React.FC = () => {
       if (isCreating) {
         // Create new companion relationship
         const { error } = await supabase
-          .from<any>('companion_plants')
+          .from('companion_plants')
           .insert([{
             plant: editingCompanion.plant,
             good: goodJson,
@@ -276,7 +277,7 @@ const SowingCalendarManager: React.FC = () => {
       } else {
         // Update existing companion relationship
         const { error } = await supabase
-          .from<any>('companion_plants')
+          .from('companion_plants')
           .update({
             good: goodJson,
             bad: badJson
@@ -332,7 +333,7 @@ const SowingCalendarManager: React.FC = () => {
     
     try {
       const { error } = await supabase
-        .from<any>('plant_growing_tips')
+        .from('plant_growing_tips')
         .delete()
         .eq('plant', plant);
       
@@ -362,7 +363,7 @@ const SowingCalendarManager: React.FC = () => {
       if (isCreating) {
         // Create new growing tips
         const { error } = await supabase
-          .from<any>('plant_growing_tips')
+          .from('plant_growing_tips')
           .insert([{
             plant: editingTips.plant,
             temperature: editingTips.temperature,
@@ -383,7 +384,7 @@ const SowingCalendarManager: React.FC = () => {
       } else {
         // Update existing growing tips
         const { error } = await supabase
-          .from<any>('plant_growing_tips')
+          .from('plant_growing_tips')
           .update({
             temperature: editingTips.temperature,
             watering: editingTips.watering,
