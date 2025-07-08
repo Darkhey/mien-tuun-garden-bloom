@@ -28,7 +28,7 @@ const BlogComments: React.FC<BlogCommentsProps> = ({ blogSlug, userId }) => {
       .select("*")
       .eq("blog_slug", blogSlug)
       .order("created_at", { ascending: true });
-    if (!error) setComments((data as Comment[]) || []);
+    if (!error) setComments((data as unknown as Comment[]) || []);
   }
 
   useEffect(() => {

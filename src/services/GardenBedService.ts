@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+const sb: any = supabase;
 import type { GardenBed } from '@/types/garden';
 
 class GardenBedService {
@@ -7,7 +8,7 @@ class GardenBedService {
       throw new Error('User ID is required');
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('garden_beds')
       .select('*')
       .eq('user_id', userId)
@@ -28,7 +29,7 @@ class GardenBedService {
       throw new Error('Bed name is required');
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('garden_beds')
       .insert({ user_id: userId, name: name.trim(), description: description.trim(), plants: [] })
       .select()
@@ -56,7 +57,7 @@ class GardenBedService {
       throw new Error('No valid fields to update');
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from('garden_beds')
       .update(filteredUpdates)
       .eq('id', id)
@@ -74,7 +75,7 @@ class GardenBedService {
       throw new Error('Bed ID is required');
     }
 
-    const { error } = await supabase
+    const { error } = await sb
       .from('garden_beds')
       .delete()
       .eq('id', id);
@@ -89,7 +90,7 @@ class GardenBedService {
       throw new Error('Bed ID and Plant ID are required');
     }
 
-    const { data: updated, error } = await supabase.rpc('add_plant_to_bed', {
+    const { data: updated, error } = await sb.rpc('add_plant_to_bed', {
       bed_id: bedId,
       plant_id: plantId
     });
@@ -106,7 +107,7 @@ class GardenBedService {
       throw new Error('Bed ID and Plant ID are required');
     }
 
-    const { data: updated, error } = await supabase.rpc('remove_plant_from_bed', {
+    const { data: updated, error } = await sb.rpc('remove_plant_from_bed', {
       bed_id: bedId,
       plant_id: plantId
     });

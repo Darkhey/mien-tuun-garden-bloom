@@ -27,7 +27,7 @@ const RecipeComments: React.FC<RecipeCommentsProps> = ({ recipeId, userId }) => 
       .select("*")
       .eq("recipe_id", recipeId)
       .order("created_at", { ascending: true });
-    if (!error) setComments((data as Comment[]) || []);
+    if (!error) setComments((data as unknown as Comment[]) || []);
   }
 
   async function handleDelete(id: string) {

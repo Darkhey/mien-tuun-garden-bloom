@@ -219,7 +219,7 @@ const Sidebar = React.forwardRef<
                   } as React.CSSProperties
                 }
                 onClick={(e) => e.stopPropagation()}
-                {...props}
+                {...(props as any)}
               >
                 <div className="flex h-full w-full flex-col">{children}</div>
                 <Button 
@@ -291,7 +291,7 @@ const Sidebar = React.forwardRef<
               : "border-r border-gray-200",
             className
           )}
-          {...props}
+          {...(props as any)}
         >
           <div
             data-sidebar="sidebar"
