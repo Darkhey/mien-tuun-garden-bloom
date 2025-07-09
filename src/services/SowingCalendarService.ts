@@ -78,18 +78,93 @@ class SowingCalendarService {
           .select('*')
           .ilike('name', `%${query}%`)
           .order('name');
-        
+
         if (error) {
           console.error(`Error searching plants for "${query}":`, error);
           return [];
         }
-        
+
         return data as unknown as PlantData[];
       } catch (error) {
         console.error(`Error in searchPlants:`, error);
         return [];
       }
     });
+  }
+
+  async getCompanionPlants(plantName: string): Promise<CompanionPlantData | null> {
+    return this.getCachedOrFetch(`companions-${plantName}`, async () => {
+      try {
+        const { data, error } = await supabase
+          .from('companion_plants')
+          .select('*')
+          .eq('plant', plantName)
+          .single();
+
+        if (error) {
+          console.error('Error fetching companion plants:', error);
+          return null;
+        }
+
+        return data as unknown as CompanionPlantData;
+      } catch (error) {
+        console.error('Error in getCompanionPlants:', error);
+        return null;
+      }
+    });
+  }
+
+  async getPlantGrowingTips(plantName: string): Promise<PlantGrowingTips | null> {
+    return this.getCachedOrFetch(`tips-${plantName}`, async () => {
+      try {
+        const { data, error } = await supabase
+          .from('plant_growing_tips')
+          .select('*')
+          .eq('plant', plantName)
+          .single();
+
+        if (error) {
+          console.error('Error fetching growing tips:', error);
+          return null;
+        }
+
+        return data as unknown as PlantGrowingTips;
+      } catch (error) {
+        console.error('Error in getPlantGrowingTips:', error);
+        return null;
+      }
+    });
+  }
+
+  async addPlant(plant: PlantData): Promise<void> {
+    try {
+      const { error } = await supabase.from('sowing_calendar').insert([
+        {
+          name: plant.name,
+          type: plant.type,
+          season: plant.season,
+          direct_sow: plant.directSow,
+          indoor: plant.indoor,
+          plant_out: plant.plantOut,
+          harvest: plant.harvest,
+          difficulty: plant.difficulty,
+          notes: plant.notes,
+          description: plant.description,
+          image_url: plant.imageUrl,
+          companion_plants: plant.companionPlants ?? [],
+          avoid_plants: plant.avoidPlants ?? [],
+          growing_tips: plant.growingTips ?? [],
+          common_problems: plant.commonProblems ?? []
+        }
+      ]);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error adding plant:', error);
+      throw error;
+    }
   }
 
   clearCache(): void {
