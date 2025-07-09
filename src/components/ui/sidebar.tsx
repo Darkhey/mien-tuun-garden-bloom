@@ -2,7 +2,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, type HTMLMotionProps } from "framer-motion"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -154,14 +154,14 @@ const SidebarProvider = React.forwardRef<
 )
 SidebarProvider.displayName = "SidebarProvider"
 
-const Sidebar = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div"> & {
-    side?: "left" | "right"
-    variant?: "sidebar" | "floating" | "inset"
-    collapsible?: "offcanvas" | "icon" | "none"
-  }
->(
+interface SidebarProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
+  children?: React.ReactNode
+  side?: "left" | "right"
+  variant?: "sidebar" | "floating" | "inset"
+  collapsible?: "offcanvas" | "icon" | "none"
+}
+
+const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
   (
     {
       side = "left",
@@ -177,16 +177,16 @@ const Sidebar = React.forwardRef<
 
     if (collapsible === "none") {
       return (
-        <div
+        <motion.div
           className={cn(
             "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
             className
           )}
           ref={ref}
-          {...props}
+          {...(props as HTMLMotionProps<'div'>)}
         >
           {children}
-        </div>
+        </motion.div>
       )
     }
 
@@ -219,7 +219,7 @@ const Sidebar = React.forwardRef<
                   } as React.CSSProperties
                 }
                 onClick={(e) => e.stopPropagation()}
-                {...props}
+                {...(props as HTMLMotionProps<'div'>)}
               >
                 <div className="flex h-full w-full flex-col">{children}</div>
                 <Button 
@@ -291,7 +291,7 @@ const Sidebar = React.forwardRef<
               : "border-r border-gray-200",
             className
           )}
-          {...props}
+          {...(props as HTMLMotionProps<'div'>)}
         >
           <div
             data-sidebar="sidebar"

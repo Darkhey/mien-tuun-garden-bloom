@@ -18,7 +18,7 @@ interface SowingCalendarFiltersProps {
   setSelectedDifficulty: (value: string) => void;
   categories: SowingCategory[];
   categoryFilter: Record<string, boolean>;
-  setCategoryFilter: (value: Record<string, boolean>) => void;
+  setCategoryFilter: (value: React.SetStateAction<Record<string, boolean>>) => void;
   onReset: () => void;
 }
 
