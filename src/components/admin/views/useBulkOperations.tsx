@@ -294,4 +294,4 @@ export const useBulkOperations = (selectedIds: string[], clearSelection: () => v
     optimizeTitles,
     generateImages,
     cancelOperation
-  };};
+  };
