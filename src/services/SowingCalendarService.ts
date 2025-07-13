@@ -40,7 +40,7 @@ class SowingCalendarService {
           return this.getFallbackPlants();
         }
         
-        return data as unknown as PlantData[];
+        return this.transformDbToPlantData(data || []);
       } catch (error) {
         console.error('Error in getAllPlants:', error);
         return this.getFallbackPlants();
@@ -62,7 +62,7 @@ class SowingCalendarService {
           return null;
         }
         
-        return data as unknown as PlantData;
+        return this.transformDbRowToPlantData(data);
       } catch (error) {
         console.error(`Error in getPlantById:`, error);
         return null;
@@ -84,7 +84,7 @@ class SowingCalendarService {
           return [];
         }
 
-        return data as unknown as PlantData[];
+        return this.transformDbToPlantData(data || []);
       } catch (error) {
         console.error(`Error in searchPlants:`, error);
         return [];
@@ -106,7 +106,11 @@ class SowingCalendarService {
           return null;
         }
 
-        return data as unknown as CompanionPlantData;
+        return {
+          plant: data.plant,
+          good: data.good || [],
+          bad: data.bad || []
+        } as CompanionPlantData;
       } catch (error) {
         console.error('Error in getCompanionPlants:', error);
         return null;
@@ -128,7 +132,16 @@ class SowingCalendarService {
           return null;
         }
 
-        return data as unknown as PlantGrowingTips;
+        return {
+          plant: data.plant,
+          temperature: data.temperature,
+          watering: data.watering,
+          light: data.light,
+          timing: data.timing,
+          difficulty: data.difficulty,
+          specificTips: data.specific_tips || [],
+          commonMistakes: data.common_mistakes || []
+        } as PlantGrowingTips;
       } catch (error) {
         console.error('Error in getPlantGrowingTips:', error);
         return null;
@@ -169,6 +182,33 @@ class SowingCalendarService {
 
   clearCache(): void {
     this.cache.clear();
+  }
+
+  // Transform database row to PlantData interface
+  private transformDbRowToPlantData(row: any): PlantData {
+    return {
+      id: row.id,
+      name: row.name,
+      type: row.type,
+      season: row.season || [],
+      directSow: row.direct_sow || [],
+      indoor: row.indoor || [],
+      plantOut: row.plant_out || [],
+      harvest: row.harvest || [],
+      difficulty: row.difficulty,
+      notes: row.notes || '',
+      description: row.description,
+      imageUrl: row.image_url,
+      companionPlants: row.companion_plants || [],
+      avoidPlants: row.avoid_plants || [],
+      growingTips: row.growing_tips || [],
+      commonProblems: row.common_problems || []
+    };
+  }
+
+  // Transform array of database rows to PlantData array
+  private transformDbToPlantData(rows: any[]): PlantData[] {
+    return rows.map(row => this.transformDbRowToPlantData(row));
   }
 
   // Fallback methods for when the database is not available
