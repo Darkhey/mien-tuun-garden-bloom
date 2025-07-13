@@ -55,7 +55,7 @@ class SowingCalendarService {
           .from('sowing_calendar')
           .select('*')
           .eq('id', id)
-          .single();
+          .maybeSingle();
         
         if (error) {
           console.error(`Error fetching plant with ID ${id}:`, error);
@@ -99,7 +99,7 @@ class SowingCalendarService {
           .from('companion_plants')
           .select('*')
           .eq('plant', plantName)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching companion plants:', error);
@@ -125,7 +125,7 @@ class SowingCalendarService {
           .from('plant_growing_tips')
           .select('*')
           .eq('plant', plantName)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching growing tips:', error);

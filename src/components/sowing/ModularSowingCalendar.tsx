@@ -161,7 +161,7 @@ const ModularSowingCalendar: React.FC = () => {
       console.error('Error adding plant:', error);
       toast({
         title: "Fehler",
-        description: `Fehler beim Hinzufügen der Pflanze: ${error.message}`,
+        description: `Fehler beim Hinzufügen der Pflanze: ${(error as Error)?.message || 'Unbekannter Fehler'}`,
         variant: "destructive",
       });
     }
