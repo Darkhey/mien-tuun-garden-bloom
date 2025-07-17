@@ -140,10 +140,10 @@ const KIBlogCreator: React.FC = () => {
         .from('blog_posts')
         .insert([article])
         .select()
-        .single();
+        .maybeSingle();
       
-      if (blogPostError) {
-        throw new Error(`Blog-Post Speicher-Fehler: ${blogPostError.message}`);
+      if (blogPostError || !blogPost) {
+        throw new Error(`Blog-Post Speicher-Fehler: ${blogPostError?.message || 'Kein Blog-Post zurückgegeben'}`);
       }
       
       // Version für Tracking speichern

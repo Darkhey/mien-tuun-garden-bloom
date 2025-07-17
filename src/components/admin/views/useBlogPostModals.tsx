@@ -15,9 +15,13 @@ export const useBlogPostModals = (loadBlogPosts: () => void, loadInstagramStatus
         .from('blog_posts')
         .select('*')
         .eq('id', post.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+
+      if (!fullPost) {
+        throw new Error('Blog-Post nicht gefunden');
+      }
 
       console.log('[BlogPostsView] Loaded full post for editing:', fullPost);
       setEditingPost(fullPost);

@@ -31,8 +31,28 @@ const SowingCalendarTable: React.FC<SowingCalendarTableProps> = ({
   const renderMonthDots = (plant: PlantData, col: number) => {
     return (
       <TooltipProvider>
-        {categories.map(({ key, color, label }) =>
-          categoryFilter[key] && (plant[key as keyof PlantData] as number[])?.includes(col + 1) ? (
+        {categories.map(({ key, color, label }) => {
+          let months: number[] = [];
+          
+          // Safe property access with proper field mapping
+          switch (key) {
+            case 'directSow':
+              months = plant.directSow || [];
+              break;
+            case 'indoor':
+              months = plant.indoor || [];
+              break;
+            case 'plantOut':
+              months = plant.plantOut || [];
+              break;
+            case 'harvest':
+              months = plant.harvest || [];
+              break;
+            default:
+              return null;
+          }
+          
+          return categoryFilter[key] && months.includes(col + 1) ? (
             <Tooltip key={key}>
               <TooltipTrigger asChild>
                 <span
@@ -43,8 +63,8 @@ const SowingCalendarTable: React.FC<SowingCalendarTableProps> = ({
                 <p>{label} für {plant.name} im {MONTHS[col]}</p>
               </TooltipContent>
             </Tooltip>
-          ) : null
-        )}
+          ) : null;
+        })}
       </TooltipProvider>
     );
   };

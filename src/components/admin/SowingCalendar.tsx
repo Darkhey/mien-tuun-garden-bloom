@@ -584,8 +584,28 @@ const CATEGORIES = [
 function renderMonthDots(row: typeof SOWING_DATA[number], col: number, categoryFilter: Record<string, boolean>) {
   return (
     <TooltipProvider>
-      {CATEGORIES.map(({ key, color, label }) =>
-        categoryFilter[key] && (row[key as keyof typeof row] as number[]).includes(col + 1) ? (
+      {CATEGORIES.map(({ key, color, label }) => {
+        let months: number[] = [];
+        
+        // Safe property access
+        switch (key) {
+          case 'directSow':
+            months = row.directSow || [];
+            break;
+          case 'indoor':
+            months = row.indoor || [];
+            break;
+          case 'plantOut':
+            months = row.plantOut || [];
+            break;
+          case 'harvest':
+            months = row.harvest || [];
+            break;
+          default:
+            return null;
+        }
+        
+        return categoryFilter[key] && months.includes(col + 1) ? (
           <Tooltip key={key}>
             <TooltipTrigger asChild>
               <span
@@ -596,8 +616,8 @@ function renderMonthDots(row: typeof SOWING_DATA[number], col: number, categoryF
               <p>{label} für {row.plant} im {MONTHS[col]}</p>
             </TooltipContent>
           </Tooltip>
-        ) : null
-      )}
+        ) : null;
+      })}
     </TooltipProvider>
   );
 }
@@ -630,10 +650,27 @@ const SowingCalendar: React.FC = () => {
       if (selectedMonth !== "ALL") {
         const monthNum = MONTHS.indexOf(selectedMonth) + 1;
         // Wenn für eine aktivierte Kategorie in diesem Monat kein Eintrag -> Zeile ausblenden
-        const anyCategory = CATEGORIES.some(cat =>
-          categoryFilter[cat.key] &&
-          (row[cat.key as keyof typeof row] as number[]).includes(monthNum)
-        );
+        const anyCategory = CATEGORIES.some(cat => {
+          if (!categoryFilter[cat.key]) return false;
+          
+          let months: number[] = [];
+          switch (cat.key) {
+            case 'directSow':
+              months = row.directSow || [];
+              break;
+            case 'indoor':
+              months = row.indoor || [];
+              break;
+            case 'plantOut':
+              months = row.plantOut || [];
+              break;
+            case 'harvest':
+              months = row.harvest || [];
+              break;
+          }
+          
+          return months.includes(monthNum);
+        });
         if (!anyCategory) return false;
       }
       return true;

@@ -99,7 +99,7 @@ export const usePodcastActions = (
       .from('blog_podcasts')
       .select('id')
       .eq('blog_post_id', blogPostId)
-      .single();
+      .maybeSingle();
 
     if (podcast) {
       await generateAudioForPodcast(podcast.id, blogPostId, title);

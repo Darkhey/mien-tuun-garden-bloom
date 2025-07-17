@@ -98,7 +98,13 @@ const ModularSowingCalendar: React.FC = () => {
         const monthIndex = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'].indexOf(selectedMonth) + 1;
         const anyCategory = CATEGORIES.some(cat => 
           categoryFilter[cat.key] && 
-          (plant[cat.key as keyof PlantData] as number[])?.includes(monthIndex)
+          (() => {
+            const months = cat.key === 'directSow' ? plant.directSow :
+                          cat.key === 'indoor' ? plant.indoor :
+                          cat.key === 'plantOut' ? plant.plantOut :
+                          cat.key === 'harvest' ? plant.harvest : [];
+            return Array.isArray(months) && months.includes(monthIndex);
+          })()
         );
         if (!anyCategory) return false;
       }
