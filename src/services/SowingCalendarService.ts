@@ -62,7 +62,7 @@ class SowingCalendarService {
           return null;
         }
         
-        return this.transformDbRowToPlantData(data);
+        return data ? this.transformDbRowToPlantData(data) : null;
       } catch (error) {
         console.error(`Error in getPlantById:`, error);
         return null;
@@ -106,6 +106,8 @@ class SowingCalendarService {
           return null;
         }
 
+        if (!data) return null;
+        
         return {
           plant: data.plant,
           good: data.good || [],
@@ -132,6 +134,8 @@ class SowingCalendarService {
           return null;
         }
 
+        if (!data) return null;
+        
         return {
           plant: data.plant,
           temperature: data.temperature,
@@ -185,7 +189,8 @@ class SowingCalendarService {
   }
 
   // Transform database row to PlantData interface
-  private transformDbRowToPlantData(row: any): PlantData {
+  private transformDbRowToPlantData(row: any): PlantData | null {
+    if (!row) return null;
     return {
       id: row.id,
       name: row.name,
@@ -208,7 +213,7 @@ class SowingCalendarService {
 
   // Transform array of database rows to PlantData array
   private transformDbToPlantData(rows: any[]): PlantData[] {
-    return rows.map(row => this.transformDbRowToPlantData(row));
+    return rows.map(row => this.transformDbRowToPlantData(row)).filter((plant): plant is PlantData => plant !== null);
   }
 
   // Fallback methods for when the database is not available

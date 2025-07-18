@@ -85,9 +85,9 @@ class BlogDataFlowTester {
         .from('blog_posts')
         .insert([articleData])
         .select()
-        .single();
+        .maybeSingle();
 
-      if (createError) {
+      if (createError || !createdArticle) {
         this.log(
           "Artikel-Erstellung",
           "Erfolgreiche Speicherung in Datenbank",
@@ -289,9 +289,9 @@ class BlogDataFlowTester {
       .from('blog_posts')
       .insert([articleData])
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error || !data) {
       this.log(
         "Entwurf-Speicherung",
         "Entwurf erfolgreich gespeichert",
@@ -339,9 +339,9 @@ class BlogDataFlowTester {
       .from('blog_posts')
       .insert([articleData])
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error || !data) {
       this.log(
         "Artikel-Veröffentlichung",
         "Artikel erfolgreich veröffentlicht",
@@ -386,9 +386,9 @@ class BlogDataFlowTester {
       })
       .eq('id', testArticle.id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error || !data) {
       this.log(
         "Artikel-Bearbeitung",
         "Artikel erfolgreich bearbeitet",
@@ -439,9 +439,9 @@ class BlogDataFlowTester {
       })
       .eq('id', testArticle.id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error || !data) {
       this.log(
         "Status-Änderung (Entwurf → Veröffentlicht)",
         "Status erfolgreich geändert",
@@ -465,9 +465,9 @@ class BlogDataFlowTester {
         })
         .eq('id', testArticle.id)
         .select()
-        .single();
+        .maybeSingle();
 
-      if (revertError) {
+      if (revertError || !revertData) {
         this.log(
           "Status-Änderung (Veröffentlicht → Entwurf)",
           "Status erfolgreich zurückgesetzt",
@@ -518,7 +518,7 @@ class BlogDataFlowTester {
           .from('blog_posts')
           .select('id')
           .eq('id', testArticle.id)
-          .single();
+          .maybeSingle();
 
         this.log(
           "Artikel-Löschung",

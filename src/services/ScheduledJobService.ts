@@ -86,9 +86,9 @@ class ScheduledJobService {
       .from('cron_jobs')
       .select('*')
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
-    if (error) {
+    if (error || !data) {
       if (error.code === 'PGRST116') return null;
       throw error;
     }
@@ -136,9 +136,9 @@ class ScheduledJobService {
       .from('cron_jobs')
       .insert(jobData)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error || !data) throw error || new Error('Failed to create scheduled job');
     
     const payload = data.function_payload as Record<string, any> || {};
     return {
@@ -178,9 +178,9 @@ class ScheduledJobService {
       })
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error || !data) throw error || new Error('Failed to update scheduled job');
     
     const payload = data.function_payload as Record<string, any> || {};
     return {
@@ -223,9 +223,9 @@ class ScheduledJobService {
       .update({ enabled: isActive })
       .eq('id', id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error || !data) throw error || new Error('Failed to delete scheduled job');
     
     const payload = data.function_payload as Record<string, any> || {};
     return {

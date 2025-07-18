@@ -35,8 +35,8 @@ class GardenBedService {
       .from('garden_beds')
       .insert({ user_id: userId, name: name.trim(), description: description.trim(), plants: [] })
       .select()
-      .single();
-    if (error) {
+      .maybeSingle();
+    if (error || !data) {
       console.error('Error creating bed:', error);
       throw new Error(error.message);
     }
@@ -64,8 +64,8 @@ class GardenBedService {
       .update(filteredUpdates)
       .eq('id', id)
       .select()
-      .single();
-    if (error) {
+      .maybeSingle();
+    if (error || !data) {
       console.error('Error updating bed:', error);
       throw new Error(error.message);
     }

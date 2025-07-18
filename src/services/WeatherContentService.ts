@@ -362,9 +362,9 @@ export class WeatherContentService {
           content_types: ['blog']
         })
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      if (error || !data) {
         throw error;
       }
 

@@ -93,11 +93,17 @@ class BlogPostPipelineService {
               content: generated!.content,
               excerpt,
               status: config.autoPublish ? 'veröffentlicht' : 'entwurf',
-              featured_image: generated!.featuredImage || null
-            } as any
+              featured_image: generated!.featuredImage || null,
+              author: 'Marianne',
+              category: config.category || 'kochen',
+              reading_time: Math.max(1, Math.floor(generated!.content.split(' ').length / 200)),
+              seo_description: excerpt,
+              seo_title: generated!.title,
+              slug: generated!.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+            }
           ])
           .select()
-          .single();
+          .maybeSingle();
 
         if (error) {
           throw new Error(`Database error: ${error.message}`);

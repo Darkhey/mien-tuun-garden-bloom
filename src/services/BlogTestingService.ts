@@ -183,9 +183,9 @@ class BlogTestingService {
         .from('blog_posts')
         .insert([testPost])
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error || !data) throw error || new Error('Failed to create test post');
 
       // Cleanup: Delete test post
       await supabase

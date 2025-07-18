@@ -424,7 +424,7 @@ export class ContentInsightsService {
       .from('blog_posts')
       .select('*')
       .or(`id.eq.${contentId},slug.eq.${contentId}`)
-      .single();
+      .maybeSingle();
 
     if (error || !post) {
       console.error('[ContentInsights] Post not found:', error?.message);

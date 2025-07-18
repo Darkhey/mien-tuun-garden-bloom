@@ -2,8 +2,17 @@
 import React from "react";
 import IngredientList from "@/components/IngredientList";
 
+type Ingredient = {
+  id?: string;
+  amount?: number;
+  unit?: string;
+  name: string;
+  notes?: string;
+  group?: string;
+};
+
 interface RecipeIngredientsProps {
-  ingredients: any[];
+  ingredients: Ingredient[];
   servings: number;
   setServings: (servings: number) => void;
   baseServings: number;

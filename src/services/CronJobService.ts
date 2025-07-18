@@ -67,9 +67,9 @@ class CronJobService {
         .from('cron_jobs')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      if (error || !data) {
         if (error.code === 'PGRST116') return null;
         throw error;
       }
@@ -117,9 +117,9 @@ class CronJobService {
         .from('cron_jobs')
         .insert(jobData)
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error || !data) throw error || new Error('Failed to create cron job');
       return data;
     } catch (error) {
       console.error('Error creating job:', error);
@@ -157,9 +157,9 @@ class CronJobService {
         .update(updateData)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error || !data) throw error || new Error('Failed to update cron job');
       return data;
     } catch (error) {
       console.error(`Error updating job with ID ${id}:`, error);
@@ -174,9 +174,9 @@ class CronJobService {
         .from('cron_jobs')
         .select('id, name')
         .eq('id', id)
-        .single();
+        .maybeSingle();
         
-      if (checkError) {
+      if (checkError || !job) {
         if (checkError.code === 'PGRST116') {
           throw new Error(`Job with ID ${id} not found`);
         }
@@ -222,9 +222,9 @@ class CronJobService {
         })
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error || !data) throw error || new Error('Failed to delete cron job');
       return data;
     } catch (error) {
       console.error(`Error toggling job with ID ${id}:`, error);
@@ -243,9 +243,9 @@ class CronJobService {
         .from('cron_jobs')
         .select('enabled, name, function_name')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (jobError) {
+      if (jobError || !job) {
         console.error('Error checking job status:', jobError);
         return { success: false, error: `Job nicht gefunden: ${jobError.message}` };
       }
@@ -354,9 +354,9 @@ class CronJobService {
         .from('job_templates')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      if (error || !data) {
         if (error.code === 'PGRST116') return null;
         throw error;
       }
@@ -402,9 +402,9 @@ class CronJobService {
         .from('scheduled_tasks')
         .insert(taskData)
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error || !data) throw error || new Error('Failed to create scheduled task');
       return data;
     } catch (error) {
       console.error('Error creating scheduled task:', error);

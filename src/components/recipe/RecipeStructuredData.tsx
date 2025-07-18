@@ -3,7 +3,7 @@ import React from 'react';
 const SUPABASE_STORAGE_URL = "https://ublbxvpmoccmegtwaslh.supabase.co/storage/v1/object/public/recipe-images/";
 
 // Helper to parse potentially stringified JSON
-function parseArray(val: any): any[] {
+function parseArray(val: unknown): unknown[] {
   if (Array.isArray(val)) return val;
   if (typeof val === 'string') {
     try {
@@ -45,8 +45,16 @@ const RecipeStructuredData: React.FC<RecipeStructuredDataProps> = ({
   averageRating,
   ratingCount,
 }) => {
-  const ingredients = parseArray(recipe.ingredients).map(ing => (typeof ing === 'object' && ing.original) ? ing.original : ing.toString());
-  const instructions = parseArray(recipe.instructions).map(inst => ({ "@type": "HowToStep", "text": (typeof inst === 'object' && inst.text) ? inst.text : inst.toString() }));
+  const ingredients = parseArray(recipe.ingredients).map(ing => {
+    if (typeof ing === 'object' && ing !== null && 'original' in ing) {
+      return (ing as any).original;
+    }
+    return ing?.toString() || '';
+  });
+  const instructions = parseArray(recipe.instructions).map(inst => ({ 
+    "@type": "HowToStep", 
+    "text": (typeof inst === 'object' && inst !== null && 'text' in inst) ? (inst as any).text : inst?.toString() || ''
+  }));
 
   const schema: any = {
     "@context": "https://schema.org",
