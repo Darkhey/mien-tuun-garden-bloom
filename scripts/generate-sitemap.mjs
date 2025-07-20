@@ -40,7 +40,14 @@ async function generateSitemap() {
 
   posts?.forEach(post => {
     const lastmod = (post.updated_at || post.published_at || currentDate).split('T')[0];
-    sitemap += `\n  <url>\n    <loc>${baseUrl}/blog/${post.slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>`;
+    const encodedSlug = encodeURIComponent(post.slug);
+    sitemap += `
+  <url>
+    <loc>${baseUrl}/blog/${encodedSlug}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
   });
 
   sitemap += '\n</urlset>';
