@@ -1,10 +1,15 @@
-User-agent: Googlebot
+
+User-agent: *
 Allow: /
 
-Sitemap: https://mien-tuun.de/sitemap.xml
+# Specific bots with higher priority
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Twitterbot
 Allow: /
@@ -12,5 +17,12 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
-Allow: /
+# Block sensitive admin areas
+Disallow: /admin/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://mien-tuun.de/sitemap.xml
+
+# Additional optimization
+Host: https://mien-tuun.de
