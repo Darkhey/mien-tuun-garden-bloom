@@ -22,11 +22,15 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function generateSitemap() {
-  const { data: posts } = await supabase
+  const { data: posts, error } = await supabase
     .from('blog_posts')
     .select('slug, updated_at, published_at')
     .eq('status', 'veröffentlicht')
     .eq('published', true);
+
+  if (error) {
+    throw new Error(`Database query failed: ${error.message}`);
+  }
 
   const baseUrl = 'https://mien-tuun.de';
   const currentDate = new Date().toISOString().split('T')[0];
