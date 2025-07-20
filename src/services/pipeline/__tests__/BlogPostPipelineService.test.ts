@@ -20,7 +20,7 @@ const mockSuccessfulDb = () => {
   (supabase.from as any).mockImplementation(() => ({
     insert: () => ({
       select: () => ({
-        single: () => Promise.resolve({ data: { id: 1 }, error: null })
+        maybeSingle: () => Promise.resolve({ data: { id: 1 }, error: null })
       })
     }),
     update: () => ({
@@ -63,7 +63,7 @@ describe('BlogPostPipelineService', () => {
     (supabase.from as any).mockImplementation(() => ({
       insert: () => ({
         select: () => ({
-          single: () => Promise.resolve({ data: null, error: { message: 'db err' } })
+          maybeSingle: () => Promise.resolve({ data: null, error: { message: 'db err' } })
         })
       }),
       update: () => ({
