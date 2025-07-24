@@ -1,0 +1,5 @@
+# ads.txt file for Mien Tuun
+# This file is used to declare authorized digital sellers for advertising inventory
+# For more information, visit: https://iabtechlab.com/ads-txt/
+
+google.com, pub-4326654077043920, DIRECT, f08c47fec0942fa0
