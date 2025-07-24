@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from "react-helmet";
 import { useQuery } from '@tanstack/react-query';
 import BlogPostCard from "@/components/blog/BlogPostCard";
-import SmartBlogFilter from "@/components/blog/SmartBlogFilter";
+import SimpleBlogFilter from "@/components/blog/SimpleBlogFilter";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from '@/integrations/supabase/types';
 import type { BlogPost } from '@/types/content';
@@ -37,8 +37,6 @@ const BlogOverview: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [sortOption, setSortOption] = useState<'newest' | 'alphabetical' | 'relevance'>('newest');
 
   // Setze Kategorie aus URL-Parameter
   useEffect(() => {
@@ -76,13 +74,15 @@ const BlogOverview: React.FC = () => {
     });
   }, [blogRows]);
 
-  // Alle verfügbaren Tags sammeln
-  const availableTags = useMemo(() => {
-    const tagSet = new Set<string>();
+  // Suchvorschläge aus Artikeltiteln generieren
+  const searchSuggestions = useMemo(() => {
+    const suggestions = new Set<string>();
     enrichedPosts.forEach(post => {
-      post.allTags?.forEach((tag: string) => tagSet.add(tag));
+      // Wichtige Wörter aus Titeln extrahieren
+      const words = post.title.split(/\s+/).filter(word => word.length > 3);
+      words.forEach(word => suggestions.add(word));
     });
-    return Array.from(tagSet).sort();
+    return Array.from(suggestions).sort();
   }, [enrichedPosts]);
 
   // Intelligente Filterung
@@ -94,72 +94,46 @@ const BlogOverview: React.FC = () => {
       // Saison-Filter (basierend auf Smart Season)
       if (selectedSeason && post.smartSeason !== selectedSeason) return false;
 
-      // Tag-Filter
-      if (selectedTags.length > 0) {
-        const hasMatchingTag = selectedTags.some(selectedTag => 
-          post.allTags?.some((tag: string) => 
-            tag.toLowerCase().includes(selectedTag.toLowerCase())
-          )
-        );
-        if (!hasMatchingTag) return false;
-      }
 
-      // Erweiterte Suche
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        const titleMatch = post.title?.toLowerCase().includes(searchLower);
-        const excerptMatch = post.excerpt?.toLowerCase().includes(searchLower);
-        const contentMatch = post.content?.toLowerCase().includes(searchLower);
-        const tagMatch = post.allTags?.some((tag: string) => 
-          tag.toLowerCase().includes(searchLower)
-        );
-        const categoryMatch = post.smartCategory?.toLowerCase().includes(searchLower);
-        
-        if (!titleMatch && !excerptMatch && !contentMatch && !tagMatch && !categoryMatch) {
-          return false;
-        }
-      }
+  // Vereinfachte Suche - nur Titel und Excerpt
+  if (searchTerm) {
+    const searchLower = searchTerm.toLowerCase();
+    const titleMatch = post.title?.toLowerCase().includes(searchLower);
+    const excerptMatch = post.excerpt?.toLowerCase().includes(searchLower);
+    
+    if (!titleMatch && !excerptMatch) {
+      return false;
+    }
+  }
 
       return true;
     });
-  }, [enrichedPosts, selectedCategory, selectedSeason, searchTerm, selectedTags]);
+  }, [enrichedPosts, selectedCategory, selectedSeason, searchTerm]);
 
-  // Sortierung
+  // Einfache Sortierung - nur nach Datum oder Relevanz bei Suche
   const sortedPosts = useMemo(() => {
     const sorted = [...filteredPosts];
     
-    sorted.sort((a, b) => {
-      switch (sortOption) {
-        case 'alphabetical':
-          return a.title.localeCompare(b.title);
-        case 'relevance':
-          // Einfache Relevanz basierend auf Tag-Matches und Suchbegriff
-          let scoreA = 0, scoreB = 0;
-          
-          if (searchTerm) {
-            const searchLower = searchTerm.toLowerCase();
-            if (a.title.toLowerCase().includes(searchLower)) scoreA += 10;
-            if (b.title.toLowerCase().includes(searchLower)) scoreB += 10;
-            if (a.excerpt?.toLowerCase().includes(searchLower)) scoreA += 5;
-            if (b.excerpt?.toLowerCase().includes(searchLower)) scoreB += 5;
-          }
-          
-          if (selectedTags.length > 0) {
-            selectedTags.forEach(tag => {
-              if (a.allTags?.some(t => t.toLowerCase().includes(tag.toLowerCase()))) scoreA += 3;
-              if (b.allTags?.some(t => t.toLowerCase().includes(tag.toLowerCase()))) scoreB += 3;
-            });
-          }
-          
-          return scoreB - scoreA;
-        case 'newest':
-        default:
-          return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
-      }
-    });
+    if (searchTerm) {
+      // Bei Suchbegriffen: Relevanz-Sortierung (Titel-Matches zuerst)
+      sorted.sort((a, b) => {
+        const searchLower = searchTerm.toLowerCase();
+        const aTitle = a.title.toLowerCase().includes(searchLower);
+        const bTitle = b.title.toLowerCase().includes(searchLower);
+        
+        if (aTitle && !bTitle) return -1;
+        if (!aTitle && bTitle) return 1;
+        
+        // Falls beide oder keiner im Titel: nach Datum
+        return new Date(b.published_at).getTime() - new Date(a.published_at).getTime();
+      });
+    } else {
+      // Standard: Neueste zuerst
+      sorted.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
+    }
     
     return sorted;
-  }, [filteredPosts, sortOption, searchTerm, selectedTags]);
+  }, [filteredPosts, searchTerm]);
 
   return (
     <>
@@ -181,19 +155,15 @@ const BlogOverview: React.FC = () => {
             Entdecke spannende Artikel, praktische Tipps und kreative Ideen rund um Garten, Küche und einen nachhaltigen Lebensstil.
           </p>
           
-          <SmartBlogFilter
+          <SimpleBlogFilter
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
             selectedSeason={selectedSeason}
             setSelectedSeason={setSelectedSeason}
-            selectedTags={selectedTags}
-            setSelectedTags={setSelectedTags}
-            availableTags={availableTags}
-            sortOption={sortOption}
-            setSortOption={setSortOption}
             resultCount={sortedPosts.length}
+            availableSearchSuggestions={searchSuggestions}
           />
         </div>
       </section>
@@ -243,7 +213,6 @@ const BlogOverview: React.FC = () => {
               <p className="text-earth-500 text-lg">
                 {(() => {
                   if (searchTerm) return `Keine Artikel gefunden für "${searchTerm}".`;
-                  if (selectedTags.length > 0) return `Keine Artikel mit den Tags "${selectedTags.join(', ')}" gefunden.`;
                   if (selectedCategory && selectedSeason) return `Keine Artikel in dieser Kategorie und Saison gefunden.`;
                   if (selectedCategory) return `Keine Artikel in dieser Kategorie gefunden.`;
                   if (selectedSeason) return `Keine Artikel für diese Saison gefunden.`;
