@@ -13,6 +13,7 @@ import { Loader2, Eye, Save, Sparkles, CheckCircle, AlertCircle, Image as ImageI
 import { supabase } from '@/integrations/supabase/client';
 import { SEOService, type SEOMetadata } from '@/services/SEOService';
 import { WeatherContentService } from '@/services/WeatherContentService';
+import DOMPurify from 'dompurify';
 
 interface QualityMetrics {
   generationTime: number;
@@ -400,7 +401,7 @@ const EnhancedBlogArticleEditor: React.FC<EnhancedBlogArticleEditorProps> = ({
           </CardHeader>
           <CardContent className="space-y-4">
             <h3 className="text-xl font-semibold">{generatedTitle}</h3>
-            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: generatedContent }} />
+            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(generatedContent) }} />
             <Button
               onClick={handleSave}
               disabled={isGenerating}
