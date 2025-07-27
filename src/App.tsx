@@ -25,6 +25,7 @@ const AussaatkalenderPage = React.lazy(() => import('./pages/AussaatkalenderPage
 const Links = React.lazy(() => import('./pages/Links'));
 const Impressum = React.lazy(() => import('./pages/Impressum'));
 const Datenschutz = React.lazy(() => import('./pages/Datenschutz'));
+const CookiePolicy = React.lazy(() => import('./pages/CookiePolicy'));
 const NewsletterConfirmPage = React.lazy(() => import('./pages/NewsletterConfirmPage'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
@@ -66,6 +67,7 @@ function App() {
                 <Route path="/links" element={<LazyRoute><Links /></LazyRoute>} />
                 <Route path="/impressum" element={<LazyRoute><Impressum /></LazyRoute>} />
                 <Route path="/datenschutz" element={<LazyRoute><Datenschutz /></LazyRoute>} />
+                <Route path="/cookie-policy" element={<LazyRoute><CookiePolicy /></LazyRoute>} />
                 <Route path="/newsletter-bestaetigung" element={<LazyRoute><NewsletterConfirmPage /></LazyRoute>} />
                 <Route path="*" element={<LazyRoute><NotFound /></LazyRoute>} />
               </Routes>

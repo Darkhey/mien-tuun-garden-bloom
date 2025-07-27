@@ -80,7 +80,7 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-earth-600 hover:text-sage-600 transition-colors">
+                <Link to="/ueber-uns" className="text-earth-600 hover:text-sage-600 transition-colors">
                   Über mich
                 </Link>
               </li>
@@ -115,11 +115,14 @@ const Footer: React.FC = () => {
             für nachhaltiges Leben.
           </p>
           
-          <div className="flex space-x-4 mt-4 md:mt-0">
-            <Link to="/datenschutz" className="text-earth-600 hover:text-sage-600 text-sm transition-colors">
+          <div className="flex flex-wrap gap-4 mt-4 md:mt-0 text-sm">
+            <Link to="/datenschutz" className="text-earth-600 hover:text-sage-600 transition-colors">
               Datenschutz
             </Link>
-            <Link to="/impressum" className="text-earth-600 hover:text-sage-600 text-sm transition-colors">
+            <Link to="/cookie-policy" className="text-earth-600 hover:text-sage-600 transition-colors">
+              Cookie-Richtlinie
+            </Link>
+            <Link to="/impressum" className="text-earth-600 hover:text-sage-600 transition-colors">
               Impressum
             </Link>
           </div>
