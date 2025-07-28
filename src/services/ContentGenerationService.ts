@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { geminiService } from './GeminiService';
+import { buildMariannePrompt } from '@/config/blog.config';
 
 export interface ContentQuality {
   score: number;
@@ -109,9 +110,12 @@ class ContentGenerationServiceClass {
     excerpt?: string;
   }): Promise<{ content: string; model?: string } | null> {
     try {
+      // Marianne-Stil Prompt generieren
+      const mariannePrompt = buildMariannePrompt(params.prompt, params.category || 'Allgemein', params.season);
+      
       const { data, error } = await supabase.functions.invoke('generate-blog-post', {
         body: {
-          prompt: params.prompt,
+          prompt: mariannePrompt,
           context: {
             category: params.category,
             season: params.season,
@@ -142,7 +146,12 @@ class ContentGenerationServiceClass {
     tags?: string[];
   }): Promise<string | null> {
     try {
-      return await geminiService.generateBlogPost(params);
+      // Marianne-Stil Prompt generieren für Gemini
+      const mariannePrompt = buildMariannePrompt(params.prompt, params.category || 'Allgemein', params.season);
+      return await geminiService.generateBlogPost({
+        ...params,
+        prompt: mariannePrompt
+      });
     } catch (err) {
       console.error('[ContentGeneration] Gemini generation failed:', err);
       return null;

@@ -62,24 +62,29 @@ export class GeminiService {
     contentType?: string[];
     tags?: string[];
   }): Promise<string> {
-    const systemPrompt = `Du bist Marianne, eine professionelle deutschsprachige Bloggerin für Garten & Küche und schreibst inspirierende, SEO-optimierte Blogartikel.
-
-WICHTIGE ANFORDERUNGEN:
-- Schreibe ausschließlich auf Deutsch
-- Verwende Markdown-Format mit H1 Titel und H2/H3 Unterüberschriften
-- Erstelle 1000-1500 Wörter umfassende, tiefgreifende Artikel
-- Integriere natürlich Long-Tail-SEO-Keywords
-- Schreibe praxisnah, inspirierend und wissenschaftlich fundiert
-- Verwende strukturierte Listen und konkrete Handlungsanleitungen
-
-KONTEXT:
-${params.category ? `Kategorie: ${params.category}` : ''}
-${params.season ? `Saison: ${params.season}` : ''}
-${params.audiences ? `Zielgruppe: ${params.audiences.join(', ')}` : ''}
-${params.contentType ? `Content-Typ: ${params.contentType.join(', ')}` : ''}
-${params.tags ? `Tags: ${params.tags.join(', ')}` : ''}
-
-PROMPT: ${params.prompt}`;
+    // Der Prompt sollte bereits Marianne-Stil enthalten, wenn er von ContentGenerationService kommt
+    const isMariannePrompt = params.prompt.includes('Moin moin ihr Lieben') || params.prompt.includes('Marianne');
+    
+    let systemPrompt;
+    if (isMariannePrompt) {
+      // Marianne-Prompt direkt verwenden
+      systemPrompt = params.prompt;
+    } else {
+      // Fallback für Legacy-Calls
+      systemPrompt = `Du bist Marianne, eine erfahrene deutsche Garten- und Küchenbloggerin.
+      
+      ERÖFFNUNG: Beginne IMMER mit "Moin moin ihr Lieben"
+      ABSCHLUSS: Beende IMMER mit "bis zum nächsten Mal meine Lieben"
+      
+      ${params.category ? `Kategorie: ${params.category}` : ''}
+      ${params.season ? `Saison: ${params.season}` : ''}
+      ${params.audiences?.length ? `Zielgruppe: ${params.audiences.join(', ')}` : ''}
+      ${params.contentType?.length ? `Content-Typ: ${params.contentType.join(', ')}` : ''}
+      ${params.tags?.length ? `Tags: ${params.tags.join(', ')}` : ''}
+      
+      Schreibe einen herzlichen, persönlichen Blogartikel (1200+ Wörter) mit "ihr" statt "Sie".
+      Thema: ${params.prompt}`;
+    }
 
     return this.generateText(systemPrompt, {
       temperature: 0.7,
