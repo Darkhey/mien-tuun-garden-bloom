@@ -58,11 +58,11 @@ const BlogPodcastFilter: React.FC<BlogPodcastFilterProps> = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Alle Kategorien</SelectItem>
-            <SelectItem value="kochen">Kochen</SelectItem>
-            <SelectItem value="gaertnern">Gärtnern</SelectItem>
-            <SelectItem value="nachhaltig-leben">Nachhaltig Leben</SelectItem>
-            <SelectItem value="diy-basteln">DIY & Basteln</SelectItem>
-            <SelectItem value="saisonales">Saisonales</SelectItem>
+            <SelectItem value="garten-planung">Garten & Planung</SelectItem>
+            <SelectItem value="pflanzenpflege">Pflanzenpflege</SelectItem>
+            <SelectItem value="ernte-kueche">Ernte & Küche</SelectItem>
+            <SelectItem value="selbermachen-ausruestung">Selbermachen & Ausrüstung</SelectItem>
+            <SelectItem value="nachhaltigkeit-umwelt">Nachhaltigkeit & Umwelt</SelectItem>
           </SelectContent>
         </Select>
 
