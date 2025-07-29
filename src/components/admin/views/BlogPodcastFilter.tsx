@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import { MAIN_CATEGORIES } from '@/config/blog.config';
 
 interface BlogPodcastFilterProps {
   search: string;
@@ -58,11 +59,11 @@ const BlogPodcastFilter: React.FC<BlogPodcastFilterProps> = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Alle Kategorien</SelectItem>
-            <SelectItem value="kochen">Kochen</SelectItem>
-            <SelectItem value="gaertnern">Gärtnern</SelectItem>
-            <SelectItem value="nachhaltig-leben">Nachhaltig Leben</SelectItem>
-            <SelectItem value="diy-basteln">DIY & Basteln</SelectItem>
-            <SelectItem value="saisonales">Saisonales</SelectItem>
+            {MAIN_CATEGORIES.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                {cat.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
