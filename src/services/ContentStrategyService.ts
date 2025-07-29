@@ -31,13 +31,13 @@ interface PersonalizationProfile {
 
 class ContentStrategyService {
   private strategicKeywords = {
-    "gaertnern": ["Hochbeet", "Kompost", "Mischkultur", "Permakultur", "Aussaat", "Pflege"],
-    "gartenkueche": ["Fermentieren", "Einkochen", "Kräuter", "Saisonal", "Zero Waste", "Regional"],
-    "diy-basteln": ["Upcycling", "Selbermachen", "Bauen", "Reparieren", "Gartenmöbel", "Werkzeug"],
-    "nachhaltigkeit": ["Plastikfrei", "Klimafreundlich", "Regenerativ", "Naturgarten", "Kreislauf"],
-    "indoor-gardening": ["Zimmerpflanzen", "Hydroponik", "Microgreens", "Sprossen", "Keimlinge"],
-    "saisonales": ["Frühling", "Sommer", "Herbst", "Winter", "Erntezeit", "Aussaatzeit"],
-    "lifestyle": ["Selbstversorgung", "Achtsamkeit", "Work-Life-Balance", "Minimalismus", "Wellness"]
+    "garten-planung": ["Hochbeet", "Kompost", "Mischkultur", "Permakultur", "Aussaat", "Planung"],
+    "pflanzenpflege": ["Gießen", "Düngen", "Schnitt", "Schädlinge", "Bodenpflege", "Kompost"],
+    "ernte-kueche": ["Fermentieren", "Einkochen", "Kräuter", "Saisonal", "Zero Waste", "Lagerung"],
+    "selbermachen-ausruestung": ["Upcycling", "Selbermachen", "Bauen", "Reparieren", "Werkzeug"],
+    "nachhaltigkeit-umwelt": ["Plastikfrei", "Klimafreundlich", "Regenerativ", "Naturgarten", "Kreislauf"],
+    "spezielle-gartenbereiche": ["Urban", "Balkon", "Indoor", "Hydroponik", "Gewächshaus"],
+    "philosophie-lifestyle": ["Selbstversorgung", "Achtsamkeit", "Work-Life-Balance", "Minimalismus", "Wellness"]
   };
 
   async generateContentStrategy(context: {
@@ -105,13 +105,13 @@ class ContentStrategyService {
     
     // Prioritäten für verschiedene Kategorien
     const categoryPriorities = {
-      "gaertnern": 95,
-      "gartenkueche": 90,
-      "nachhaltigkeit": 85,
-      "saisonales": 80,
-      "diy-basteln": 75,
-      "indoor-gardening": 70,
-      "lifestyle": 65
+      "garten-planung": 95,
+      "pflanzenpflege": 90,
+      "ernte-kueche": 90,
+      "nachhaltigkeit-umwelt": 85,
+      "spezielle-gartenbereiche": 80,
+      "selbermachen-ausruestung": 75,
+      "philosophie-lifestyle": 65
     };
 
     Object.entries(this.strategicKeywords).forEach(([category, keywords]) => {
@@ -141,7 +141,7 @@ class ContentStrategyService {
     return [
       {
         priority: 90,
-        category: "gaertnern",
+        category: "garten-planung",
         season: currentSeason,
         suggestedTopics: [
           "Hochbeet optimal nutzen - Marianne's bewährte Methoden",
@@ -153,7 +153,7 @@ class ContentStrategyService {
       },
       {
         priority: 85,
-        category: "gartenkueche",
+        category: "ernte-kueche",
         season: currentSeason,
         suggestedTopics: [
           "Saisonale Rezepte direkt aus dem Garten",
