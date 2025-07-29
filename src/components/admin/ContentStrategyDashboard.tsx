@@ -12,6 +12,7 @@ import { ContentStrategyCacheService } from "@/services/ContentStrategyCacheServ
 import { TrendSourceService, EnhancedTrend } from "@/services/TrendSourceService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getTrendTags } from "./blogHelpers";
 
 interface StrategyArticleResponse {
   success: boolean;
@@ -30,13 +31,14 @@ interface CategoryContentGap {
 }
 
 const BLOG_CATEGORIES = [
-  { id: 'gaertnern', name: 'Gärtnern', icon: '🌱', keywords: ['garten', 'pflanzen', 'aussaat', 'ernte', 'pflege'] },
-  { id: 'gartenkueche', name: 'Gartenküche', icon: '👩‍🍳', keywords: ['kochen', 'rezept', 'ernte', 'kräuter', 'saisonal'] },
-  { id: 'diy-basteln', name: 'DIY & Basteln', icon: '🔨', keywords: ['diy', 'basteln', 'selbermachen', 'bauen', 'upcycling'] },
-  { id: 'nachhaltigkeit', name: 'Nachhaltigkeit', icon: '♻️', keywords: ['nachhaltig', 'umwelt', 'bio', 'plastikfrei', 'zero waste'] },
-  { id: 'indoor-gardening', name: 'Indoor Gardening', icon: '🏠', keywords: ['indoor', 'zimmerpflanzen', 'hydroponik', 'sprossen'] },
-  { id: 'saisonales', name: 'Saisonales', icon: '🍂', keywords: ['saison', 'frühling', 'sommer', 'herbst', 'winter'] },
-  { id: 'lifestyle', name: 'Lifestyle', icon: '✨', keywords: ['lifestyle', 'gesundheit', 'wellness', 'selbstversorgung'] }
+  { id: 'garten-planung', name: 'Garten & Planung', icon: '🌱', keywords: ['garten', 'planung', 'hochbeet', 'beet', 'aussaat', 'permakultur'] },
+  { id: 'pflanzenpflege', name: 'Pflanzenpflege', icon: '🌿', keywords: ['gießen', 'düngen', 'schneiden', 'schädlingsbekämpfung', 'bodenpflege'] },
+  { id: 'ernte-kueche', name: 'Ernte & Küche', icon: '🍅', keywords: ['rezepte', 'ernte', 'konservieren', 'küche', 'lagerung'] },
+  { id: 'nachhaltigkeit-umwelt', name: 'Nachhaltigkeit & Umwelt', icon: '♻️', keywords: ['nachhaltig', 'umwelt', 'bio', 'plastikfrei', 'permakultur'] },
+  { id: 'spezielle-gartenbereiche', name: 'Spezielle Gartenbereiche', icon: '🏡', keywords: ['urban', 'balkon', 'indoor', 'gewächshaus', 'hydroponik'] },
+  { id: 'selbermachen-ausruestung', name: 'Selbermachen & Ausrüstung', icon: '🔨', keywords: ['diy', 'basteln', 'werkzeug', 'upcycling', 'bauen'] },
+  { id: 'philosophie-lifestyle', name: 'Philosophie & Lifestyle', icon: '✨', keywords: ['selbstversorgung', 'achtsamkeit', 'lifestyle', 'wellness', 'inspiration'] },
+  { id: 'allgemein', name: 'Allgemein', icon: '📚', keywords: ['tipps', 'tricks', 'ratgeber', 'grundlagen'] }
 ];
 
 const ContentStrategyDashboard: React.FC = () => {
@@ -96,73 +98,38 @@ const ContentStrategyDashboard: React.FC = () => {
   };
 
   const generateMissingTopicsForCategory = (category: any, currentCount: number): string[] => {
-    const topicSuggestions: Record<string, string[]> = {
-      'gaertnern': [
-        'Hochbeet anlegen für Anfänger',
-        'Kompost richtig anlegen',
-        'Mischkultur Tipps',
-        'Garten im Herbst vorbereiten',
-        'Natürliche Schädlingsbekämpfung'
-      ],
-      'gartenkueche': [
-        'Kräuter konservieren',
-        'Fermentieren für Anfänger',
-        'Zero Waste in der Küche',
-        'Saisonaler Ernährungsplan',
-        'Essbare Blüten verwenden'
-      ],
-      'diy-basteln': [
-        'Upcycling Gartenmöbel',
-        'Pflanzgefäße selber machen',
-        'Gewächshaus DIY',
-        'Gartenwerkzeug reparieren',
-        'Kompostbehälter bauen'
-      ],
-      'nachhaltigkeit': [
-        'Plastikfrei gärtnern',
-        'Regenwasser sammeln',
-        'Permakultur Grundlagen',
-        'Naturdünger herstellen',
-        'Klimafreundlich gärtnern'
-      ],
-      'indoor-gardening': [
-        'Microgreens anbauen',
-        'Zimmerpflanzen für Anfänger',
-        'Hydroponik Setup',
-        'Kräuter auf der Fensterbank',
-        'Indoor Kompostierung'
-      ],
-      'saisonales': [
-        'Frühlingsarbeiten im Garten',
-        'Winterschutz für Pflanzen',
-        'Herbsternte einlagern',
-        'Sommergemüse anbauen',
-        'Ganzjähriger Anbauplan'
-      ],
-      'lifestyle': [
-        'Selbstversorgung beginnen',
-        'Garten als Therapie',
-        'Achtsames Gärtnern',
-        'Work-Life-Balance durch Garten',
-        'Minimalismus im Garten'
-      ]
+    const getCurrentSeason = () => {
+      const month = new Date().getMonth() + 1;
+      if (month >= 3 && month <= 5) return 'Frühling';
+      if (month >= 6 && month <= 8) return 'Sommer';
+      if (month >= 9 && month <= 11) return 'Herbst';
+      return 'Winter';
     };
 
-    const suggestions = topicSuggestions[category.id] || [];
-    // Zeige mehr Vorschläge wenn weniger Artikel vorhanden
+    const season = getCurrentSeason();
+    const trendTags = getTrendTags(category.name, season);
+    const keywords: string[] = category.keywords || [];
+
+    const baseSuggestions = [
+      `${trendTags[0] || keywords[0]} richtig nutzen`,
+      `Tipps für ${trendTags[1] || keywords[1]}`,
+      `${season}: ${trendTags[2] || keywords[2]}`,
+      `Häufige Fehler bei ${keywords[0]} vermeiden`,
+      `${trendTags[0] || keywords[1]} Schritt-für-Schritt`
+    ];
+
     const suggestionCount = Math.max(3, Math.min(5, 8 - Math.floor(currentCount / 2)));
-    return suggestions.slice(0, suggestionCount);
+    return baseSuggestions.slice(0, suggestionCount);
   };
 
   const calculateCategoryPriority = (articleCount: number, categoryId: string): number => {
     // Basis-Priorität basierend auf fehlenden Artikeln
     let priority = Math.max(0, 10 - articleCount);
     
-    // Saisonale Kategorien bekommen Boost
-    if (categoryId === 'saisonales') priority += 2;
-    
-    // Core-Kategorien bekommen Boost
-    if (['gaertnern', 'gartenkueche'].includes(categoryId)) priority += 1;
+    // Bestimmte Kategorien erhalten einen kleinen Prioritäts-Boost
+    if (categoryId === 'spezielle-gartenbereiche') priority += 2;
+
+    if (['garten-planung', 'pflanzenpflege', 'ernte-kueche'].includes(categoryId)) priority += 1;
     
     return priority * 10; // Skalierung für bessere Darstellung
   };
