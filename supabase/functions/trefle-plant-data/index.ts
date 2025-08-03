@@ -22,8 +22,16 @@ serve(async (req) => {
   try {
     if (!TREFLE_API_TOKEN) {
       console.error("[trefle-plant-data] Trefle API token not configured - expected secret name: TREFLE_API");
-      throw new Error("Trefle API token not configured");
+      return new Response(
+        JSON.stringify({ error: "Trefle API token not configured. Please contact administrator." }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
     }
+
+    console.log("[trefle-plant-data] API token present, length:", TREFLE_API_TOKEN.length);
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -86,14 +94,36 @@ async function searchPlants(query: string, page: number, limit: number) {
     url.searchParams.append('page', page.toString());
     url.searchParams.append('limit', limit.toString());
     
+    console.log(`[trefle-plant-data] Requesting URL: ${url.toString().replace(TREFLE_API_TOKEN!, '[TOKEN_HIDDEN]')}`);
+    
     const response = await fetch(url.toString(), {
       headers: {
         'Accept': 'application/json',
+        'User-Agent': 'Marianne-Garten-App/1.0',
       },
     });
 
+    console.log(`[trefle-plant-data] Response status: ${response.status}`);
+
     if (!response.ok) {
       const errorText = await response.text();
+      console.error(`[trefle-plant-data] API Error Response: ${errorText}`);
+      
+      // Check if it's a rate limiting issue
+      if (response.status === 429) {
+        throw new Error(`Trefle API rate limit exceeded. Please try again later.`);
+      }
+      
+      // Check if it's an authentication issue
+      if (response.status === 401 || response.status === 403) {
+        throw new Error(`Trefle API authentication failed. Please check API key.`);
+      }
+      
+      // If it's a server error, provide a user-friendly message
+      if (response.status >= 500) {
+        throw new Error(`Trefle API service is temporarily unavailable. Please try again later.`);
+      }
+      
       throw new Error(`Trefle API error (${response.status}): ${errorText}`);
     }
 
