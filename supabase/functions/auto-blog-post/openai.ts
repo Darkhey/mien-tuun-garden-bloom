@@ -70,7 +70,7 @@ export async function generateTopicIdea(contextPrompt: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o-mini", // Use the faster model for topic generation
         messages: [
           { role: "system", content: "Du bist eine deutschsprachige Garten-/Küchenbloggerin. Erfinde ein frisches, trendiges Blogartikel-Thema für diese Rahmenbedingungen (höchstens 10 Worte):" },
           { role: "user", content: contextPrompt }
@@ -111,7 +111,7 @@ export async function generateArticle(prompt: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o-mini", // Use compatible model
         messages: [
           { role: "system", content: "Du bist eine deutsche Garten-/Küchenbloggerin. Gib einen SEO-optimierten Artikel als Markdown zurück, mit Überschrift und Teaser." },
           { role: "user", content: prompt }
@@ -155,7 +155,7 @@ export async function analyzeContentPerformance(content: string, metadata: any) 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "gpt-4o-mini", // Use compatible model
         messages: [
           { 
             role: "system", 

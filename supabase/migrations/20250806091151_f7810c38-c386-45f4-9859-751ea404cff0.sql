@@ -1,0 +1,7 @@
+-- First create job templates
+INSERT INTO job_templates (name, description, job_type, function_name, default_cron_expression, category, default_payload, is_system_template) VALUES
+('Daily Blog Post', 'Automatische tägliche Blog-Artikel Generierung', 'content_generation', 'auto-blog-post', '0 9 * * *', 'content', '{"prompt": "Schreibe einen neuen inspirierenden Garten- oder Küchenblogartikel inklusive saisonalem Bezug, Trends und Tipps."}', true),
+('SEO Article Generator', 'SEO-optimierte Artikel 3x pro Woche', 'content_generation', 'create-strategy-article', '0 10 * * 1,3,5', 'seo', '{"topic": "Gartentipps", "category": "garten", "urgency": "medium"}', true),
+('Seasonal Content', 'Wöchentliche saisonale Inhalte', 'content_generation', 'create-strategy-article', '0 11 * * 1', 'seasonal', '{"topic": "Saisonale Gartentipps", "category": "garten", "season": "current"}', true),
+('Instagram Post Generator', 'Tägliche Instagram Posts um 18:00 Uhr', 'social_media', 'instagram-post', '0 18 * * *', 'social', '{"type": "garden_tip", "template": "daily"}', true),
+('Recipe of the Week', 'Wöchentliche Rezept-Artikel', 'content_generation', 'generate-recipe', '0 8 * * 2', 'recipe', '{"type": "seasonal", "category": "hauptgericht"}', true);
