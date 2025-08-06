@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Play, Pause, AlertTriangle, CheckCircle, RefreshCw, Loader2, BarChart3, Activity } from "lucide-react";
-import SimpleScheduledJobManager from "../SimpleScheduledJobManager";
+import { CronJobManager } from './CronJobManager';
 import { scheduledJobService } from "@/services/ScheduledJobService";
 import { cronJobService } from "@/services/CronJobService";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -418,7 +418,11 @@ const ScheduledJobsView: React.FC = () => {
         </Alert>
       )}
 
-      <SimpleScheduledJobManager />
+      {/* Enhanced Job Manager with new CronJobManager */}
+      <div className="space-y-6">
+        <h3 className="text-lg font-semibold">Erweiterte Job-Verwaltung</h3>
+        <CronJobManager onJobCreated={loadJobStats} />
+      </div>
     </div>
   );
 };

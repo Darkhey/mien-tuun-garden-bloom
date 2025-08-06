@@ -8,6 +8,7 @@ import KIBlogCreatorView from '@/components/admin/views/KIBlogCreatorView';
 import BlogPodcastView from '@/components/admin/views/BlogPodcastView';
 import ContentStrategyView from '@/components/admin/views/ContentStrategyView';
 import ScheduledJobsView from '@/components/admin/views/ScheduledJobsView';
+import { AutomationMonitoringView } from '@/components/admin/views/AutomationMonitoringView';
 import AudioSidebarView from '@/components/admin/views/AudioSidebarView';
 import SowingCalendarManager from '@/components/admin/SowingCalendarManager';
 import AdminLayout from '@/components/admin/AdminLayout';
@@ -44,6 +45,8 @@ const AdminDashboard = () => {
         return <ContentStrategyView />;
       case 'scheduled-jobs':
         return <ScheduledJobsView />;
+      case 'automation-monitor':
+        return <AutomationMonitoringView />;
       case 'audio-generator':
         return <AudioSidebarView />;
       case 'sowing-calendar':

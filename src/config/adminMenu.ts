@@ -86,9 +86,15 @@ export const adminMenuItems: AdminMenuItem[] = [
       },
       {
         id: 'scheduled-jobs',
-        title: 'Geplante Jobs',
+        title: 'Job-Verwaltung',
         icon: Clock,
         path: '/admin/scheduled-jobs'
+      },
+      {
+        id: 'automation-monitor',
+        title: 'Monitoring',
+        icon: Settings,
+        path: '/admin/automation-monitor'
       },
       {
         id: 'audio-generator',
