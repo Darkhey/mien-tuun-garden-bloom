@@ -7,7 +7,7 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.5";
  * Optionale fuzzy Logik: auch Titel-Ähnlichkeit ab 85% als Duplikat zählen.
  */
 export async function isDuplicate(supabase: SupabaseClient, slug: string, title: string) {
-  // Prüfe Slug
+  // Prüfe Slug/Titel in History
   const { data: histSlugs, error: hSlugErr } = await supabase
     .from("blog_topic_history")
     .select("slug, title");
@@ -17,17 +17,28 @@ export async function isDuplicate(supabase: SupabaseClient, slug: string, title:
     throw new Error(`Fehler beim Lesen der History: ${hSlugErr.message}`);
   }
 
-  // Slug exakte Übereinstimmung (mit Suffix-Entfernung)
+  // Prüfe zusätzlich existierende Blogposts
+  const { data: posts, error: postsErr } = await supabase
+    .from("blog_posts")
+    .select("slug, title");
+  if (postsErr) {
+    console.warn("Konnte blog_posts für Duplicate-Check nicht lesen:", postsErr.message);
+  }
+
   const baseSlug = slug.replace(/-\d+$/, "");
-  let found = histSlugs?.some((t: any) => t.slug.replace(/-\d+$/, "") === baseSlug);
+  const all = [ ...(histSlugs || []), ...(posts || []) ];
+
+  // Slug exakte Übereinstimmung (mit Suffix-Entfernung)
+  let found = all.some((t: any) => (t.slug || "").replace(/-\d+$/, "") === baseSlug);
 
   // Titel exakt
   if (!found && title) {
-    found = histSlugs?.some((t: any) => t.title.trim().toLowerCase() === title.trim().toLowerCase());
+    found = all.some((t: any) => (t.title || "").trim().toLowerCase() === title.trim().toLowerCase());
   }
-  // Fuzzy Title Check (min 85% Ähnlichkeit, einfachster Ansatz: Levenshtein)
+
+  // Fuzzy Title Check (min 85% Ähnlichkeit, einfacher Ansatz)
   if (!found && title) {
-    found = histSlugs?.some((t: any) => {
+    found = all.some((t: any) => {
       const a = normalize(title), b = normalize(t.title || "");
       return a.length > 4 && b.length > 4 && levenshtein(a, b) / Math.max(a.length, b.length) > 0.85;
     });
@@ -103,4 +114,14 @@ export async function logTopicAttempt(supabase: SupabaseClient, { slug, title, u
     if (error) {
       console.error("Fehler beim Protokollieren des Themas:", error);
     }
+}
+
+// Zentrales Logging für Automationsläufe
+export async function logAutomationEvent(supabase: SupabaseClient, status: 'success' | 'error', details: any) {
+  const { error } = await supabase.from('content_automation_logs').insert([
+    { action: 'auto-blog-post', status, details }
+  ]);
+  if (error) {
+    console.error('Fehler beim Schreiben in content_automation_logs:', error);
+  }
 }

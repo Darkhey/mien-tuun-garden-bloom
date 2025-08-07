@@ -5,7 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.5";
 import { CATEGORIES, SEASONS, AUTHORS, TAGS, corsHeaders } from "./constants.ts";
 import { generateSlug, getRandom } from "./helpers.ts";
 import { generateImage, generateTopicIdea, generateArticle } from "./openai.ts";
-import { uploadImageToSupabase, checkBlacklist, isDuplicate, saveBlogPost, logTopicAttempt } from "./supabase-helpers.ts";
+import { uploadImageToSupabase, checkBlacklist, isDuplicate, saveBlogPost, logTopicAttempt, logAutomationEvent } from "./supabase-helpers.ts";
 import { getUnsplashFallback } from "../_shared/unsplash_fallbacks.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -93,49 +93,94 @@ serve(async (req) => {
       console.error("Fehler bei der KI-Bildgenerierung:", imgErr);
     }
 
-    // 7. Artikel-Objekt aufbauen
-    const postData = {
-      slug: slug + "-" + now.getTime(),
-      title: topicIdea,
-      excerpt,
-      content: articleContent,
-      author: "Marianne", // Geändert
-      published: true,
-      featured: false,
-      featured_image,
-      seo_title: seoTitle,
-      seo_description: seoDescription,
-      seo_keywords: seoKeywords,
-      tags: [trend],
-      category,
-      published_at: now.toISOString().slice(0,10),
-      reading_time: 5,
-      difficulty: "",
-      season,
-      audiences: ["Automatisch"],
-      content_types: ["Inspiration"],
-    };
+// 7. Metriken berechnen und Pipeline-Config laden
+const wordCount = articleContent.split(/\s+/).length;
+const readingTime = Math.ceil(wordCount / 160);
+const hasTitle = articleContent.includes('# ');
+const hasSubheadings = (articleContent.match(/## /g) || []).length;
+const hasH3Headings = (articleContent.match(/### /g) || []).length;
+const hasLists = (articleContent.match(/^[-*+] /gm) || []).length;
+const hasFAQ = articleContent.toLowerCase().includes('faq') || articleContent.toLowerCase().includes('häufige fragen');
+const qualityScore = Math.min(100, Math.max(50, 
+  (wordCount >= 800 ? 25 : wordCount / 32) +
+  (hasTitle ? 15 : 0) +
+  (hasSubheadings >= 3 ? 15 : hasSubheadings * 5) +
+  (hasH3Headings >= 2 ? 10 : hasH3Headings * 3) +
+  (hasLists >= 2 ? 10 : hasLists * 2) +
+  (hasFAQ ? 10 : 0) +
+  (articleContent.length > 2000 ? 15 : articleContent.length / 133) +
+  10
+));
+
+const { data: pipelineCfg } = await supabase
+  .from('pipeline_config')
+  .select('quality_threshold,auto_publish')
+  .order('created_at', { ascending: false })
+  .limit(1)
+  .maybeSingle();
+
+const threshold = pipelineCfg?.quality_threshold ?? 80;
+const autoPublish = pipelineCfg?.auto_publish ?? false;
+const willPublish = autoPublish && Math.round(qualityScore) >= threshold;
+
+// 8. Artikel-Objekt aufbauen
+const uniqueSlug = `${slug}-${now.getTime()}`;
+const postData = {
+  slug: uniqueSlug,
+  title: topicIdea,
+  excerpt,
+  content: articleContent,
+  author: "Marianne",
+  published: willPublish,
+  featured: false,
+  featured_image,
+  seo_title: seoTitle,
+  seo_description: seoDescription,
+  seo_keywords: seoKeywords,
+  tags: [trend],
+  category,
+  published_at: now.toISOString().slice(0,10),
+  reading_time: readingTime,
+  season,
+  audiences: ["Automatisch"],
+  content_types: ["Inspiration"],
+  status: willPublish ? "veröffentlicht" : "entwurf",
+  quality_score: Math.round(qualityScore)
+};
 
     // 8. In Blog speichern
     await saveBlogPost(supabase, postData);
 
     // 9. Thema als "used" in History loggen (inkl. context-Daten, Suffix slug)
     await logTopicAttempt(supabase, {
-      slug: slug + "-" + now.getTime(),
+      slug: uniqueSlug,
       title: topicIdea,
       reason: "used",
-      used_in_post: slug + "-" + now.getTime(),
+      used_in_post: uniqueSlug,
       try_count: attempt,
       context: { contextPrompt }
     });
 
+    // 10. Erfolg ins Automations-Log schreiben
+    await logAutomationEvent(supabase, 'success', {
+      action: 'auto-blog-post',
+      slug: uniqueSlug,
+      title: topicIdea,
+      category,
+      season,
+      quality_score: Math.round(qualityScore),
+      threshold,
+      auto_publish: autoPublish,
+      published: willPublish
+    });
+
     return new Response(JSON.stringify({
       status: "success",
-      slug,
+      slug: uniqueSlug,
       title: topicIdea,
       excerpt,
       content: articleContent,
-      author: "Marianne", // Geändert
+      author: "Marianne",
       featured_image,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }
