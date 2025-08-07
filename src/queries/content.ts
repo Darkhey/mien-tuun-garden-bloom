@@ -1,6 +1,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { BlogPost } from '@/types/content';
+import { cacheService, CACHE_KEYS, CACHE_TTL } from '@/services/CacheService';
+import { measureAsyncOperation } from '@/hooks/usePerformanceMonitor';
 import { WEATHER_BASE_URL, WEATHER_LATITUDE, WEATHER_LONGITUDE, WEATHER_TIMEZONE } from '@/config/weather.config';
 import { isBlogPost, isWeatherResponse, isHourlyWeatherResponse } from '@/utils/typeguards';
 
@@ -12,40 +14,53 @@ export interface CommentRow {
 }
 
 export const fetchLatestPosts = async (): Promise<BlogPost[]> => {
-  const { data, error } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('published', true)
-    .order('published_at', { ascending: false })
-    .limit(3);
-  if (error) throw error;
-  
-  const rows = Array.isArray(data) ? data : [];
-  const posts = rows.map((row) => ({
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
-    excerpt: row.excerpt,
-    content: row.content,
-    author: row.author,
-    publishedAt: row.published_at,
-    updatedAt: row.updated_at || undefined,
-    featuredImage: row.featured_image || '/placeholder.svg',
-    category: row.category || '',
-    tags: row.tags || [],
-    readingTime: row.reading_time || 5,
-    seo: {
-      title: row.seo_title || row.title,
-      description: row.seo_description || '',
-      keywords: row.seo_keywords || [],
-    },
-    featured: !!row.featured,
-    published: !!row.published,
-    structuredData: row.structured_data || undefined,
-    originalTitle: row.original_title || undefined,
-    ogImage: row.og_image || undefined,
-  })) as BlogPost[];
-  return posts;
+  return measureAsyncOperation(async () => {
+    // Check cache first
+    const cached = cacheService.get<BlogPost[]>(CACHE_KEYS.LATEST_POSTS);
+    if (cached) {
+      return cached;
+    }
+
+    const { data, error } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('published', true)
+      .order('published_at', { ascending: false })
+      .limit(3);
+    
+    if (error) throw error;
+    
+    const rows = Array.isArray(data) ? data : [];
+    const posts = rows.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      excerpt: row.excerpt,
+      content: row.content,
+      author: row.author,
+      publishedAt: row.published_at,
+      updatedAt: row.updated_at || undefined,
+      featuredImage: row.featured_image || '/placeholder.svg',
+      category: row.category || '',
+      tags: row.tags || [],
+      readingTime: row.reading_time || 5,
+      seo: {
+        title: row.seo_title || row.title,
+        description: row.seo_description || '',
+        keywords: row.seo_keywords || [],
+      },
+      featured: !!row.featured,
+      published: !!row.published,
+      structuredData: row.structured_data || undefined,
+      originalTitle: row.original_title || undefined,
+      ogImage: row.og_image || undefined,
+    })) as BlogPost[];
+
+    // Cache the result
+    cacheService.set(CACHE_KEYS.LATEST_POSTS, posts, CACHE_TTL.MEDIUM);
+    
+    return posts;
+  }, 'fetchLatestPosts');
 };
 
 export const fetchLatestComments = async (): Promise<CommentRow[]> => {

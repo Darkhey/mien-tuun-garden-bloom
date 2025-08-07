@@ -1,13 +1,18 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import BlogPostCard from '@/components/blog/BlogPostCard';
 import type { BlogPost } from '@/types/content';
 import { fetchLatestPosts } from '@/queries/content';
+import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
 
-const LatestPostsSection: React.FC = () => {
+const LatestPostsSection: React.FC = memo(() => {
+  usePerformanceMonitor('LatestPostsSection', process.env.NODE_ENV === 'development');
+  
   const { data = [], isLoading, error } = useQuery({
     queryKey: ['latest-posts'],
     queryFn: fetchLatestPosts,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    gcTime: 10 * 60 * 1000, // 10 minutes in memory
   });
 
   if (isLoading) {
@@ -35,13 +40,18 @@ const LatestPostsSection: React.FC = () => {
           Neueste Beiträge
         </h2>
         <div className="grid md:grid-cols-3 gap-8">
-          {data.map((post) => (
-            <BlogPostCard key={post.id} post={post} />
+          {data.map((post, index) => (
+            <BlogPostCard 
+              key={post.id} 
+              post={post}
+            />
           ))}
         </div>
       </div>
     </section>
   );
-};
+});
+
+LatestPostsSection.displayName = 'LatestPostsSection';
 
 export default LatestPostsSection;

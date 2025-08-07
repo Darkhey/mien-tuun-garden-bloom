@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Calendar, Tag } from "lucide-react";
 import { unifiedImageService } from '@/services/UnifiedImageService';
@@ -25,47 +25,73 @@ interface BlogPostCardProps {
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   const [imgError, setImgError] = useState(false);
   const [optimizedImageUrl, setOptimizedImageUrl] = useState<string>('');
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRef = useRef<HTMLElement>(null);
+
+  // Intersection Observer for lazy loading
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { 
+        threshold: 0.1,
+        rootMargin: '50px' // Load 50px before entering viewport
+      }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const prepareImage = useCallback(async () => {
+    try {
+      // If no featured image or placeholder, get a fallback
+      if (!post.featuredImage || post.featuredImage === '/placeholder.svg' || post.featuredImage.trim() === '') {
+        const fallbackUrl = await unifiedImageService.getImageForContent({
+          title: post.title,
+          category: post.category,
+          tags: post.tags,
+          preferredSource: 'unsplash'
+        });
+        
+        // Optimize the fallback image
+        const optimized = unifiedImageService.optimizeUnsplashUrl(fallbackUrl, {
+          width: 400,
+          height: 224,
+          quality: 80
+        });
+        
+        setOptimizedImageUrl(optimized);
+      } else {
+        // Use existing image and optimize if it's from Unsplash
+        const imageUrl = getImageUrl(post.featuredImage);
+        const optimized = unifiedImageService.optimizeUnsplashUrl(imageUrl, {
+          width: 400,
+          height: 224,
+          quality: 80
+        });
+        
+        setOptimizedImageUrl(optimized);
+      }
+    } catch (error) {
+      console.warn('Error preparing image for card:', error);
+      // Use fallback
+      setOptimizedImageUrl(unifiedImageService.getFallbackImage(post.category));
+    }
+  }, [post.featuredImage, post.category, post.tags, post.title]);
 
   useEffect(() => {
-    const prepareImage = async () => {
-      try {
-        // If no featured image or placeholder, get a fallback
-        if (!post.featuredImage || post.featuredImage === '/placeholder.svg' || post.featuredImage.trim() === '') {
-          const fallbackUrl = await unifiedImageService.getImageForContent({
-            title: post.title,
-            category: post.category,
-            tags: post.tags,
-            preferredSource: 'unsplash'
-          });
-          
-          // Optimize the fallback image
-          const optimized = unifiedImageService.optimizeUnsplashUrl(fallbackUrl, {
-            width: 400,
-            height: 224,
-            quality: 80
-          });
-          
-          setOptimizedImageUrl(optimized);
-        } else {
-          // Use existing image and optimize if it's from Unsplash
-          const imageUrl = getImageUrl(post.featuredImage);
-          const optimized = unifiedImageService.optimizeUnsplashUrl(imageUrl, {
-            width: 400,
-            height: 224,
-            quality: 80
-          });
-          
-          setOptimizedImageUrl(optimized);
-        }
-      } catch (error) {
-        console.warn('Error preparing image for card:', error);
-        // Use fallback
-        setOptimizedImageUrl(unifiedImageService.getFallbackImage(post.category));
-      }
-    };
-
-    prepareImage();
-  }, [post.featuredImage, post.category, post.tags, post.title]);
+    if (isVisible) {
+      prepareImage();
+    }
+  }, [isVisible, prepareImage]);
 
   const getImageUrl = (imagePath: string): string => {
     if (!imagePath || imagePath.trim() === '' || imagePath === '/placeholder.svg') {
@@ -113,17 +139,28 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   const imageSource = imgError ? unifiedImageService.getFallbackImage(post.category) : optimizedImageUrl;
 
   return (
-    <article className="bg-white rounded-2xl shadow group hover:shadow-lg transition-all duration-200 overflow-hidden h-full flex flex-col">
+    <article 
+      ref={cardRef}
+      className="bg-white rounded-2xl shadow group hover:shadow-lg transition-all duration-200 overflow-hidden h-full flex flex-col"
+    >
       <Link to={`/blog/${post.slug}`} className="block overflow-hidden">
-        <img 
-          src={imageSource} 
-          alt={post.title} 
-          className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105" 
-          onError={handleImageError}
-          loading="lazy"
-          width="400"
-          height="224"
-        />
+        {isVisible ? (
+          <img 
+            src={imageSource} 
+            alt={post.title} 
+            className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105" 
+            onError={handleImageError}
+            loading="lazy"
+            width="400"
+            height="224"
+            decoding="async"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="w-full h-56 bg-sage-50 animate-pulse flex items-center justify-center">
+            <div className="w-16 h-16 bg-sage-100 rounded-lg"></div>
+          </div>
+        )}
       </Link>
       <div className="p-5 flex-1 flex flex-col">
         <div className="flex items-center gap-2 mb-2 text-sm">

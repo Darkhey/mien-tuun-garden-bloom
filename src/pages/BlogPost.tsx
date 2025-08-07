@@ -15,12 +15,16 @@ import RelatedArticlesSection from "@/components/blog/RelatedArticlesSection";
 import BlogComments from "@/components/blog/BlogComments";
 import { useToast } from "@/hooks/use-toast";
 import { generateUniqueSlug } from "@/utils/slugHelpers";
+import { generateSEOTitle, generateSEODescription, generateKeywords, optimizeImageForSEO } from "@/utils/seoHelpers";
+import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
 import { Calendar, User, Tag } from "lucide-react";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  usePerformanceMonitor('BlogPost', process.env.NODE_ENV === 'development');
 
   const { data: user } = useQuery({
     queryKey: ["user"],
@@ -53,6 +57,8 @@ const BlogPost = () => {
       }
       return data as Tables<"blog_posts">;
     },
+    staleTime: 10 * 60 * 1000, // 10 minutes cache for blog posts
+    gcTime: 30 * 60 * 1000, // 30 minutes in memory
   });
 
   const articleRef = useRef<HTMLElement | null>(null);
@@ -86,29 +92,36 @@ const BlogPost = () => {
     return <div className="text-center py-12">Artikel nicht gefunden.</div>;
   }
 
+  // Generate optimized SEO data
+  const seoTitle = generateSEOTitle(post.seo_title || post.title);
+  const seoDescription = generateSEODescription(post.content, post.seo_description || post.excerpt);
+  const seoKeywords = generateKeywords(post.title, post.content, post.category, post.tags || []);
+  const optimizedImage = optimizeImageForSEO(post.featured_image, { width: 1200, height: 630, quality: 85 });
+
   return (
     <>
       <Helmet>
-        <title>{post.title} | Mien Tuun</title>
-        <meta
-          name="description"
-          content={post.excerpt || post.description || ""}
-        />
-        <meta name="keywords" content={post.tags?.join(", ") || ""} />
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <meta name="keywords" content={seoKeywords.join(", ")} />
         <meta property="og:title" content={post.title} />
-        <meta
-          property="og:description"
-          content={post.excerpt || post.description || ""}
-        />
-        <meta property="og:image" content={post.featured_image} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:image" content={optimizedImage} />
         <meta property="og:type" content="article" />
+        <meta property="og:url" content={`https://mien-tuun.de/blog/${post.slug}`} />
         <meta property="article:author" content={post.author} />
         <meta property="article:published_time" content={post.published_at} />
         <meta property="article:section" content={post.category} />
         {post.tags?.map((tag) => (
           <meta key={tag} property="article:tag" content={tag} />
         ))}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.title} />
+        <meta name="twitter:description" content={seoDescription} />
+        <meta name="twitter:image" content={optimizedImage} />
         <link rel="canonical" href={`https://mien-tuun.de/blog/${post.slug}`} />
+        <meta name="robots" content="index, follow, max-image-preview:large" />
+        <meta name="googlebot" content="index, follow" />
       </Helmet>
 
       <BlogStructuredData
