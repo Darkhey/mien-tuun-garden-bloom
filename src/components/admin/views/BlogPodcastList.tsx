@@ -35,6 +35,7 @@ interface BlogPodcastListProps {
   onGenerateAudio: (podcastId: string, blogPostId: string, title: string) => void;
   onPlayPodcast: (audioUrl: string) => void;
   onDownloadPodcast: (audioUrl: string, title: string) => void;
+  onGenerateFullPodcast?: (blogPostId: string, title: string) => void;
 }
 
 const BlogPodcastList: React.FC<BlogPodcastListProps> = ({
@@ -44,7 +45,8 @@ const BlogPodcastList: React.FC<BlogPodcastListProps> = ({
   onGenerateScript,
   onGenerateAudio,
   onPlayPodcast,
-  onDownloadPodcast
+  onDownloadPodcast,
+  onGenerateFullPodcast
 }) => {
   const [openScripts, setOpenScripts] = useState<Set<string>>(new Set());
 
@@ -184,24 +186,36 @@ const BlogPodcastList: React.FC<BlogPodcastListProps> = ({
                       )}
                     </div>
                   ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => onGenerateScript(post.id, post.title)}
-                      disabled={isGenerating}
-                      className="bg-sage-600 hover:bg-sage-700"
-                    >
-                      {isGenerating ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Wird erstellt...
-                        </>
-                      ) : (
-                        <>
-                          <Mic className="h-4 w-4 mr-2" />
-                          Podcast erstellen
-                        </>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => onGenerateScript(post.id, post.title)}
+                        disabled={isGenerating}
+                        className="bg-sage-600 hover:bg-sage-700"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Wird erstellt...
+                          </>
+                        ) : (
+                          <>
+                            <Mic className="h-4 w-4 mr-2" />
+                            Podcast erstellen
+                          </>
+                        )}
+                      </Button>
+                      {onGenerateFullPodcast && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onGenerateFullPodcast(post.id, post.title)}
+                          disabled={isGenerating}
+                        >
+                          Alles: Skript + Audio
+                        </Button>
                       )}
-                    </Button>
+                    </div>
                   )}
                 </div>
               </div>
