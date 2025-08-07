@@ -1,213 +1,173 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.42.6";
+
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+);
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    console.log("[scheduled-job-executor] Starting scheduled tasks execution");
 
-    const { jobId, action } = await req.json();
+    // Get all pending scheduled tasks that are due
+    const { data: tasks, error: tasksError } = await supabase
+      .from('scheduled_tasks')
+      .select('*')
+      .eq('status', 'pending')
+      .lte('scheduled_for', new Date().toISOString())
+      .order('priority', { ascending: false })
+      .order('scheduled_for', { ascending: true });
 
-    console.log(`[ScheduledJobExecutor] Processing request - jobId: ${jobId}, action: ${action}`);
+    if (tasksError) {
+      console.error("[scheduled-job-executor] Error fetching tasks:", tasksError);
+      throw tasksError;
+    }
 
-    if (action === 'execute') {
-      // Get job details
-      const { data: job, error: jobError } = await supabaseClient
-        .from('scheduled_jobs.job_configs')
-        .select('*')
-        .eq('id', jobId)
-        .single();
+    console.log(`[scheduled-job-executor] Found ${tasks?.length || 0} tasks to execute`);
 
-      if (jobError || !job) {
-        throw new Error(`Job not found: ${jobId}`);
-      }
+    const results = [];
 
-      if (!job.is_active) {
-        throw new Error(`Job is disabled: ${jobId}`);
-      }
-
-      // Create execution record
-      const { data: executionData, error: executionError } = await supabaseClient
-        .from('scheduled_jobs.execution_history')
-        .insert({
-          job_id: jobId,
-          status: 'success',
-          started_at: new Date().toISOString()
-        })
-        .select('id')
-        .single();
-
-      if (executionError) {
-        throw new Error(`Failed to create execution record: ${executionError.message}`);
-      }
-
-      const executionId = executionData.id;
-      const startTime = Date.now();
-
+    for (const task of tasks || []) {
       try {
-        console.log(`[ScheduledJobExecutor] Executing job: ${job.name}`);
-        
-        // Check if target table exists
-        const { data: tableExists, error: tableError } = await supabaseClient.rpc(
-          'check_table_exists',
-          { table_name: job.target_table }
-        );
+        console.log(`[scheduled-job-executor] Executing task: ${task.name} (${task.function_name})`);
 
-        if (tableError || !tableExists) {
-          throw new Error(`Target table does not exist: ${job.target_table}`);
-        }
-
-        // Process template data
-        let templateData = job.template_data;
-        
-        // Add dynamic values
-        templateData = {
-          ...templateData,
-          created_at: new Date().toISOString()
-        };
-
-        // Generate UUID if needed
-        if (templateData.id === 'auto') {
-          const { data: uuidData } = await supabaseClient.rpc('gen_random_uuid');
-          templateData.id = uuidData;
-        }
-
-        // Insert the record
-        const { data: insertData, error: insertError } = await supabaseClient
-          .from(job.target_table)
-          .insert([templateData])
-          .select('id');
-
-        if (insertError) {
-          throw new Error(`Failed to insert record: ${insertError.message}`);
-        }
-
-        const duration = Date.now() - startTime;
-
-        // Update execution record
-        await supabaseClient
-          .from('scheduled_jobs.execution_history')
+        // Mark task as running
+        await supabase
+          .from('scheduled_tasks')
           .update({
-            status: 'success',
-            completed_at: new Date().toISOString(),
-            duration_ms: duration,
-            entries_created: 1,
-            entries_failed: 0,
-            execution_log: {
-              actions: [
-                {
-                  action: 'insert',
-                  table: job.target_table,
-                  id: insertData[0]?.id,
-                  status: 'success',
-                  timestamp: new Date().toISOString()
-                }
-              ]
-            }
+            status: 'running',
+            executed_at: new Date().toISOString()
           })
-          .eq('id', executionId);
+          .eq('id', task.id);
 
-        // Update job record
-        await supabaseClient
-          .from('scheduled_jobs.job_configs')
-          .update({
-            last_run_at: new Date().toISOString(),
-            next_run_at: await supabaseClient.rpc(
-              'scheduled_jobs.calculate_next_run',
-              { schedule_pattern: job.schedule_pattern }
-            ),
-            run_count: job.run_count + 1,
-            retry_count: 0
-          })
-          .eq('id', jobId);
-
-        console.log(`[ScheduledJobExecutor] Job executed successfully: ${job.name} (${duration}ms)`);
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            executionId,
-            duration,
-            result: { id: insertData[0]?.id }
-          }),
+        // Execute the function
+        const startTime = Date.now();
+        const { data: functionResult, error: functionError } = await supabase.functions.invoke(
+          task.function_name,
           {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
+            body: task.function_payload || {},
+            headers: {
+              'Content-Type': 'application/json',
+            }
           }
         );
 
-      } catch (executionError) {
         const duration = Date.now() - startTime;
+
+        if (functionError) {
+          console.error(`[scheduled-job-executor] Task ${task.name} failed:`, functionError);
+          
+          // Mark task as failed
+          await supabase
+            .from('scheduled_tasks')
+            .update({
+              status: 'failed',
+              error_message: functionError.message,
+              result: { error: functionError.message, duration_ms: duration }
+            })
+            .eq('id', task.id);
+
+          results.push({
+            task_id: task.id,
+            task_name: task.name,
+            status: 'failed',
+            error: functionError.message
+          });
+        } else {
+          console.log(`[scheduled-job-executor] Task ${task.name} completed successfully`);
+          
+          // Mark task as completed
+          await supabase
+            .from('scheduled_tasks')
+            .update({
+              status: 'completed',
+              result: { data: functionResult, duration_ms: duration }
+            })
+            .eq('id', task.id);
+
+          results.push({
+            task_id: task.id,
+            task_name: task.name,
+            status: 'completed',
+            duration_ms: duration
+          });
+        }
+
+      } catch (error) {
+        console.error(`[scheduled-job-executor] Unexpected error for task ${task.name}:`, error);
         
-        // Update execution record with error
-        await supabaseClient
-          .from('scheduled_jobs.execution_history')
+        // Mark task as failed
+        await supabase
+          .from('scheduled_tasks')
           .update({
             status: 'failed',
-            completed_at: new Date().toISOString(),
-            duration_ms: duration,
-            entries_created: 0,
-            entries_failed: 1,
-            error_details: executionError.message,
-            execution_log: {
-              actions: [
-                {
-                  action: 'insert',
-                  table: job.target_table,
-                  status: 'failed',
-                  error: executionError.message,
-                  timestamp: new Date().toISOString()
-                }
-              ]
-            }
+            error_message: error.message,
+            result: { error: error.message }
           })
-          .eq('id', executionId);
+          .eq('id', task.id);
 
-        // Update job record to increment retry count
-        await supabaseClient
-          .from('scheduled_jobs.job_configs')
-          .update({
-            retry_count: job.retry_count + 1,
-            error_log: [...(job.error_log || []), executionError.message]
-          })
-          .eq('id', jobId);
-
-        console.error(`[ScheduledJobExecutor] Job execution failed: ${executionError.message}`);
-        throw executionError;
+        results.push({
+          task_id: task.id,
+          task_name: task.name,
+          status: 'failed',
+          error: error.message
+        });
       }
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Unknown action' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+    // Clean up old completed/failed tasks (keep last 100)
+    try {
+      const { data: oldTasks } = await supabase
+        .from('scheduled_tasks')
+        .select('id')
+        .in('status', ['completed', 'failed'])
+        .order('executed_at', { ascending: true })
+        .range(100, 9999);
+
+      if (oldTasks && oldTasks.length > 0) {
+        const oldTaskIds = oldTasks.map(t => t.id);
+        await supabase
+          .from('scheduled_tasks')
+          .delete()
+          .in('id', oldTaskIds);
+        
+        console.log(`[scheduled-job-executor] Cleaned up ${oldTasks.length} old tasks`);
       }
-    );
+    } catch (cleanupError) {
+      console.error("[scheduled-job-executor] Cleanup error:", cleanupError);
+      // Don't fail the main execution for cleanup errors
+    }
+
+    console.log("[scheduled-job-executor] Scheduled tasks execution completed", results);
+
+    return new Response(JSON.stringify({
+      success: true,
+      executed_tasks: results.length,
+      results
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
   } catch (error) {
-    console.error('[ScheduledJobExecutor] Error:', error);
-    
-    return new Response(
-      JSON.stringify({
-        error: error.message,
-        success: false
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
+    console.error("[scheduled-job-executor] Fatal error:", error);
+    return new Response(JSON.stringify({
+      error: "Scheduled tasks execution failed",
+      message: error.message
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-});
+};
+
+serve(handler);

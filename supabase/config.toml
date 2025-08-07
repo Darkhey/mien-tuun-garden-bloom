@@ -1,1 +1,10 @@
 project_id = "ublbxvpmoccmegtwaslh"
+
+[functions.cron-executor]
+verify_jwt = false
+
+[functions.pipeline-executor]
+verify_jwt = false
+
+[functions.scheduled-job-executor]
+verify_jwt = false
