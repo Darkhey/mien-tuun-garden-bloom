@@ -14,6 +14,7 @@ import BlogSystemTestDashboard from "./BlogSystemTestDashboard";
 import { getTrendTags, buildContextFromMeta } from "./blogHelpers";
 import { supabase } from "@/integrations/supabase/client";
 import type { SEOMetadata } from '@/services/SEOService';
+import { blogAnalyticsService } from "@/services/BlogAnalyticsService";
 
 const TAG_OPTIONS = [
   "Schnell", "Kinder", "Tipps", "DIY", "Low Budget", "Bio", "Natur", "Regional", "Saisonal", "Nachhaltig", "Praktisch", "Dekor", "Haushalt",
@@ -35,8 +36,11 @@ const KIBlogCreator: React.FC = () => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestionSelections, setSuggestionSelections] = useState<string[]>([]);
-  // Track which suggestions were successfully saved
+  // Track which suggestions were erfolgreich gespeichert
   const [savedSuggestions, setSavedSuggestions] = useState<string[]>([]);
+  // Empfehlungen aus echten Daten
+  const [recommendedSuggestions, setRecommendedSuggestions] = useState<string[]>([]);
+  const [recLoading, setRecLoading] = useState(false);
   
   // Enhanced Editor State
   const [selectedPrompt, setSelectedPrompt] = useState("");
@@ -61,8 +65,26 @@ const KIBlogCreator: React.FC = () => {
       
       setDebugLogs(prev => [...prev, `Enhanced KI Blog Creator geladen - ${trendTags.length} Trend-Tags aktiv`]);
     };
+
+    const loadRecommendations = async () => {
+      setRecLoading(true);
+      try {
+        const posts = await blogAnalyticsService.fetchBlogPosts();
+        const existing = blogAnalyticsService.extractKeywords(posts);
+        const trends = await blogAnalyticsService.fetchCurrentTrends();
+        const gaps = blogAnalyticsService.findKeywordGaps(trends, existing);
+        const top = gaps.slice(0, 8).map(g => g.keyword);
+        setRecommendedSuggestions(top);
+        setDebugLogs(prev => [...prev, `Empfehlungen geladen (${top.length})`]);
+      } catch (e: any) {
+        setDebugLogs(prev => [...prev, `Empfehlungen fehlgeschlagen: ${e.message}`]);
+      } finally {
+        setRecLoading(false);
+      }
+    };
     
     initializeSystem();
+    loadRecommendations();
   }, [category, season]);
 
   const handleSaveArticle = async (
@@ -94,20 +116,36 @@ const KIBlogCreator: React.FC = () => {
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-+|-+$/g, '');
-      
       const slug = `${baseSlug}-${Date.now()}`;
-      
+
       // User Authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError) {
         console.warn('Auth-Fehler:', authError);
       }
-      
       const currentUserId = user?.id || null;
-      
+
       // Kombiniere normale Tags mit Wetter-Tags
       const allTags = [...new Set([...(tags || []), ...(weatherTags || [])])];
-      
+
+      // Pipeline-Config für Auto-Publish laden (optional)
+      let shouldAutoPublish = false;
+      let threshold = 999;
+      try {
+        const { data: config } = await supabase
+          .from('pipeline_config')
+          .select('quality_threshold, auto_publish')
+          .limit(1)
+          .maybeSingle();
+        const qualityScore = Math.round(Number(quality?.score) || 0);
+        threshold = config?.quality_threshold ?? threshold;
+        shouldAutoPublish = !!(config?.auto_publish && qualityScore >= threshold);
+      } catch (e) {
+        // Kein Admin oder Tabelle nicht erreichbar -> kein Auto-Publish
+      }
+
+      const qualityScore = Math.round(Number(quality?.score) || 0);
+
       // Bereite erweiterte Artikel-Daten mit SEO und Wetter-Tags vor
       const article = {
         slug,
@@ -117,7 +155,7 @@ const KIBlogCreator: React.FC = () => {
         description: excerpt || content.slice(0, 300).replace(/<[^>]*>/g, ''),
         category: category || "Allgemein",
         season: season || "ganzjährig",
-        tags: allTags, // Kombinierte Tags mit Wetter-Tags
+        tags: allTags,
         content_types: contentType.length ? contentType : ["blog"],
         audiences: audiences.length ? audiences : ["anfaenger"],
         featured_image: featuredImage || imageUrl || "",
@@ -127,38 +165,52 @@ const KIBlogCreator: React.FC = () => {
         seo_title: seoData?.title || title,
         seo_keywords: seoData?.keywords || tags,
         structured_data: seoData?.structuredData ? JSON.stringify(seoData.structuredData) : null,
-        published: false,
-        featured: quality?.score > 90,
+        published: shouldAutoPublish,
+        featured: qualityScore > 90,
         reading_time: Math.ceil(content.split(/\s+/).length / 160),
         author: "Marianne",
-        status: "entwurf",
-        user_id: currentUserId
+        status: shouldAutoPublish ? "veröffentlicht" : "entwurf",
+        user_id: currentUserId,
+        quality_score: qualityScore,
       };
-      
+
       // Blog-Post in Haupttabelle anlegen
       const { data: blogPost, error: blogPostError } = await supabase
         .from('blog_posts')
         .insert([article])
         .select()
         .maybeSingle();
-      
+
       if (blogPostError || !blogPost) {
         throw new Error(`Blog-Post Speicher-Fehler: ${blogPostError?.message || 'Kein Blog-Post zurückgegeben'}`);
       }
-      
+
       // Version für Tracking speichern
       const version = {
         blog_post_id: blogPost.id,
         user_id: currentUserId,
         ...article
       };
-      
+
       const { error } = await supabase
         .from('blog_post_versions')
         .insert([version]);
-      
+
       if (error) {
         console.warn('Version konnte nicht gespeichert werden:', error);
+      }
+
+      // Versuche, Log zu schreiben (optional, Admin erforderlich)
+      try {
+        await supabase.from('content_automation_logs').insert([
+          {
+            action: 'manual_create',
+            status: 'success',
+            details: { slug, title, category, season, shouldAutoPublish, qualityScore },
+          }
+        ]);
+      } catch (logErr) {
+        console.warn('Konnte content_automation_logs nicht schreiben (wahrscheinlich fehlende Berechtigung):', logErr);
       }
       
       toast({
@@ -243,6 +295,34 @@ const KIBlogCreator: React.FC = () => {
             dynamicTags={dynamicTags}
             loading={loading || isSuggesting}
           />
+
+          {/* Empfehlungen aus echten Daten */}
+          {recommendedSuggestions.length > 0 && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Empfehlungen aus echten Daten</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {recommendedSuggestions.map((s, i) => {
+                    const selected = suggestionSelections.includes(s);
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        className={`border px-3 py-1 rounded-full text-sm transition ${selected ? 'bg-blue-600 text-white border-blue-600' : 'bg-white'}`}
+                        onClick={() => setSuggestionSelections(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
+                        disabled={loading || isSuggesting || recLoading}
+                        aria-pressed={selected}
+                      >
+                        {selected ? '✓ ' : ''}{s}
+                      </button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Suggestion Workflow */}
           <BlogSuggestionWorkflow

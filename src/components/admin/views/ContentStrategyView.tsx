@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, Target, BarChart, Activity, Clock, AlertCircle } from "lucide-react";
 import ContentStrategyDashboard from "../ContentStrategyDashboard";
-import { contentStrategyService } from "@/services/ContentStrategyService";
 import { cronJobService } from "@/services/CronJobService";
-import { scheduledJobService } from "@/services/ScheduledJobService";
 
 const ContentStrategyView: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -25,9 +23,9 @@ const ContentStrategyView: React.FC = () => {
     try {
       console.log("[ContentStrategy] Loading system status...");
       
-      const [cronStats, scheduledStats] = await Promise.all([
+      const [cronStats, scheduledTasks] = await Promise.all([
         cronJobService.getJobStats(),
-        scheduledJobService.getJobStats()
+        cronJobService.getScheduledTasks()
       ]);
 
       setSystemStatus({
@@ -42,9 +40,9 @@ const ContentStrategyView: React.FC = () => {
           failed: cronStats.lastExecutions.filter(e => e.status === 'failed').length
         },
         scheduledJobs: {
-          pending: 0, // TODO: Get from scheduled jobs
-          running: 0,
-          completed: scheduledStats.lastExecutions.filter(e => e.status === 'completed').length
+          pending: scheduledTasks.filter((t: any) => t.status === 'pending').length,
+          running: scheduledTasks.filter((t: any) => t.status === 'running').length,
+          completed: scheduledTasks.filter((t: any) => t.status === 'completed').length
         }
       });
 

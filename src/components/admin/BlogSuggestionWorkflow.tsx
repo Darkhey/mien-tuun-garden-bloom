@@ -54,22 +54,27 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
 
       setDebugLogs(prev => [...prev, "Antwort erhalten"]);
       
-      const { topics } = data;
+      // Unterstütze data.suggestions oder data.topics
+      const rawList = (Array.isArray((data as any)?.suggestions)
+        ? (data as any).suggestions
+        : (Array.isArray((data as any)?.topics) ? (data as any).topics : [])) as any[];
 
-      if (!topics) {
+      if (!rawList || rawList.length === 0) {
         throw new Error("Keine Themenvorschläge von der KI erhalten.");
       }
       
       setDebugLogs(prev => [...prev, "Edge-Function Rückgabe: " + JSON.stringify(data, null, 2)]);
       
-      // Entferne doppelte Anführungszeichen und bereinige die Themen
-      const cleanedTopics = topics.map((topic: string) => {
-        // Entferne führende und abschließende Anführungszeichen
-        return topic.replace(/^"(.*)"$/, '$1');
-      });
+      // Bereinigen + Deduplizieren
+      const cleaned = rawList
+        .map(String)
+        .map((s) => s.trim().replace(/^"(.*)"$/, '$1'))
+        .filter(Boolean);
+      const uniqueTopics = Array.from(new Set(cleaned));
 
+      // Versuche, Historie zu speichern (optional)
       try {
-        const rows = cleanedTopics.map((title: string) => ({
+        const rows = uniqueTopics.map((title: string) => ({
           slug: generateSlug(title),
           title,
           reason: 'suggested',
@@ -81,8 +86,8 @@ const BlogSuggestionWorkflow: React.FC<BlogSuggestionWorkflowProps> = ({
         setDebugLogs(prev => [...prev, `Fehler beim Speichern: ${dbErr.message}`]);
       }
 
-      setSuggestions(cleanedTopics);
-      setDebugLogs(prev => [...prev, "Vorschläge extrahiert: " + JSON.stringify(cleanedTopics, null, 2)]);
+      setSuggestions(uniqueTopics);
+      setDebugLogs(prev => [...prev, "Vorschläge extrahiert: " + JSON.stringify(uniqueTopics, null, 2)]);
     } catch (err: any) {
       setDebugLogs(prev => [...prev, "Fehler bei Themenvorschlägen: " + String(err.message || err)]);
       toast({
