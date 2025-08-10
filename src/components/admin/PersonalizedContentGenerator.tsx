@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { User, Zap, Target, Settings } from "lucide-react";
 import { contentStrategyService, PersonalizationProfile } from "@/services/ContentStrategyService";
 import { contentGenerationService } from "@/services/ContentGenerationService";
+import { MAIN_CATEGORIES } from "@/config/blog.config";
 
 const PersonalizedContentGenerator: React.FC = () => {
   const [profile, setProfile] = useState<PersonalizationProfile>({
@@ -23,10 +24,7 @@ const PersonalizedContentGenerator: React.FC = () => {
   const [generatedContent, setGeneratedContent] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const categories = [
-    "gartenplanung", "saisonale-kueche", "nachhaltigkeit", 
-    "diY-projekte", "ernte", "selbstversorgung"
-  ];
+  const categories = MAIN_CATEGORIES.map(cat => cat.id);
 
   const handleCategoryToggle = (category: string) => {
     setProfile(prev => ({
