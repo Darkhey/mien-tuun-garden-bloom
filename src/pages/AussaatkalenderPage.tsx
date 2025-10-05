@@ -63,10 +63,10 @@ const AussaatkalenderPage: React.FC = () => {
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Button asChild size="lg" className="bg-sage-600 hover:bg-sage-700">
-              <a href="/blog?category=aussaat-pflanzung">Aussaat & Pflanzung Tipps</a>
+              <a href="/blog?category=garten-planung">Aussaat & Pflanzung Tipps</a>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <a href="/blog?category=saisonale-kueche">Saisonale Rezepte</a>
+              <a href="/blog?category=ernte-kueche">Saisonale Rezepte</a>
             </Button>
           </div>
         </div>

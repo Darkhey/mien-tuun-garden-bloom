@@ -2,73 +2,74 @@
 // Smart Category Mapping basierend auf Tags
 export const SMART_CATEGORIES = [
   {
-    id: 'gaertnern',
-    name: 'Gärtnern',
+    id: 'garten-planung',
+    name: 'Garten & Planung',
     icon: '🌱',
     keywords: [
-      'garten', 'pflanzen', 'aussaat', 'ernte', 'pflege', 'beet', 'hochbeet',
-      'kompost', 'düngen', 'gießen', 'schneiden', 'schädlinge', 'bodenpflege',
-      'permakultur', 'mischkultur', 'mulchen', 'gewächshaus', 'balkon'
+      'garten', 'planung', 'aussaat', 'beet', 'hochbeet', 'permakultur',
+      'kompost', 'bodenpflege', 'mischkultur', 'gewächshaus', 'balkon'
     ]
   },
   {
-    id: 'gartenküche',
-    name: 'Gartenküche',
-    icon: '👩‍🍳',
+    id: 'pflanzenpflege',
+    name: 'Pflanzenpflege',
+    icon: '🌿',
     keywords: [
-      'kochen', 'rezept', 'küche', 'ernte', 'einkochen', 'konservieren',
-      'haltbarmachen', 'lagerung', 'kräuter', 'gewürze', 'saisonal',
-      'frisch', 'gesund', 'regional', 'bio'
+      'gießen', 'düngen', 'schneiden', 'schädlinge', 'krankheiten',
+      'pflegetipps', 'kompost', 'boden'
     ]
   },
   {
-    id: 'diy-basteln',
-    name: 'DIY & Basteln',
+    id: 'ernte-kueche',
+    name: 'Ernte & Küche',
+    icon: '🍅',
+    keywords: [
+      'kochen', 'rezept', 'ernte', 'einkochen', 'konservieren',
+      'haltbarmachen', 'lagerung', 'kräuter', 'saisonal', 'regional'
+    ]
+  },
+  {
+    id: 'selbermachen-ausruestung',
+    name: 'Selbermachen & Ausrüstung',
     icon: '🔨',
     keywords: [
-      'diy', 'basteln', 'selbermachen', 'bauen', 'werkzeug', 'upcycling',
-      'kreativ', 'handwerk', 'anleitung', 'projekt', 'reparieren',
-      'gartenmöbel', 'dekoration', 'holz', 'recycling'
+      'diy', 'basteln', 'selbermachen', 'bauen', 'werkzeug',
+      'upcycling', 'projekt', 'reparieren', 'gartenmöbel'
     ]
   },
   {
-    id: 'nachhaltigkeit',
-    name: 'Nachhaltigkeit',
+    id: 'nachhaltigkeit-umwelt',
+    name: 'Nachhaltigkeit & Umwelt',
     icon: '♻️',
     keywords: [
-      'nachhaltig', 'umwelt', 'öko', 'bio', 'plastikfrei', 'zero waste',
-      'klimaschutz', 'ressourcen', 'sparen', 'naturschutz', 'regenerativ',
-      'kreislauf', 'energy', 'wassersparen', 'kompost'
+      'nachhaltig', 'umwelt', 'bio', 'plastikfrei', 'zero waste',
+      'klimaschutz', 'ressourcen', 'regenerativ', 'kreislauf', 'wassersparen'
     ]
   },
   {
-    id: 'indoor-gardening',
-    name: 'Indoor Gardening',
-    icon: '🏠',
+    id: 'spezielle-gartenbereiche',
+    name: 'Spezielle Gartenbereiche',
+    icon: '🏡',
     keywords: [
-      'indoor', 'zimmerpflanzen', 'innen', 'hydroponik', 'keimlinge',
-      'sprossen', 'fensterbrett', 'grow light', 'topf', 'container',
-      'microgreens', 'kräuter innen', 'wohnung'
+      'urban', 'balkon', 'indoor', 'hydroponik', 'gewächshaus',
+      'container', 'microgreens'
     ]
   },
   {
-    id: 'saisonales',
-    name: 'Saisonales',
-    icon: '🍂',
-    keywords: [
-      'saison', 'saisonal', 'frühling', 'sommer', 'herbst', 'winter',
-      'jahreszeit', 'kalender', 'monat', 'zeit', 'wetter', 'klima',
-      'erntezeit', 'aussaatzeit', 'pflanzzeit'
-    ]
-  },
-  {
-    id: 'lifestyle',
-    name: 'Lifestyle',
+    id: 'philosophie-lifestyle',
+    name: 'Philosophie & Lifestyle',
     icon: '✨',
     keywords: [
-      'lifestyle', 'leben', 'gesundheit', 'wellness', 'entspannung',
-      'achtsamkeit', 'natur', 'philosophie', 'inspiration', 'tipps',
-      'routine', 'balance', 'selbstversorgung', 'minimalismus'
+      'lifestyle', 'gesundheit', 'wellness', 'entspannung', 'achtsamkeit',
+      'philosophie', 'inspiration', 'selbstversorgung', 'minimalismus'
+    ]
+  },
+  {
+    id: 'allgemein',
+    name: 'Allgemein',
+    icon: '📚',
+    keywords: [
+      'tipps', 'tricks', 'grundlagen', 'ratgeber', 'praxis'
     ]
   }
 ];
@@ -84,7 +85,7 @@ export const SEASONS = [
 export function assignSmartCategory(tags: string[], content: string = '', title: string = ''): string {
   const allText = `${title} ${content} ${tags.join(' ')}`.toLowerCase();
   
-  let bestMatch = { category: 'lifestyle', score: 0 };
+  let bestMatch = { category: 'philosophie-lifestyle', score: 0 };
   
   SMART_CATEGORIES.forEach(category => {
     let score = 0;
