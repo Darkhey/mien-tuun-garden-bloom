@@ -11,6 +11,7 @@ import ScheduledJobsView from '@/components/admin/views/ScheduledJobsView';
 import { AutomationMonitoringView } from '@/components/admin/views/AutomationMonitoringView';
 import AudioSidebarView from '@/components/admin/views/AudioSidebarView';
 import SowingCalendarManager from '@/components/admin/SowingCalendarManager';
+import TimelineView from '@/components/admin/views/TimelineView';
 import AdminLayout from '@/components/admin/AdminLayout';
 
 const AdminDashboard = () => {
@@ -51,6 +52,8 @@ const AdminDashboard = () => {
         return <AudioSidebarView />;
       case 'sowing-calendar':
         return <SowingCalendarManager />;
+      case 'timeline':
+        return <TimelineView />;
       default:
         return <BlogPostsView />;
     }
