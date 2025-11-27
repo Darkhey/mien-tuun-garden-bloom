@@ -22,6 +22,14 @@ export const SEASONS = [
   { value: "Ganzjährig", label: "Ganzjährig" },
 ];
 
+// Vereinfachte Hauptkategorien für schnelle Filteransichten
+export const MAIN_CATEGORIES = [
+  { id: "garten-planung", name: "Garten", icon: "\uD83C\uDF31" },
+  { id: "ernte-kueche", name: "Küche", icon: "\uD83C\uDF45" },
+  { id: "selbermachen-ausruestung", name: "DIY", icon: "\uD83D\uDD28" },
+  { id: "nachhaltigkeit-umwelt", name: "Nachhaltig", icon: "\u267B\uFE0F" },
+];
+
 export const AUTHORS = [
   "Anna",
   "Marcus",

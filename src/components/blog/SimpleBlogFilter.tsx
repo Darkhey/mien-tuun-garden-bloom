@@ -2,14 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SEASONS, MAIN_CATEGORIES } from "@/config/blog.config";
 
-// Vereinfachte Hauptkategorien (nur 4 statt 7)
-const MAIN_CATEGORIES = [
-  { id: 'gaertnern', name: 'Garten', icon: '🌱' },
-  { id: 'gartenküche', name: 'Küche', icon: '🍅' },
-  { id: 'diy-basteln', name: 'DIY', icon: '🔨' },
-  { id: 'nachhaltigkeit', name: 'Nachhaltig', icon: '♻️' }
-];
 
 interface SimpleBlogFilterProps {
   searchTerm: string;
@@ -155,17 +149,17 @@ const SimpleBlogFilter: React.FC<SimpleBlogFilterProps> = ({
             >
               Alle
             </button>
-            {['frühling', 'sommer', 'herbst', 'winter'].map((season) => (
+            {SEASONS.filter(s => s.value !== 'Ganzjährig').map(({ value, label }) => (
               <button
-                key={season}
-                onClick={() => setSelectedSeason(season)}
+                key={value.toLowerCase()}
+                onClick={() => setSelectedSeason(value.toLowerCase())}
                 className={`px-3 py-1 rounded-full text-xs transition-all ${
-                  selectedSeason === season
+                  selectedSeason === value.toLowerCase()
                     ? 'bg-sage-600 text-white'
                     : 'bg-sage-100 text-sage-700 hover:bg-sage-200'
                 }`}
               >
-                {season.charAt(0).toUpperCase() + season.slice(1)}
+                {label}
               </button>
             ))}
           </div>

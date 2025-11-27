@@ -24,8 +24,12 @@ const PersonalizedContentGenerator: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const categories = [
-    "gartenplanung", "saisonale-kueche", "nachhaltigkeit", 
-    "diY-projekte", "ernte", "selbstversorgung"
+    "garten-planung",
+    "pflanzenpflege",
+    "ernte-kueche",
+    "selbermachen-ausruestung",
+    "nachhaltigkeit-umwelt",
+    "philosophie-lifestyle"
   ];
 
   const handleCategoryToggle = (category: string) => {

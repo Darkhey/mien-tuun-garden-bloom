@@ -1,5 +1,6 @@
 import React from "react";
 import TagSelector from "./TagSelector";
+import { BLOG_CATEGORIES, SEASONS } from "@/config/blog.config";
 
 interface BlogMetaSectionProps {
   category: string;
@@ -20,24 +21,9 @@ interface BlogMetaSectionProps {
   loading: boolean;
 }
 
-const BLOG_CATEGORIES = [
-  { value: "Garten & Planung", label: "Garten & Planung" },
-  { value: "Pflanzenpflege", label: "Pflanzenpflege" },
-  { value: "Ernte & Küche", label: "Ernte & Küche" },
-  { value: "Nachhaltigkeit & Umwelt", label: "Nachhaltigkeit & Umwelt" },
-  { value: "Spezielle Gartenbereiche", label: "Spezielle Gartenbereiche" },
-  { value: "Selbermachen & Ausrüstung", label: "Selbermachen & Ausrüstung" },
-  { value: "Philosophie & Lifestyle", label: "Philosophie & Lifestyle" },
-  { value: "Allgemein", label: "Allgemein" },
-];
-
-const SEASONS = [
-  { value: "frühling", label: "Frühling" },
-  { value: "sommer", label: "Sommer" },
-  { value: "herbst", label: "Herbst" },
-  { value: "winter", label: "Winter" },
-  { value: "ganzjährig", label: "Ganzjährig" },
-];
+// BLOG_CATEGORIES und SEASONS werden seit der Zentralisierung aus
+// src/config/blog.config.ts importiert, damit Frontend und Backend
+// immer die gleichen Werte verwenden.
 
 const AUDIENCE_OPTIONS = [
   "Anfänger", "Fortgeschrittene", "Familien", "Singles", "Kinder", "Senioren"
