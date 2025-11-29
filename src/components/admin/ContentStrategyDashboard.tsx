@@ -30,13 +30,14 @@ interface CategoryContentGap {
 }
 
 const BLOG_CATEGORIES = [
-  { id: 'gaertnern', name: 'Gärtnern', icon: '🌱', keywords: ['garten', 'pflanzen', 'aussaat', 'ernte', 'pflege'] },
-  { id: 'gartenkueche', name: 'Gartenküche', icon: '👩‍🍳', keywords: ['kochen', 'rezept', 'ernte', 'kräuter', 'saisonal'] },
-  { id: 'diy-basteln', name: 'DIY & Basteln', icon: '🔨', keywords: ['diy', 'basteln', 'selbermachen', 'bauen', 'upcycling'] },
-  { id: 'nachhaltigkeit', name: 'Nachhaltigkeit', icon: '♻️', keywords: ['nachhaltig', 'umwelt', 'bio', 'plastikfrei', 'zero waste'] },
-  { id: 'indoor-gardening', name: 'Indoor Gardening', icon: '🏠', keywords: ['indoor', 'zimmerpflanzen', 'hydroponik', 'sprossen'] },
-  { id: 'saisonales', name: 'Saisonales', icon: '🍂', keywords: ['saison', 'frühling', 'sommer', 'herbst', 'winter'] },
-  { id: 'lifestyle', name: 'Lifestyle', icon: '✨', keywords: ['lifestyle', 'gesundheit', 'wellness', 'selbstversorgung'] }
+  { id: 'garten-planung', name: 'Garten & Planung', icon: '🌱', keywords: ['garten', 'planung', 'hochbeet', 'beet', 'aussaat', 'permakultur'] },
+  { id: 'pflanzenpflege', name: 'Pflanzenpflege', icon: '🌿', keywords: ['gießen', 'düngen', 'schneiden', 'schädlingsbekämpfung', 'bodenpflege'] },
+  { id: 'ernte-kueche', name: 'Ernte & Küche', icon: '🍅', keywords: ['rezepte', 'ernte', 'konservieren', 'küche', 'lagerung'] },
+  { id: 'nachhaltigkeit-umwelt', name: 'Nachhaltigkeit & Umwelt', icon: '♻️', keywords: ['nachhaltig', 'umwelt', 'bio', 'plastikfrei', 'permakultur'] },
+  { id: 'spezielle-gartenbereiche', name: 'Spezielle Gartenbereiche', icon: '🏡', keywords: ['urban', 'balkon', 'indoor', 'gewächshaus', 'hydroponik'] },
+  { id: 'selbermachen-ausruestung', name: 'Selbermachen & Ausrüstung', icon: '🔨', keywords: ['diy', 'basteln', 'werkzeug', 'upcycling', 'bauen'] },
+  { id: 'philosophie-lifestyle', name: 'Philosophie & Lifestyle', icon: '✨', keywords: ['selbstversorgung', 'achtsamkeit', 'lifestyle', 'wellness', 'inspiration'] },
+  { id: 'allgemein', name: 'Allgemein', icon: '📚', keywords: ['tipps', 'tricks', 'ratgeber', 'grundlagen'] }
 ];
 
 const ContentStrategyDashboard: React.FC = () => {
@@ -97,54 +98,61 @@ const ContentStrategyDashboard: React.FC = () => {
 
   const generateMissingTopicsForCategory = (category: any, currentCount: number): string[] => {
     const topicSuggestions: Record<string, string[]> = {
-      'gaertnern': [
+      'garten-planung': [
         'Hochbeet anlegen für Anfänger',
         'Kompost richtig anlegen',
         'Mischkultur Tipps',
         'Garten im Herbst vorbereiten',
         'Natürliche Schädlingsbekämpfung'
       ],
-      'gartenkueche': [
+      'pflanzenpflege': [
+        'Richtig gießen im Sommer',
+        'Natürliche Dünger selber machen',
+        'Pflanzen vor Schädlingen schützen',
+        'Überwinterung empfindlicher Arten',
+        'Schnitt-Tipps für Obstgehölze'
+      ],
+      'ernte-kueche': [
         'Kräuter konservieren',
         'Fermentieren für Anfänger',
         'Zero Waste in der Küche',
         'Saisonaler Ernährungsplan',
         'Essbare Blüten verwenden'
       ],
-      'diy-basteln': [
+      'selbermachen-ausruestung': [
         'Upcycling Gartenmöbel',
         'Pflanzgefäße selber machen',
         'Gewächshaus DIY',
         'Gartenwerkzeug reparieren',
         'Kompostbehälter bauen'
       ],
-      'nachhaltigkeit': [
+      'nachhaltigkeit-umwelt': [
         'Plastikfrei gärtnern',
         'Regenwasser sammeln',
         'Permakultur Grundlagen',
         'Naturdünger herstellen',
         'Klimafreundlich gärtnern'
       ],
-      'indoor-gardening': [
-        'Microgreens anbauen',
-        'Zimmerpflanzen für Anfänger',
+      'spezielle-gartenbereiche': [
+        'Urban Gardening auf dem Balkon',
         'Hydroponik Setup',
-        'Kräuter auf der Fensterbank',
-        'Indoor Kompostierung'
+        'Gewächshaus richtig nutzen',
+        'Balkongarten pflegen',
+        'Innenraumbegrünung leicht gemacht'
       ],
-      'saisonales': [
-        'Frühlingsarbeiten im Garten',
-        'Winterschutz für Pflanzen',
-        'Herbsternte einlagern',
-        'Sommergemüse anbauen',
-        'Ganzjähriger Anbauplan'
-      ],
-      'lifestyle': [
+      'philosophie-lifestyle': [
         'Selbstversorgung beginnen',
         'Garten als Therapie',
         'Achtsames Gärtnern',
         'Work-Life-Balance durch Garten',
         'Minimalismus im Garten'
+      ],
+      'allgemein': [
+        'Tipps für den Saisonstart',
+        'Bewährte Garten-Hacks',
+        'Werkzeugpflege leicht gemacht',
+        'So gelingt der Kompost',
+        'Fragen aus der Community beantwortet'
       ]
     };
 
@@ -158,11 +166,10 @@ const ContentStrategyDashboard: React.FC = () => {
     // Basis-Priorität basierend auf fehlenden Artikeln
     let priority = Math.max(0, 10 - articleCount);
     
-    // Saisonale Kategorien bekommen Boost
-    if (categoryId === 'saisonales') priority += 2;
-    
-    // Core-Kategorien bekommen Boost
-    if (['gaertnern', 'gartenkueche'].includes(categoryId)) priority += 1;
+    // Bestimmte Kategorien erhalten einen kleinen Prioritäts-Boost
+    if (categoryId === 'spezielle-gartenbereiche') priority += 2;
+
+    if (['garten-planung', 'pflanzenpflege', 'ernte-kueche'].includes(categoryId)) priority += 1;
     
     return priority * 10; // Skalierung für bessere Darstellung
   };
