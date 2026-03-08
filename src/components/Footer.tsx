@@ -75,8 +75,8 @@ const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/garten" className="text-earth-600 hover:text-sage-600 transition-colors">
-                  Gartentipps
+                <Link to="/aussaatkalender" className="text-earth-600 hover:text-sage-600 transition-colors">
+                  Aussaatkalender
                 </Link>
               </li>
               <li>

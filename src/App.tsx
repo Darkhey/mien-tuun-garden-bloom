@@ -36,8 +36,6 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  const isMobile = useIsMobile();
-
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -47,7 +45,7 @@ function App() {
               <Routes>
                 <Route path="/" element={
                   <LazyRoute>
-                    {isMobile ? <MobileLandingPage /> : <Index />}
+                    <Index />
                   </LazyRoute>
                 } />
                 <Route path="/rezepte" element={<LazyRoute><RecipeOverview /></LazyRoute>} />
