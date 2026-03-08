@@ -1,5 +1,5 @@
 // Importiere zentrale Konfiguration
-import { CATEGORIES, SEASONS, AUTHORS, TAGS, corsHeaders } from "../_shared/blog-config.ts";
+import { CATEGORIES, SEASONS, AUTHORS, TAGS } from "../_shared/blog-config.ts";
 
 // Re-exportiere für Kompatibilität
 export { CATEGORIES, SEASONS, AUTHORS, TAGS };
