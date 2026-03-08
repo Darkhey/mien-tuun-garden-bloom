@@ -4,6 +4,7 @@ import { siteConfig } from '@/config/site.config';
 import { Menu, X, Flower, Search, LogOut, Shield } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import AuthDialog from "@/components/AuthDialog";
+import SearchOverlay from "@/components/SearchOverlay";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
