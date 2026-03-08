@@ -6,11 +6,8 @@ import { Toaster } from "@/components/ui/sonner";
 import ErrorBoundary from '@/components/ErrorBoundary';
 import LazyRoute from '@/components/LazyRoute';
 import Layout from '@/components/Layout';
-import { useIsMobile } from '@/hooks/use-mobile';
-
 // Lazy load components
 const Index = React.lazy(() => import('./pages/Index'));
-const MobileLandingPage = React.lazy(() => import('./pages/MobileLandingPage'));
 const RecipeOverview = React.lazy(() => import('./pages/RecipeOverview'));
 const RecipeDetail = React.lazy(() => import('./pages/RecipeDetail'));
 const BlogOverview = React.lazy(() => import('./pages/BlogOverview'));
