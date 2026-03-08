@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { slugify } from "@/utils/slugify";
 import { extractText } from "@/utils/textExtraction";
+import { AffiliateProductCard } from "./AffiliateProductCard";
 
 const createHeading = (level: 1 | 2 | 3, className: string) => {
   const Tag = `h${level}` as keyof JSX.IntrinsicElements;
