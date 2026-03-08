@@ -193,10 +193,11 @@ const BlogOverview: React.FC = () => {
             <div className="text-center py-12 text-earth-500">Lade Artikel...</div>
           ) : error ? (
             <div className="text-center py-12 text-red-500">Fehler beim Laden der Artikel.</div>
-          ) : sortedPosts.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {sortedPosts.map((post) => {
-                const mappedPost: BlogPost = {
+          ) : displayedPosts.length > 0 ? (
+            <div className="space-y-12">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {displayedPosts.map((post) => {
+                  const mappedPost: BlogPost = {
                   id: post.id,
                   slug: post.slug,
                   title: post.title,
