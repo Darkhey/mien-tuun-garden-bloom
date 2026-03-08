@@ -136,6 +136,12 @@ const BlogPost = () => {
         slug={post.slug}
       />
 
+      <ReadingProgressBar />
+      <Breadcrumbs items={[
+        { label: "Blog", href: "/blog" },
+        { label: post.category, href: `/blog?category=${encodeURIComponent(post.category)}` },
+        { label: post.title },
+      ]} />
       <div className="relative">
         <article ref={articleRef} className="max-w-4xl mx-auto px-4 py-8">
           {/* Blog Post Header */}

@@ -1,8 +1,10 @@
-
 import React from 'react';
 import { siteConfig } from '@/config/site.config';
 import Header from './Header';
 import Footer from './Footer';
+import ScrollToTop from './ScrollToTop';
+import CookieConsent from './CookieConsent';
+import ExitIntentPopup from './ExitIntentPopup';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,6 +24,9 @@ const Layout: React.FC<LayoutProps> = ({
         {children}
       </main>
       <Footer />
+      <ScrollToTop />
+      <CookieConsent />
+      <ExitIntentPopup />
     </div>
   );
 };
