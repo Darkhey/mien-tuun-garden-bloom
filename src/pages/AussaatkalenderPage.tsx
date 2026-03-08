@@ -195,7 +195,7 @@ const AussaatkalenderPage: React.FC = () => {
                   </li>
                 </ul>
                 <a 
-                  href="https://muutto.lovable.app" 
+                  href="https://muutto.xyz" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-full font-medium transition-all shadow-lg hover:shadow-xl w-fit"
