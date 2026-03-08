@@ -19,7 +19,10 @@ import { useToast } from "@/hooks/use-toast";
 import { generateUniqueSlug } from "@/utils/slugHelpers";
 import { generateSEOTitle, generateSEODescription, generateKeywords, optimizeImageForSEO } from "@/utils/seoHelpers";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
-import { Calendar, User, Tag } from "lucide-react";
+import { Calendar, User, Tag, Menu } from "lucide-react";
+import { FloatingShareBar } from "@/components/blog/FloatingShareBar";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
