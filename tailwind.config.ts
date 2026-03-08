@@ -67,8 +67,8 @@ export default {
 				}
 			},
 			fontFamily: {
-				'serif': ['Playfair Display', 'serif'],
-				'sans': ['Inter', 'system-ui', 'sans-serif'],
+				'serif': ['Lora', 'Playfair Display', 'serif'],
+				'sans': ['Source Sans 3', 'system-ui', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

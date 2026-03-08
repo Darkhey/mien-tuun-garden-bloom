@@ -1,9 +1,9 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import DOMPurify from 'dompurify';
-import { fetchLatestComments, type CommentRow } from '@/queries/content';
+import { fetchLatestComments } from '@/queries/content';
+import { MessageCircle } from 'lucide-react';
 
 const LatestCommentsSection: React.FC = () => {
   const { data = [], isLoading, error } = useQuery({
@@ -11,50 +11,37 @@ const LatestCommentsSection: React.FC = () => {
     queryFn: fetchLatestComments,
   });
 
-  if (isLoading) {
-    return (
-      <section className="py-16 px-4 text-center">
-        <p className="text-sage-600">Lade neueste Kommentare...</p>
-      </section>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="py-16 px-4 text-center">
-        <p className="text-sage-600">
-          Kommentare konnten nicht geladen werden.
-          {process.env.NODE_ENV === 'development' && (
-            <span className="block text-xs text-red-500 mt-1">
-              {error instanceof Error ? error.message : 'Unknown error'}
-            </span>
-          )}
-        </p>
-      </section>
-    );
-  }
-
-  if (!data.length) return null;
+  if (isLoading || error || !data.length) return null;
 
   return (
-    <section className="py-16 px-4 bg-sage-50">
+    <section className="py-20 px-4 bg-background">
       <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-earth-800 mb-8 text-center">
-          Neueste Kommentare
-        </h2>
+        <div className="text-center mb-10">
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
+            Aus der Gemeinschaft
+          </h2>
+          <p className="text-muted-foreground text-lg">Was andere Gartenfreunde sagen</p>
+        </div>
         <ul className="space-y-4">
           {data.map((c) => (
-            <li key={c.id} className="bg-white p-4 rounded-xl border border-sage-100 shadow-sm">
-              <p
-                className="text-earth-700 text-sm mb-2 line-clamp-2"
-                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.content) }}
-              />
-              <Link to={`/blog/${c.blog_slug}`} className="text-sage-600 text-xs hover:underline">
-                Zum Beitrag
-              </Link>
-              <span className="text-sage-400 text-xs ml-2">
-                {new Date(c.created_at).toLocaleDateString('de-DE')}
-              </span>
+            <li key={c.id} className="garden-card p-5 flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <MessageCircle className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p
+                  className="text-foreground/80 text-sm mb-2 line-clamp-2 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(c.content) }}
+                />
+                <div className="flex items-center gap-3">
+                  <Link to={`/blog/${c.blog_slug}`} className="text-primary text-xs font-medium hover:underline">
+                    Zum Beitrag →
+                  </Link>
+                  <span className="text-muted-foreground text-xs">
+                    {new Date(c.created_at).toLocaleDateString('de-DE')}
+                  </span>
+                </div>
+              </div>
             </li>
           ))}
         </ul>

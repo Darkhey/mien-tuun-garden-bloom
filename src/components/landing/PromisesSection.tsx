@@ -1,48 +1,48 @@
-
 import React from 'react';
 import { CheckCircle, Heart, Flower } from 'lucide-react';
 
 const promises = [
   {
-    icon: <CheckCircle className="w-6 h-6 text-sage-600" />,
+    icon: CheckCircle,
     title: "Erprobte Tipps aus 20+ Jahren",
-    description: "Keine Theorie - nur was wirklich funktioniert im norddeutschen Klima"
+    description: "Keine Theorie – nur was wirklich funktioniert im norddeutschen Klima.",
+    emoji: "🌿"
   },
   {
-    icon: <Heart className="w-6 h-6 text-sage-600" />,
+    icon: Heart,
     title: "Mit Herz & Verstand",
-    description: "Authentische Ratschläge einer echten Gärtnerin, nicht von einem Schreibtisch"
+    description: "Authentische Ratschläge einer echten Gärtnerin, direkt aus dem Garten.",
+    emoji: "💚"
   },
   {
-    icon: <Flower className="w-6 h-6 text-sage-600" />,
+    icon: Flower,
     title: "Saisonal & Regional",
-    description: "Alles abgestimmt auf unser norddeutsches Wetter und unsere Böden"
+    description: "Alles abgestimmt auf norddeutsches Wetter und unsere Böden.",
+    emoji: "🌸"
   }
 ];
 
 const PromisesSection: React.FC = () => {
   return (
-    <section className="py-16 px-4 bg-sage-25">
+    <section className="py-20 px-4 bg-secondary/50">
       <div className="max-w-5xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-serif font-bold text-earth-800 mb-4">
+        <div className="text-center mb-14">
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
             Warum du mir vertrauen kannst
           </h2>
-          <p className="text-sage-700 text-lg">
-            Seit über 20 Jahren gärtnere ich hier in Ostfriesland und weiß, was funktioniert.
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Über zwei Jahrzehnte Erfahrung in Ostfrieslands Gärten – das merkt man.
           </p>
         </div>
         <div className="grid md:grid-cols-3 gap-8">
           {promises.map((promise, idx) => (
             <div
               key={idx}
-              className="text-center space-y-4"
+              className="garden-card p-8 text-center space-y-4"
             >
-              <div className="mx-auto w-12 h-12 bg-sage-100 rounded-full flex items-center justify-center">
-                {promise.icon}
-              </div>
-              <h3 className="text-xl font-semibold text-earth-800">{promise.title}</h3>
-              <p className="text-sage-700">{promise.description}</p>
+              <div className="text-4xl mb-2">{promise.emoji}</div>
+              <h3 className="text-xl font-bold text-foreground">{promise.title}</h3>
+              <p className="text-muted-foreground leading-relaxed">{promise.description}</p>
             </div>
           ))}
         </div>
