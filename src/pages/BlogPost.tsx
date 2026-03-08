@@ -28,6 +28,7 @@ const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   usePerformanceMonitor('BlogPost', process.env.NODE_ENV === 'development');
 
