@@ -7,19 +7,25 @@ interface SowingCalendarLegendProps {
 
 const SowingCalendarLegend: React.FC<SowingCalendarLegendProps> = ({ categories }) => {
   return (
-    <div className="mt-4 p-4 bg-sage-25 rounded-lg border border-sage-200">
-      <div className="flex flex-wrap gap-x-6 gap-y-2 justify-center text-sm">
+    <div className="mt-6 p-5 bg-white rounded-xl border border-sage-200 shadow-sm">
+      <div className="flex flex-wrap gap-x-8 gap-y-3 justify-center text-sm mb-4">
         {categories.map(cat => (
-          <div key={cat.key} className="flex items-center gap-2">
-            <span className={`${cat.color} w-3 h-3 rounded-full border border-white shadow-sm`}></span>
-            <span className="text-sage-700 font-medium">{cat.label}</span>
+          <div key={cat.key} className="flex items-center gap-2.5">
+            <span className={`${cat.color} w-4 h-4 rounded-full border-2 border-white shadow-sm`}></span>
+            <span className="text-earth-700 font-medium">{cat.label}</span>
           </div>
         ))}
       </div>
-      <div className="text-center mt-3 text-xs text-sage-600">
-        💡 Schwierigkeitsgrade: <span className="text-green-600 font-medium">Einfach</span> für Anfänger, 
-        <span className="text-yellow-600 font-medium"> Mittel</span> mit etwas Erfahrung, 
-        <span className="text-red-600 font-medium"> Schwer</span> für erfahrene Gärtner
+      <div className="flex flex-wrap gap-4 justify-center text-xs text-muted-foreground pt-3 border-t border-sage-100">
+        <span className="flex items-center gap-1.5">
+          <span className="text-base">🌱</span> Einfach – perfekt für Anfänger
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="text-base">🌿</span> Mittel – etwas Erfahrung hilfreich
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="text-base">🌳</span> Schwer – für erfahrene Gärtner
+        </span>
       </div>
     </div>
   );
