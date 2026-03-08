@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import BlogPostCard from "./BlogPostCard";
@@ -59,14 +60,48 @@ const RelatedArticlesSection: React.FC<RelatedArticlesSectionProps> = ({ current
 
   if (isLoading || posts === undefined || posts.length === 0) return null;
 
+  const nextPost = posts[0];
+
   return (
     <section className="mt-16">
-      <h2 className="text-2xl font-serif font-bold mb-6 text-sage-900">Verwandte Artikel</h2>
-      <div className="grid md:grid-cols-3 gap-8">
-        {posts.map((post) => (
-          <BlogPostCard key={post.slug} post={post} />
-        ))}
-      </div>
+      {/* Prominent "Next Article" banner */}
+      <Link
+        to={`/blog/${nextPost.slug}`}
+        className="group block mb-10 rounded-2xl overflow-hidden border border-border bg-card hover:shadow-xl transition-all duration-300"
+      >
+        <div className="flex flex-col md:flex-row">
+          <div className="md:w-2/5 overflow-hidden">
+            <img
+              src={nextPost.featuredImage || "/placeholder.svg"}
+              alt={nextPost.title}
+              className="w-full h-48 md:h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              loading="lazy"
+            />
+          </div>
+          <div className="p-6 md:p-8 flex flex-col justify-center md:w-3/5">
+            <span className="text-xs uppercase tracking-wider text-primary font-semibold mb-2">Weiterlesen →</span>
+            <h3 className="text-xl md:text-2xl font-serif font-bold text-foreground group-hover:text-primary transition-colors mb-3">
+              {nextPost.title}
+            </h3>
+            <p className="text-muted-foreground text-sm line-clamp-2">{nextPost.excerpt || ""}</p>
+            <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{nextPost.category}</span> · <span>{nextPost.readingTime} min Lesezeit</span>
+            </div>
+          </div>
+        </div>
+      </Link>
+
+      {/* Remaining related articles */}
+      {posts.length > 1 && (
+        <>
+          <h2 className="text-2xl font-serif font-bold mb-6 text-foreground">Verwandte Artikel</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {posts.slice(1).map((post) => (
+              <BlogPostCard key={post.slug} post={post} />
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 };

@@ -13,6 +13,8 @@ import BlogPostShareSection from "@/components/blog/BlogPostShareSection";
 import CallToActionSection from "@/components/blog/CallToActionSection";
 import RelatedArticlesSection from "@/components/blog/RelatedArticlesSection";
 import BlogComments from "@/components/blog/BlogComments";
+import ReadingProgressBar from "@/components/ReadingProgressBar";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { useToast } from "@/hooks/use-toast";
 import { generateUniqueSlug } from "@/utils/slugHelpers";
 import { generateSEOTitle, generateSEODescription, generateKeywords, optimizeImageForSEO } from "@/utils/seoHelpers";
@@ -134,6 +136,12 @@ const BlogPost = () => {
         slug={post.slug}
       />
 
+      <ReadingProgressBar />
+      <Breadcrumbs items={[
+        { label: "Blog", href: "/blog" },
+        { label: post.category, href: `/blog?category=${encodeURIComponent(post.category)}` },
+        { label: post.title },
+      ]} />
       <div className="relative">
         <article ref={articleRef} className="max-w-4xl mx-auto px-4 py-8">
           {/* Blog Post Header */}

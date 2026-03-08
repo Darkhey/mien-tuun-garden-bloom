@@ -21,6 +21,20 @@ interface BlogPostCardProps {
   post: BlogPost;
 }
 
+const SEASON_TAGS: Record<string, string[]> = {
+  spring: ["frühling", "aussaat", "frühjahr"],
+  summer: ["sommer", "ernte", "grillen"],
+  autumn: ["herbst", "einkochen", "einmachen"],
+  winter: ["winter", "vorkultur", "planung"],
+};
+
+const isCurrentSeason = (tags: string[]): boolean => {
+  const month = new Date().getMonth();
+  const season = month <= 1 || month === 11 ? "winter" : month <= 4 ? "spring" : month <= 7 ? "summer" : "autumn";
+  const seasonTags = SEASON_TAGS[season] || [];
+  return tags.some(t => seasonTags.some(st => t.toLowerCase().includes(st)));
+};
+
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   const [imgError, setImgError] = useState(false);
   const [optimizedImageUrl, setOptimizedImageUrl] = useState<string>('');
@@ -109,8 +123,16 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
         )}
       </Link>
       <div className="p-6 flex-1 flex flex-col">
-        <div className="flex items-center gap-2 mb-3 text-sm">
+        <div className="flex items-center gap-2 mb-3 text-sm flex-wrap">
           <span className="garden-badge">{post.category}</span>
+          <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-medium">
+            {post.readingTime} min
+          </span>
+          {isCurrentSeason(post.tags) && (
+            <span className="bg-accent/20 text-accent-foreground px-2 py-0.5 rounded-full text-xs font-medium animate-pulse">
+              🌱 Jetzt aktuell
+            </span>
+          )}
           <span className="text-muted-foreground flex items-center gap-1 ml-auto text-xs">
             <Calendar className="h-3.5 w-3.5" /> {new Date(post.publishedAt).toLocaleDateString('de-DE')}
           </span>

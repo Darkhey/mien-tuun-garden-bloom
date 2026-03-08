@@ -4,9 +4,11 @@ import { siteConfig } from '@/config/site.config';
 import { Menu, X, Flower, Search, LogOut, Shield } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import AuthDialog from "@/components/AuthDialog";
+import SearchOverlay from "@/components/SearchOverlay";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
@@ -96,9 +98,14 @@ const Header: React.FC = () => {
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-sage-500 transition-all group-hover:w-full"></span>
               </Link>
             ))}
-            <button className="p-2 text-earth-700 hover:text-sage-600 transition-colors">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="p-2 text-earth-700 hover:text-sage-600 transition-colors"
+              aria-label="Suche öffnen (⌘K)"
+            >
               <Search className="h-5 w-5" />
             </button>
+            <SearchOverlay open={searchOpen} onOpenChange={setSearchOpen} />
             {/* Auth Links */}
             {!session?.user && (
               <AuthDialog>
