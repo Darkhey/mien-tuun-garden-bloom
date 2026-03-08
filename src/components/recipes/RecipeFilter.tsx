@@ -1,6 +1,6 @@
-
 import React from "react";
-import { Filter } from "lucide-react";
+import { Search, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface RecipeFilterProps {
   categories: string[];
@@ -15,6 +15,7 @@ interface RecipeFilterProps {
   searchTerm: string;
   setSearchTerm: (v: string) => void;
 }
+
 const RecipeFilter: React.FC<RecipeFilterProps> = ({
   categories,
   selectedCategory,
@@ -28,29 +29,29 @@ const RecipeFilter: React.FC<RecipeFilterProps> = ({
   searchTerm,
   setSearchTerm,
 }) => (
-  <>
+  <div className="space-y-6">
     {/* Search */}
-    <div className="max-w-md mx-auto relative mb-8">
-      <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-earth-400 h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.35-4.35"></path></svg>
-      <input
+    <div className="max-w-md mx-auto relative">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+      <Input
         type="text"
         placeholder="Rezepte durchsuchen..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full pl-10 pr-4 py-3 border border-sage-200 rounded-full focus:ring-2 focus:ring-sage-300 focus:border-transparent"
+        className="pl-10 rounded-full"
       />
     </div>
     {/* Filters */}
-    <div className="grid md:grid-cols-3 gap-6">
+    <div className="grid md:grid-cols-3 gap-4">
       <div>
-        <label className="block text-sm font-medium text-earth-700 mb-2">
-          <Filter className="h-4 w-4 inline mr-1" />
+        <label className="block text-sm font-medium text-foreground mb-1.5">
+          <Filter className="h-3.5 w-3.5 inline mr-1" />
           Kategorie
         </label>
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="w-full p-2 border border-sage-200 rounded-lg focus:ring-2 focus:ring-sage-300 focus:border-transparent"
+          className="w-full p-2.5 border border-border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
         >
           {categories.map((category) => (
             <option key={category} value={category}>{category}</option>
@@ -58,11 +59,11 @@ const RecipeFilter: React.FC<RecipeFilterProps> = ({
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-earth-700 mb-2">Saison</label>
+        <label className="block text-sm font-medium text-foreground mb-1.5">Saison</label>
         <select
           value={selectedSeason}
           onChange={(e) => setSelectedSeason(e.target.value)}
-          className="w-full p-2 border border-sage-200 rounded-lg focus:ring-2 focus:ring-sage-300 focus:border-transparent"
+          className="w-full p-2.5 border border-border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
         >
           {seasons.map((season) => (
             <option key={season} value={season}>
@@ -72,11 +73,11 @@ const RecipeFilter: React.FC<RecipeFilterProps> = ({
         </select>
       </div>
       <div>
-        <label className="block text-sm font-medium text-earth-700 mb-2">Schwierigkeit</label>
+        <label className="block text-sm font-medium text-foreground mb-1.5">Schwierigkeit</label>
         <select
           value={selectedDifficulty}
           onChange={(e) => setSelectedDifficulty(e.target.value)}
-          className="w-full p-2 border border-sage-200 rounded-lg focus:ring-2 focus:ring-sage-300 focus:border-transparent"
+          className="w-full p-2.5 border border-border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
         >
           {difficulties.map((difficulty) => (
             <option key={difficulty} value={difficulty}>
@@ -86,6 +87,7 @@ const RecipeFilter: React.FC<RecipeFilterProps> = ({
         </select>
       </div>
     </div>
-  </>
+  </div>
 );
+
 export default RecipeFilter;
