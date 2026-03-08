@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
 import BlogPostsView from '@/components/admin/views/BlogPostsView';
 import BlogTestingView from '@/components/admin/views/BlogTestingView';
 import KIBlogCreatorView from '@/components/admin/views/KIBlogCreatorView';
@@ -11,28 +9,44 @@ import ScheduledJobsView from '@/components/admin/views/ScheduledJobsView';
 import { AutomationMonitoringView } from '@/components/admin/views/AutomationMonitoringView';
 import AudioSidebarView from '@/components/admin/views/AudioSidebarView';
 import SowingCalendarManager from '@/components/admin/SowingCalendarManager';
+import AdminDashboardView from '@/components/admin/views/AdminDashboardView';
+import NewsletterView from '@/components/admin/views/NewsletterView';
+import SettingsView from '@/components/admin/views/SettingsView';
 import AdminLayout from '@/components/admin/AdminLayout';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 
 const AdminDashboard = () => {
-  const [activeView, setActiveView] = useState('blog-posts');
+  const [activeView, setActiveView] = useState('dashboard');
   const navigate = useNavigate();
+  const { isAdmin, isLoading } = useIsAdmin();
 
-  const { data: user } = useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      return user;
-    }
-  });
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Lade Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
-  }, [user, navigate]);
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <h1 className="text-2xl font-bold text-destructive">Zugriff verweigert</h1>
+          <p className="text-muted-foreground">Du hast keine Berechtigung für das Admin-Panel.</p>
+          <button onClick={() => navigate('/')} className="text-primary underline">Zurück zur Startseite</button>
+        </div>
+      </div>
+    );
+  }
 
   const renderContent = () => {
     switch (activeView) {
+      case 'dashboard':
+        return <AdminDashboardView />;
       case 'blog-posts':
         return <BlogPostsView />;
       case 'ki-blog-creator':
@@ -51,21 +65,14 @@ const AdminDashboard = () => {
         return <AudioSidebarView />;
       case 'sowing-calendar':
         return <SowingCalendarManager />;
+      case 'newsletter':
+        return <NewsletterView />;
+      case 'settings':
+        return <SettingsView />;
       default:
-        return <BlogPostsView />;
+        return <AdminDashboardView />;
     }
   };
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Lade Dashboard...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <AdminLayout activeView={activeView} onViewChange={setActiveView}>

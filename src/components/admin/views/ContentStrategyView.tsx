@@ -9,6 +9,7 @@ import { cronJobService } from "@/services/CronJobService";
 
 const ContentStrategyView: React.FC = () => {
   const [loading, setLoading] = useState(true);
+  const [successRate, setSuccessRate] = useState(0);
   const [systemStatus, setSystemStatus] = useState({
     contentStrategy: { active: false, lastRun: null, nextRun: null },
     cronJobs: { total: 0, active: 0, failed: 0 },
@@ -28,11 +29,15 @@ const ContentStrategyView: React.FC = () => {
         cronJobService.getScheduledTasks()
       ]);
 
+      const totalExecs = cronStats.lastExecutions.length;
+      const completedExecs = cronStats.lastExecutions.filter(e => e.status === 'completed').length;
+      setSuccessRate(totalExecs > 0 ? Math.round((completedExecs / totalExecs) * 100) : 0);
+
       setSystemStatus({
         contentStrategy: {
           active: cronStats.activeJobs > 0,
           lastRun: cronStats.lastExecutions[0]?.started_at || null,
-          nextRun: null // TODO: Calculate next run from cron expressions
+          nextRun: null
         },
         cronJobs: {
           total: cronStats.totalJobs,
@@ -121,7 +126,7 @@ const ContentStrategyView: React.FC = () => {
               <BarChart className="h-5 w-5 text-purple-600" />
               <div>
                 <p className="text-sm text-gray-600">Performance</p>
-                <p className="text-lg font-semibold">87%</p>
+                <p className="text-lg font-semibold">{successRate}%</p>
               </div>
             </div>
             <p className="text-xs text-gray-500">

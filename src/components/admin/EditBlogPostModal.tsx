@@ -166,6 +166,7 @@ const EditBlogPostModal: React.FC<EditBlogPostModalProps> = ({ post, onClose, on
       // Erweiterte Daten mit SEO-Informationen
       const updateData = {
         ...formData,
+        published: formData.status === 'veröffentlicht',
         // SEO-Daten hinzufügen wenn verfügbar
         ...(seoData && {
           seo_title: seoData.title,
