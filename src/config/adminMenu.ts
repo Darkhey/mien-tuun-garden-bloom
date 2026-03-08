@@ -111,12 +111,6 @@ export const adminMenuItems: AdminMenuItem[] = [
     path: '/admin/newsletter'
   },
   {
-    id: 'events',
-    title: 'Veranstaltungen',
-    icon: Calendar,
-    path: '/admin/events'
-  },
-  {
     id: 'settings',
     title: 'Einstellungen',
     icon: Settings,

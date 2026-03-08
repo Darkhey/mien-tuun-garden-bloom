@@ -29,11 +29,15 @@ const ContentStrategyView: React.FC = () => {
         cronJobService.getScheduledTasks()
       ]);
 
+      const totalExecs = cronStats.lastExecutions.length;
+      const completedExecs = cronStats.lastExecutions.filter(e => e.status === 'completed').length;
+      setSuccessRate(totalExecs > 0 ? Math.round((completedExecs / totalExecs) * 100) : 0);
+
       setSystemStatus({
         contentStrategy: {
           active: cronStats.activeJobs > 0,
           lastRun: cronStats.lastExecutions[0]?.started_at || null,
-          nextRun: null // TODO: Calculate next run from cron expressions
+          nextRun: null
         },
         cronJobs: {
           total: cronStats.totalJobs,

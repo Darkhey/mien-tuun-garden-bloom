@@ -1,10 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-interface AverageResult {
-  avg: number | null;
-}
-
 export interface AutomationDashboardStats {
   activeWorkflows: number;
   executionsToday: number;
@@ -29,13 +25,15 @@ class AdminStatsService {
   async getAverageBlogQualityScore(): Promise<number> {
     const { data, error } = await supabase
       .from('blog_posts')
-      .select('avg(quality_score)', { head: false })
-      .single<AverageResult>();
+      .select('quality_score')
+      .not('quality_score', 'is', null);
     if (error) {
       console.error('[AdminStats] blog quality score failed', error);
       return 0;
     }
-    return data?.avg ?? 0;
+    if (!data || data.length === 0) return 0;
+    const sum = data.reduce((acc, row) => acc + (row.quality_score || 0), 0);
+    return Math.round(sum / data.length);
   }
 
   async getTodayRecipeCount(): Promise<number> {
@@ -55,13 +53,14 @@ class AdminStatsService {
   async getAverageRecipeRating(): Promise<number> {
     const { data, error } = await supabase
       .from('recipe_ratings')
-      .select('avg(rating)', { head: false })
-      .single<AverageResult>();
+      .select('rating');
     if (error) {
       console.error('[AdminStats] recipe rating failed', error);
       return 0;
     }
-    return data?.avg ?? 0;
+    if (!data || data.length === 0) return 0;
+    const sum = data.reduce((acc, row) => acc + row.rating, 0);
+    return Math.round((sum / data.length) * 10) / 10;
   }
 
   async getTodaySecurityWarningCount(): Promise<number> {
@@ -91,8 +90,6 @@ class AdminStatsService {
     let activeWorkflows = 0;
     if (!pipelines.error && pipelines.data) {
       activeWorkflows = pipelines.data.filter(p => p.status === 'active').length;
-    } else {
-      console.error('[AdminStats] load pipelines failed', pipelines.error);
     }
 
     let executionsToday = 0;
@@ -103,11 +100,22 @@ class AdminStatsService {
       const total = execs.length;
       const completed = execs.filter(e => e.status === 'completed').length;
       successRate = total > 0 ? Math.round((completed / total) * 100) : 0;
-    } else {
-      console.error('[AdminStats] load executions failed', executions.error);
     }
 
     return { activeWorkflows, executionsToday, successRate };
+  }
+
+  async getNewsletterStats(): Promise<{ total: number; confirmed: number; unconfirmed: number }> {
+    const { data, error } = await supabase
+      .from('newsletter_subscribers')
+      .select('confirmed');
+    if (error) {
+      console.error('[AdminStats] newsletter stats failed', error);
+      return { total: 0, confirmed: 0, unconfirmed: 0 };
+    }
+    const total = data?.length || 0;
+    const confirmed = data?.filter(s => s.confirmed).length || 0;
+    return { total, confirmed, unconfirmed: total - confirmed };
   }
 }
 
