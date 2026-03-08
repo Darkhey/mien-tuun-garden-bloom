@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1453,7 +1453,7 @@ export type Database = {
           action: string
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_values: Json | null
           old_values: Json | null
           record_id: string | null
@@ -1465,7 +1465,7 @@ export type Database = {
           action: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -1477,7 +1477,7 @@ export type Database = {
           action?: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -1493,7 +1493,7 @@ export type Database = {
           details: Json | null
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           severity: string
           target_user_id: string | null
           user_agent: string | null
@@ -1504,7 +1504,7 @@ export type Database = {
           details?: Json | null
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           severity?: string
           target_user_id?: string | null
           user_agent?: string | null
@@ -1515,7 +1515,7 @@ export type Database = {
           details?: Json | null
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           severity?: string
           target_user_id?: string | null
           user_agent?: string | null
@@ -1613,31 +1613,22 @@ export type Database = {
         Args: { cron_expression: string }
         Returns: string
       }
-      check_invitation_code: {
-        Args: { code: string }
-        Returns: boolean
-      }
-      check_job_health: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      check_table_exists: {
-        Args: { p_table_name: string }
-        Returns: boolean
-      }
+      check_invitation_code: { Args: { code: string }; Returns: boolean }
+      check_job_health: { Args: never; Returns: Json }
+      check_table_exists: { Args: { p_table_name: string }; Returns: boolean }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
       log_security_event: {
         Args: {
-          _event_type: string
-          _target_user_id?: string
           _details?: Json
+          _event_type: string
           _severity?: string
+          _target_user_id?: string
         }
         Returns: string
       }
