@@ -32,7 +32,8 @@ const fetchBlogPosts = async () => {
 
 const BlogOverview: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const categoryParam = searchParams.get('category');
+  const { category: routeCategory } = useParams();
+  const categoryParam = routeCategory || searchParams.get('category');
 
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>('');
