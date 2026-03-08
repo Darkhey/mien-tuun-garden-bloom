@@ -140,14 +140,19 @@ const BlogPost = () => {
         slug={post.slug}
       />
 
-      <ReadingProgressBar />
+      <ReadingProgressBar estimatedTime={post.reading_time} />
       <Breadcrumbs items={[
         { label: "Blog", href: "/blog" },
-        { label: post.category, href: `/blog?category=${encodeURIComponent(post.category)}` },
+        { label: post.category, href: `/blog/kategorie/${encodeURIComponent(post.category)}` },
         { label: post.title },
       ]} />
-      <div className="relative">
-        <article ref={articleRef} className="max-w-4xl mx-auto px-4 py-8">
+      <div className="relative flex">
+        <FloatingShareBar 
+          url={`https://mien-tuun.de/blog/${post.slug}`} 
+          title={post.title} 
+          media={optimizedImage} 
+        />
+        <article ref={articleRef} className="max-w-4xl mx-auto px-4 py-8 flex-1">
           {/* Blog Post Header */}
           <header className="mb-8">
             <div className="mb-4">
