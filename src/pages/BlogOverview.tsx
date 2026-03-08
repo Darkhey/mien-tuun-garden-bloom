@@ -39,13 +39,22 @@ const BlogOverview: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [displayCount, setDisplayCount] = useState(12);
 
   // Setze Kategorie aus URL-Parameter
   useEffect(() => {
     if (categoryParam) {
-      setSelectedCategory(categoryParam);
+      // Dekodiere die URL, falls Umlaute drin sind
+      setSelectedCategory(decodeURIComponent(categoryParam));
+    } else {
+      setSelectedCategory('');
     }
   }, [categoryParam]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setDisplayCount(12);
+  }, [selectedCategory, selectedSeason, searchTerm]);
 
   const { data: blogRows = [], isLoading, error } = useQuery({
     queryKey: ["all-blog-posts"],
