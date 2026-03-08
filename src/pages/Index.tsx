@@ -19,13 +19,13 @@ const SuggestedPostsSection = React.lazy(() => import("@/components/landing/Sugg
 
 // Loading component for lazy sections
 const SectionSkeleton = () => (
-  <section className="py-16 px-4">
+  <section className="py-20 px-4">
     <div className="max-w-6xl mx-auto">
       <div className="animate-pulse">
-        <div className="h-8 bg-gray-200 rounded w-64 mx-auto mb-8"></div>
+        <div className="h-10 bg-muted rounded w-72 mx-auto mb-8"></div>
         <div className="grid md:grid-cols-3 gap-8">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-gray-200 rounded-2xl h-96"></div>
+            <div key={i} className="bg-muted rounded-2xl h-96"></div>
           ))}
         </div>
       </div>
