@@ -121,7 +121,7 @@ const ContentStrategyView: React.FC = () => {
               <BarChart className="h-5 w-5 text-purple-600" />
               <div>
                 <p className="text-sm text-gray-600">Performance</p>
-                <p className="text-lg font-semibold">87%</p>
+                <p className="text-lg font-semibold">{successRate}%</p>
               </div>
             </div>
             <p className="text-xs text-gray-500">
