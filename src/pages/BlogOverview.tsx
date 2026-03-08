@@ -146,14 +146,21 @@ const BlogOverview: React.FC = () => {
     return sorted;
   }, [filteredPosts, searchTerm]);
 
+  const displayedPosts = sortedPosts.slice(0, displayCount);
+  const hasMore = displayCount < sortedPosts.length;
+
+  const handleLoadMore = () => {
+    setDisplayCount(prev => prev + 12);
+  };
+
   return (
     <>
       <Helmet>
-        <title>Blog | Mien Tuun</title>
-        <meta name="description" content="Entdecke spannende Artikel rund um Gartenpflege, saisonale Rezepte, Nachhaltigkeit und DIY-Projekte. Lass dich inspirieren und erweitere dein Wissen!" />
-        <meta name="keywords" content="Blog, Gartenpflege, Rezepte, Nachhaltigkeit, DIY, Mien Tuun, Garten, Kochen, Selbermachen, Inspiration" />
-        <meta property="og:title" content="Blog | Mien Tuun" />
-        <meta property="og:description" content="Entdecke spannende Artikel rund um Gartenpflege, saisonale Rezepte, Nachhaltigkeit und DIY-Projekte. Lass dich inspirieren und erweitere dein Wissen!" />
+        <title>{routeCategory ? `${decodeURIComponent(routeCategory)} Artikel | Mien Tuun Blog` : 'Blog | Mien Tuun'}</title>
+        <meta name="description" content={routeCategory ? `Entdecke alle Artikel zum Thema ${decodeURIComponent(routeCategory)} auf Mien Tuun.` : 'Entdecke spannende Artikel rund um Gartenpflege, saisonale Rezepte, Nachhaltigkeit und DIY-Projekte. Lass dich inspirieren und erweitere dein Wissen!'} />
+        <meta name="keywords" content={`Blog, Gartenpflege, Rezepte, Nachhaltigkeit, DIY, Mien Tuun, Garten, Kochen, Selbermachen, Inspiration${routeCategory ? `, ${decodeURIComponent(routeCategory)}` : ''}`} />
+        <meta property="og:title" content={routeCategory ? `${decodeURIComponent(routeCategory)} Artikel | Mien Tuun Blog` : 'Blog | Mien Tuun'} />
+        <meta property="og:description" content={routeCategory ? `Entdecke alle Artikel zum Thema ${decodeURIComponent(routeCategory)} auf Mien Tuun.` : 'Entdecke spannende Artikel rund um Gartenpflege, saisonale Rezepte, Nachhaltigkeit und DIY-Projekte. Lass dich inspirieren und erweitere dein Wissen!'} />
       </Helmet>
       
       {/* Header */}
