@@ -16,6 +16,7 @@ const LatestPostsSection = React.lazy(() => import("@/components/landing/LatestP
 const LatestCommentsSection = React.lazy(() => import("@/components/landing/LatestCommentsSection"));
 const WeatherForecastSection = React.lazy(() => import("@/components/landing/WeatherForecastSection"));
 const SuggestedPostsSection = React.lazy(() => import("@/components/landing/SuggestedPostsSection"));
+const PopularPostsSection = React.lazy(() => import("@/components/landing/PopularPostsSection"));
 
 // Loading component for lazy sections
 const SectionSkeleton = () => (
