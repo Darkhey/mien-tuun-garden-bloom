@@ -21,6 +21,20 @@ interface BlogPostCardProps {
   post: BlogPost;
 }
 
+const SEASON_TAGS: Record<string, string[]> = {
+  spring: ["frühling", "aussaat", "frühjahr"],
+  summer: ["sommer", "ernte", "grillen"],
+  autumn: ["herbst", "einkochen", "einmachen"],
+  winter: ["winter", "vorkultur", "planung"],
+};
+
+const isCurrentSeason = (tags: string[]): boolean => {
+  const month = new Date().getMonth();
+  const season = month <= 1 || month === 11 ? "winter" : month <= 4 ? "spring" : month <= 7 ? "summer" : "autumn";
+  const seasonTags = SEASON_TAGS[season] || [];
+  return tags.some(t => seasonTags.some(st => t.toLowerCase().includes(st)));
+};
+
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   const [imgError, setImgError] = useState(false);
   const [optimizedImageUrl, setOptimizedImageUrl] = useState<string>('');
