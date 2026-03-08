@@ -203,6 +203,40 @@ const BlogPost = () => {
         </article>
         <BlogPostNavigationSidebar headings={headings} />
       </div>
+
+      {isMobile && headings.length > 0 && (
+        <Sheet>
+          <SheetTrigger asChild>
+            <button 
+              className="fixed bottom-4 right-4 z-40 bg-primary text-white p-3 rounded-full shadow-lg hover:bg-primary-hover transition-colors"
+              aria-label="Inhaltsverzeichnis öffnen"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[70vh] rounded-t-2xl pt-8 pb-4 px-4 overflow-hidden flex flex-col">
+            <div className="font-serif font-bold text-xl text-earth-800 mb-4 px-2">Inhalt</div>
+            <div className="overflow-y-auto flex-1 pb-8 px-2 space-y-3">
+              {headings.map((heading) => (
+                <button
+                  key={heading.id}
+                  className={`block w-full text-left text-sm transition-colors hover:text-primary ${
+                    heading.level === 2 ? "font-medium text-earth-800" : "pl-4 text-earth-600"
+                  }`}
+                  onClick={() => {
+                    const el = document.getElementById(heading.id);
+                    if (el) {
+                      el.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }}
+                >
+                  {heading.text}
+                </button>
+              ))}
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </>
   );
 };
