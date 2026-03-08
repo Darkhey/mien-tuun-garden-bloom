@@ -74,14 +74,32 @@ const BlogPostContent: React.FC<BlogPostContentProps> = ({ content }) => (
             {...props}
           />
         ),
-        img: ({ node, src, alt, ...props }) => (
-          <img
-            src={src}
-            alt={alt || "Blog image"}
-            className="rounded-lg shadow-md my-6 max-w-full h-auto"
-            {...props}
-          />
-        ),
+        img: ({ node, src, alt, ...props }) => {
+          // Special syntax parser for affiliate cards: alt="AFFILIATE:Title|Price|Link"
+          if (alt?.startsWith('AFFILIATE:')) {
+            const [, data] = alt.split('AFFILIATE:');
+            const [title, price, link, provider] = data.split('|');
+            return (
+              <AffiliateProductCard
+                title={title || "Produkt"}
+                description={""}
+                price={price}
+                link={link || "#"}
+                imageUrl={src || ""}
+                provider={provider}
+              />
+            );
+          }
+          return (
+            <img
+              src={src}
+              alt={alt || "Blog image"}
+              loading="lazy"
+              className="rounded-lg shadow-md my-6 max-w-full h-auto bg-sage-50 object-cover"
+              {...props}
+            />
+          );
+        },
       }}
     >
       {content}

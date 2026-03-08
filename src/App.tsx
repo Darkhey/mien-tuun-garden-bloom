@@ -52,6 +52,7 @@ function App() {
                 <Route path="/rezept/:slug" element={<LazyRoute><RecipeDetail /></LazyRoute>} />
                 <Route path="/rezepte/:slug" element={<LazyRoute><RecipeDetail /></LazyRoute>} />
                 <Route path="/blog" element={<LazyRoute><BlogOverview /></LazyRoute>} />
+                <Route path="/blog/kategorie/:category" element={<LazyRoute><BlogOverview /></LazyRoute>} />
                 <Route path="/blog/:slug" element={<LazyRoute><BlogPost /></LazyRoute>} />
                 <Route path="/ueber-uns" element={<LazyRoute><About /></LazyRoute>} />
                 <Route path="/kontakt" element={<LazyRoute><ContactPage /></LazyRoute>} />

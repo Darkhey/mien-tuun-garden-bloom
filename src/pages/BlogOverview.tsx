@@ -226,6 +226,20 @@ const BlogOverview: React.FC = () => {
                 };
                 return <BlogPostCard post={mappedPost} key={post.id} />;
               })}
+              </div>
+              
+              {hasMore && (
+                <div className="flex justify-center pt-8">
+                  <Button 
+                    onClick={handleLoadMore} 
+                    variant="outline" 
+                    size="lg"
+                    className="border-sage-300 text-sage-700 hover:bg-sage-50 font-medium px-8"
+                  >
+                    Mehr Artikel laden
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-12">
