@@ -7,9 +7,10 @@ import SimpleBlogFilter from "@/components/blog/SimpleBlogFilter";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from '@/integrations/supabase/types';
 import type { BlogPost } from '@/types/content';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useParams } from 'react-router-dom';
 import { assignSmartCategory, assignSmartSeason } from '@/utils/smartCategoryMapping';
 import { extractTagsFromText } from '@/utils/tagExtractor';
+import { Button } from "@/components/ui/button";
 
 // Blog-Posts aus Supabase laden
 const fetchBlogPosts = async () => {
@@ -31,19 +32,29 @@ const fetchBlogPosts = async () => {
 
 const BlogOverview: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const categoryParam = searchParams.get('category');
+  const { category: routeCategory } = useParams();
+  const categoryParam = routeCategory || searchParams.get('category');
 
   // Filter States
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSeason, setSelectedSeason] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [displayCount, setDisplayCount] = useState(12);
 
   // Setze Kategorie aus URL-Parameter
   useEffect(() => {
     if (categoryParam) {
-      setSelectedCategory(categoryParam);
+      // Dekodiere die URL, falls Umlaute drin sind
+      setSelectedCategory(decodeURIComponent(categoryParam));
+    } else {
+      setSelectedCategory('');
     }
   }, [categoryParam]);
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setDisplayCount(12);
+  }, [selectedCategory, selectedSeason, searchTerm]);
 
   const { data: blogRows = [], isLoading, error } = useQuery({
     queryKey: ["all-blog-posts"],
@@ -135,14 +146,21 @@ const BlogOverview: React.FC = () => {
     return sorted;
   }, [filteredPosts, searchTerm]);
 
+  const displayedPosts = sortedPosts.slice(0, displayCount);
+  const hasMore = displayCount < sortedPosts.length;
+
+  const handleLoadMore = () => {
+    setDisplayCount(prev => prev + 12);
+  };
+
   return (
     <>
       <Helmet>
-        <title>Blog | Mien Tuun</title>
-        <meta name="description" content="Entdecke spannende Artikel rund um Gartenpflege, saisonale Rezepte, Nachhaltigkeit und DIY-Projekte. Lass dich inspirieren und erweitere dein Wissen!" />
-        <meta name="keywords" content="Blog, Gartenpflege, Rezepte, Nachhaltigkeit, DIY, Mien Tuun, Garten, Kochen, Selbermachen, Inspiration" />
-        <meta property="og:title" content="Blog | Mien Tuun" />
-        <meta property="og:description" content="Entdecke spannende Artikel rund um Gartenpflege, saisonale Rezepte, Nachhaltigkeit und DIY-Projekte. Lass dich inspirieren und erweitere dein Wissen!" />
+        <title>{routeCategory ? `${decodeURIComponent(routeCategory)} Artikel | Mien Tuun Blog` : 'Blog | Mien Tuun'}</title>
+        <meta name="description" content={routeCategory ? `Entdecke alle Artikel zum Thema ${decodeURIComponent(routeCategory)} auf Mien Tuun.` : 'Entdecke spannende Artikel rund um Gartenpflege, saisonale Rezepte, Nachhaltigkeit und DIY-Projekte. Lass dich inspirieren und erweitere dein Wissen!'} />
+        <meta name="keywords" content={`Blog, Gartenpflege, Rezepte, Nachhaltigkeit, DIY, Mien Tuun, Garten, Kochen, Selbermachen, Inspiration${routeCategory ? `, ${decodeURIComponent(routeCategory)}` : ''}`} />
+        <meta property="og:title" content={routeCategory ? `${decodeURIComponent(routeCategory)} Artikel | Mien Tuun Blog` : 'Blog | Mien Tuun'} />
+        <meta property="og:description" content={routeCategory ? `Entdecke alle Artikel zum Thema ${decodeURIComponent(routeCategory)} auf Mien Tuun.` : 'Entdecke spannende Artikel rund um Gartenpflege, saisonale Rezepte, Nachhaltigkeit und DIY-Projekte. Lass dich inspirieren und erweitere dein Wissen!'} />
       </Helmet>
       
       {/* Header */}
@@ -175,10 +193,11 @@ const BlogOverview: React.FC = () => {
             <div className="text-center py-12 text-earth-500">Lade Artikel...</div>
           ) : error ? (
             <div className="text-center py-12 text-red-500">Fehler beim Laden der Artikel.</div>
-          ) : sortedPosts.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {sortedPosts.map((post) => {
-                const mappedPost: BlogPost = {
+          ) : displayedPosts.length > 0 ? (
+            <div className="space-y-12">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {displayedPosts.map((post) => {
+                  const mappedPost: BlogPost = {
                   id: post.id,
                   slug: post.slug,
                   title: post.title,
@@ -207,6 +226,20 @@ const BlogOverview: React.FC = () => {
                 };
                 return <BlogPostCard post={mappedPost} key={post.id} />;
               })}
+              </div>
+              
+              {hasMore && (
+                <div className="flex justify-center pt-8">
+                  <Button 
+                    onClick={handleLoadMore} 
+                    variant="outline" 
+                    size="lg"
+                    className="border-sage-300 text-sage-700 hover:bg-sage-50 font-medium px-8"
+                  >
+                    Mehr Artikel laden
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-12">

@@ -19,12 +19,16 @@ import { useToast } from "@/hooks/use-toast";
 import { generateUniqueSlug } from "@/utils/slugHelpers";
 import { generateSEOTitle, generateSEODescription, generateKeywords, optimizeImageForSEO } from "@/utils/seoHelpers";
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor";
-import { Calendar, User, Tag } from "lucide-react";
+import { Calendar, User, Tag, Menu } from "lucide-react";
+import { FloatingShareBar } from "@/components/blog/FloatingShareBar";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   usePerformanceMonitor('BlogPost', process.env.NODE_ENV === 'development');
 
@@ -136,14 +140,19 @@ const BlogPost = () => {
         slug={post.slug}
       />
 
-      <ReadingProgressBar />
+      <ReadingProgressBar estimatedTime={post.reading_time} />
       <Breadcrumbs items={[
         { label: "Blog", href: "/blog" },
-        { label: post.category, href: `/blog?category=${encodeURIComponent(post.category)}` },
+        { label: post.category, href: `/blog/kategorie/${encodeURIComponent(post.category)}` },
         { label: post.title },
       ]} />
-      <div className="relative">
-        <article ref={articleRef} className="max-w-4xl mx-auto px-4 py-8">
+      <div className="relative flex">
+        <FloatingShareBar 
+          url={`https://mien-tuun.de/blog/${post.slug}`} 
+          title={post.title} 
+          media={optimizedImage} 
+        />
+        <article ref={articleRef} className="max-w-4xl mx-auto px-4 py-8 flex-1">
           {/* Blog Post Header */}
           <header className="mb-8">
             <div className="mb-4">
@@ -194,6 +203,40 @@ const BlogPost = () => {
         </article>
         <BlogPostNavigationSidebar headings={headings} />
       </div>
+
+      {isMobile && headings.length > 0 && (
+        <Sheet>
+          <SheetTrigger asChild>
+            <button 
+              className="fixed bottom-4 right-4 z-40 bg-primary text-white p-3 rounded-full shadow-lg hover:bg-primary-hover transition-colors"
+              aria-label="Inhaltsverzeichnis öffnen"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[70vh] rounded-t-2xl pt-8 pb-4 px-4 overflow-hidden flex flex-col">
+            <div className="font-serif font-bold text-xl text-earth-800 mb-4 px-2">Inhalt</div>
+            <div className="overflow-y-auto flex-1 pb-8 px-2 space-y-3">
+              {headings.map((heading) => (
+                <button
+                  key={heading.id}
+                  className={`block w-full text-left text-sm transition-colors hover:text-primary ${
+                    heading.level === 2 ? "font-medium text-earth-800" : "pl-4 text-earth-600"
+                  }`}
+                  onClick={() => {
+                    const el = document.getElementById(heading.id);
+                    if (el) {
+                      el.scrollIntoView({ behavior: "smooth" });
+                    }
+                  }}
+                >
+                  {heading.text}
+                </button>
+              ))}
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </>
   );
 };
