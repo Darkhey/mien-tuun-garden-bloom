@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.auto-blog-post]
 verify_jwt = false
+
+[functions.daily-content-pipeline]
+verify_jwt = false
+
+[functions.content-automation-executor]
+verify_jwt = false
