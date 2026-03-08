@@ -7,9 +7,10 @@ import SimpleBlogFilter from "@/components/blog/SimpleBlogFilter";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from '@/integrations/supabase/types';
 import type { BlogPost } from '@/types/content';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useParams } from 'react-router-dom';
 import { assignSmartCategory, assignSmartSeason } from '@/utils/smartCategoryMapping';
 import { extractTagsFromText } from '@/utils/tagExtractor';
+import { Button } from "@/components/ui/button";
 
 // Blog-Posts aus Supabase laden
 const fetchBlogPosts = async () => {
