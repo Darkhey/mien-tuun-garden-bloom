@@ -1,42 +1,41 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
 const seasonalTips = [
-  "🌱 Jetzt aussäen: Radieschen und Spinat vertragen noch Kälte - mein Geheimtipp für frühe Ernte!",
-  "🌸 Rosen schneiden: In Ostfriesland warte ich bis nach den Eisheiligen - sicher ist sicher!",
-  "🍓 Erdbeer-Zeit: Stroh unterlegen gegen Schnecken und für saubere Früchte - alte Gärtnerweisheit!",
-  "🌿 Wildkräuter sammeln: Giersch und Brennnessel sind jetzt perfekt für grüne Smoothies",
-  "🦋 Blumenwiese anlegen: Kornblumen und Mohn - so wird dein Garten zum Paradies für Insekten"
+  { emoji: "🌱", text: "Jetzt aussäen: Radieschen und Spinat vertragen noch Kälte – mein Geheimtipp für frühe Ernte!" },
+  { emoji: "🌸", text: "Rosen schneiden: In Ostfriesland warte ich bis nach den Eisheiligen – sicher ist sicher!" },
+  { emoji: "🍓", text: "Erdbeer-Zeit: Stroh unterlegen gegen Schnecken und für saubere Früchte." },
+  { emoji: "🌿", text: "Wildkräuter sammeln: Giersch und Brennnessel sind perfekt für grüne Smoothies." },
+  { emoji: "🦋", text: "Blumenwiese anlegen: Kornblumen und Mohn – ein Paradies für Insekten!" }
 ];
 
 const SeasonalTipsSection: React.FC = () => {
   return (
-    <section className="py-16 px-4 bg-white">
+    <section className="py-20 px-4 bg-background">
       <div className="max-w-5xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-serif font-bold text-earth-800 mb-3 text-center">
+        <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-3 text-center">
           Mariannes aktuelle Gartentipps
         </h2>
-        <p className="text-center text-sage-700 mb-8">
-          Frisch aus meinem Garten in Ostfriesland - das mache ich gerade:
+        <p className="text-center text-muted-foreground mb-10 text-lg">
+          Frisch aus meinem Garten – das mache ich gerade:
         </p>
-        <ul className="grid md:grid-cols-2 gap-6">
+        <ul className="grid md:grid-cols-2 gap-5">
           {seasonalTips.map((tip, idx) => (
             <li
               key={idx}
-              className="bg-sage-50 border border-sage-100 rounded-xl p-6 flex items-start gap-4 shadow-sm animate-fade-in"
-              style={{ animationDelay: `${0.05 * idx}s` }}
+              className="garden-card p-6 flex items-start gap-4 animate-fade-in"
+              style={{ animationDelay: `${0.08 * idx}s` }}
             >
-              <span className="text-2xl">{tip.match(/^[^\w\s]+/)?.[0] || "🌿"}</span>
-              <span className="text-earth-700 font-medium">{tip.replace(/^[^\w\s]+/, "")}</span>
+              <span className="text-2xl flex-shrink-0 mt-0.5">{tip.emoji}</span>
+              <span className="text-foreground/80 font-medium leading-relaxed">{tip.text}</span>
             </li>
           ))}
         </ul>
-        <div className="text-center mt-10">
+        <div className="text-center mt-12">
           <Link
             to="/blog"
-            className="inline-flex items-center bg-accent-600 text-white px-8 py-4 rounded-full font-medium hover:bg-accent-700 transition-all duration-200 shadow hover:scale-105"
+            className="inline-flex items-center bg-accent text-accent-foreground px-8 py-4 rounded-full font-semibold hover:opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.03]"
           >
             Alle Gartentipps im Blog <ArrowRight className="ml-3 h-5 w-5" />
           </Link>
