@@ -1,190 +1,294 @@
 import React, { useEffect } from "react";
-import { ArrowRight, Instagram, Calendar, User } from "lucide-react";
+import { ArrowRight, Instagram, Sprout, BookOpen, UtensilsCrossed, Leaf } from "lucide-react";
 import { Link } from 'react-router-dom';
 import NewsletterSignup from "@/components/NewsletterSignup";
 import { siteConfig } from '@/config/site.config';
-import LatestPostsSection from "@/components/landing/LatestPostsSection";
+import MobilePostsCarousel from "@/components/landing/MobilePostsCarousel";
+import MobileWeatherWidget from "@/components/landing/MobileWeatherWidget";
 import LatestCommentsSection from "@/components/landing/LatestCommentsSection";
-import WeatherForecastSection from "@/components/landing/WeatherForecastSection";
-import SuggestedPostsSection from "@/components/landing/SuggestedPostsSection";
 import { useQueryClient } from '@tanstack/react-query';
-import { fetchLatestPosts, fetchLatestComments, fetchRainForecast } from '@/queries/content';
+import { fetchLatestPosts, fetchLatestComments } from '@/queries/content';
+import { motion } from 'framer-motion';
+import marianneImg from '@/assets/marianne-portrait.jpg';
 
-const mariannePortrait =
-  'https://images.unsplash.com/photo-1594736797933-d0401ba4e7ba?auto=format&fit=crop&w=400&q=80';
 const mainHeroImage = "/lovable-uploads/74b7922c-0eef-4cb4-9f0f-f21774dc9768.png";
 
-const seasonTips = [
-  "🌱 Jetzt aussäen: Radieschen und Spinat vertragen noch Kälte - mein Geheimtipp für frühe Ernte!",
-  "🌸 Rosen schneiden: In Ostfriesland warte ich bis nach den Eisheiligen - sicher ist sicher!",
-  "🍓 Erdbeer-Zeit: Stroh unterlegen gegen Schnecken und für saubere Früchte - alte Gärtnerweisheit!",
-  "🌿 Wildkräuter sammeln: Giersch und Brennnessel sind jetzt perfekt für grüne Smoothies",
-  "🦋 Blumenwiese anlegen: Kornblumen und Mohn - so wird dein Garten zum Paradies für Insekten"
+// Dynamic seasonal tips by month
+const MONTHLY_TIPS: Record<number, { emoji: string; text: string }[]> = {
+  0: [
+    { emoji: "🌱", text: "Saatgut bestellen und Anzuchtpläne machen" },
+    { emoji: "🪵", text: "Gartengeräte pflegen und schärfen" },
+    { emoji: "📖", text: "Gartenbücher lesen und inspirieren lassen" },
+  ],
+  1: [
+    { emoji: "🌱", text: "Erste Aussaaten auf der Fensterbank: Paprika, Chili" },
+    { emoji: "🪴", text: "Zimmerpflanzen umtopfen – jetzt ideal" },
+    { emoji: "🐦", text: "Nistkästen aufhängen für die Brutsaison" },
+  ],
+  2: [
+    { emoji: "🌱", text: "Tomaten und Kohlrabi vorziehen" },
+    { emoji: "✂️", text: "Rosen und Obstbäume zurückschneiden" },
+    { emoji: "🥬", text: "Frühbeet mit Salat und Radieschen bestücken" },
+  ],
+  3: [
+    { emoji: "🌷", text: "Dahlien und Gladiolen pflanzen" },
+    { emoji: "🥕", text: "Möhren, Erbsen und Spinat direkt säen" },
+    { emoji: "🐝", text: "Bienenfreundliche Blumen aussäen" },
+  ],
+  4: [
+    { emoji: "🍅", text: "Nach den Eisheiligen: Tomaten raus!" },
+    { emoji: "🌿", text: "Kräuter ins Beet oder den Balkonkasten" },
+    { emoji: "🦋", text: "Blumenwiese anlegen für Insekten" },
+  ],
+  5: [
+    { emoji: "🍓", text: "Erdbeeren ernten – Stroh unterlegen!" },
+    { emoji: "🌹", text: "Rosen regelmäßig auf Blattläuse prüfen" },
+    { emoji: "💧", text: "Morgens gießen, Mulch gegen Verdunstung" },
+  ],
+  6: [
+    { emoji: "🥒", text: "Zucchini und Gurken ernten" },
+    { emoji: "🌻", text: "Sonnenblumen stützen bei Wind" },
+    { emoji: "🫗", text: "Regelmäßig und durchdringend wässern" },
+  ],
+  7: [
+    { emoji: "🍅", text: "Tomaten ausgeizen und hochbinden" },
+    { emoji: "🫐", text: "Beeren ernten und einfrieren" },
+    { emoji: "🥬", text: "Herbstgemüse aussäen: Feldsalat, Spinat" },
+  ],
+  8: [
+    { emoji: "🍎", text: "Äpfel und Birnen ernten" },
+    { emoji: "🌱", text: "Gründüngung auf leere Beete säen" },
+    { emoji: "🧅", text: "Zwiebeln für Frühjahrsblüher stecken" },
+  ],
+  9: [
+    { emoji: "🍂", text: "Laub sammeln – perfekt als Mulch" },
+    { emoji: "🥀", text: "Dahlien vor dem Frost ausgraben" },
+    { emoji: "🏡", text: "Garten winterfest machen" },
+  ],
+  10: [
+    { emoji: "🌳", text: "Obstbäume pflanzen – ideale Zeit!" },
+    { emoji: "🦔", text: "Igel-Quartiere aus Laub und Reisig" },
+    { emoji: "🧹", text: "Beete aufräumen und mulchen" },
+  ],
+  11: [
+    { emoji: "📋", text: "Gartenjahr reflektieren und planen" },
+    { emoji: "🎄", text: "Winterdeko mit Naturmaterialien" },
+    { emoji: "🌱", text: "Keimsprossen auf der Fensterbank ziehen" },
+  ],
+};
+
+const quickLinks = [
+  { to: "/blog", label: "Blog", icon: BookOpen },
+  { to: "/rezepte", label: "Rezepte", icon: UtensilsCrossed },
+  { to: "/aussaatkalender", label: "Aussaat", icon: Sprout },
+  { to: "/about", label: "Über mich", icon: Leaf },
 ];
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" },
+  }),
+};
 
 const MobileLandingPage = () => {
   const queryClient = useQueryClient();
+  const currentMonth = new Date().getMonth();
+  const seasonalTips = MONTHLY_TIPS[currentMonth] || MONTHLY_TIPS[0];
 
   useEffect(() => {
-    queryClient.prefetchQuery({ queryKey: ['rain-forecast'], queryFn: fetchRainForecast }).catch(console.warn);
     queryClient.prefetchQuery({ queryKey: ['latest-posts'], queryFn: fetchLatestPosts }).catch(console.warn);
     queryClient.prefetchQuery({ queryKey: ['latest-comments'], queryFn: fetchLatestComments }).catch(console.warn);
   }, [queryClient]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-sage-50">
-      {/* HERO */}
-      <section className="pt-8 px-4 text-center flex flex-col gap-4">
-        <div className="flex items-center justify-center mb-2">
-          <img
-            src={mariannePortrait}
-            alt="Marianne, Gärtnerin aus Ostfriesland"
-            className="w-12 h-12 rounded-full border-2 border-sage-200 shadow-lg"
-          />
-        </div>
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* IMMERSIVE HERO */}
+      <section className="relative h-[70vh] min-h-[480px] overflow-hidden">
         <img
           src={mainHeroImage}
-          alt="Mariannes idyllischer Garten in Ostfriesland mit Teeservice und altem Reetdachhaus"
-          className="w-full max-w-[360px] aspect-[4/3] rounded-2xl shadow-lg mx-auto object-cover border-2 border-sage-100"
+          alt="Mariannes idyllischer Garten in Ostfriesland"
+          className="absolute inset-0 w-full h-full object-cover"
         />
-        <h1 className="text-2xl font-bold font-serif text-earth-800">
-          Moin! Ich bin Marianne<br />aus Ostfriesland.
-        </h1>
-        <p className="text-base text-sage-700">
-          Seit über 20 Jahren gärtnere ich hier an der Nordseeküste und teile meine Erfahrungen mit allen, die naturnah leben möchten.
-        </p>
-        
-        {/* Newsletter Signup */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-sage-100 mt-2">
-          <h3 className="text-base font-semibold text-earth-800 mb-2">
-            🌱 Hol dir meine besten Gartentipps!
-          </h3>
-          <p className="text-sage-600 mb-3 text-sm">
-            Jeden Monat die passenden Tipps zur Saison - kostenlos.
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/30 to-transparent" />
+
+        <div className="absolute bottom-0 left-0 right-0 p-5 pb-6 space-y-3">
+          <div className="flex items-center gap-3">
+            <img
+              src={marianneImg}
+              alt="Marianne"
+              className="w-11 h-11 rounded-full ring-2 ring-primary/30 object-cover"
+            />
+            <div>
+              <p className="text-xs font-medium text-foreground/70">Garten-Blog aus Ostfriesland</p>
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold leading-tight text-foreground tracking-tight">
+            Moin! Willkommen in
+            <span className="garden-gradient-text block">Mariannes Garten</span>
+          </h1>
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
+            Seit über 20 Jahren gärtnere ich an der Nordseeküste und teile erprobte Tipps für naturnah leben.
           </p>
-          <NewsletterSignup />
-          <p className="text-xs text-sage-500 mt-2">
-            ✨ Schließ dich meiner wachsenden Garten-Gemeinschaft an!
-          </p>
+          <Link
+            to="/blog"
+            className="inline-flex items-center px-5 py-2.5 rounded-full font-semibold text-sm shadow-lg bg-primary text-primary-foreground hover:scale-[1.03] transition-all"
+          >
+            <Sprout className="w-4 h-4 mr-2" />
+            Gartentipps entdecken
+            <ArrowRight className="w-3.5 h-3.5 ml-2" />
+          </Link>
         </div>
       </section>
 
-      {/* Call-To-Action Buttons */}
-      <div className="flex flex-col gap-3 mt-4 px-4">
-        <a
-          href={siteConfig.social.instagram}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex justify-center items-center bg-gradient-to-r from-pink-400 via-red-400 to-yellow-400 text-white py-3 rounded-full font-medium text-base shadow hover:scale-105 transition"
-        >
-          <Instagram className="w-5 h-5 mr-2" />
-          Folge mir auf Instagram
-        </a>
-        <Link
-          to="/blog"
-          className="inline-flex justify-center items-center bg-sage-600 text-white py-3 rounded-full font-medium text-base shadow hover:bg-sage-700 transition"
-        >
-          Gartentipps entdecken
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Link>
-      </div>
+      {/* QUICK LINKS */}
+      <nav className="flex gap-2 px-4 py-4 overflow-x-auto scrollbar-hide">
+        {quickLinks.map(({ to, label, icon: Icon }) => (
+          <Link
+            key={to}
+            to={to}
+            className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium border border-border bg-card text-foreground hover:bg-primary/5 transition-colors"
+          >
+            <Icon className="w-3.5 h-3.5 text-primary" />
+            {label}
+          </Link>
+        ))}
+      </nav>
 
-      <WeatherForecastSection />
-      <SuggestedPostsSection />
-      <LatestPostsSection />
-      <LatestCommentsSection />
+      {/* COMPACT WEATHER */}
+      <MobileWeatherWidget />
 
+      {/* BLOG CAROUSEL */}
+      <MobilePostsCarousel />
 
-      {/* Saisonale Highlights */}
-      <section className="mt-8 px-4">
-        <h2 className="text-lg font-semibold text-earth-700 mb-3">Mariannes aktuelle Gartentipps</h2>
-        <p className="text-sm text-sage-700 mb-4 text-center">
-          Frisch aus meinem Garten in Ostfriesland - das mache ich gerade:
-        </p>
-        <ul className="flex flex-col gap-3">
-          {seasonTips.map((tip, idx) => (
-            <li
+      {/* SEASONAL TIPS – horizontal swipe */}
+      <motion.section
+        className="py-6 bg-secondary/30"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+      >
+        <div className="px-4 mb-3">
+          <h2 className="text-lg font-bold text-foreground">Gartentipps im {new Date().toLocaleDateString('de-DE', { month: 'long' })}</h2>
+        </div>
+        <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory px-4 pb-2 scrollbar-hide">
+          {seasonalTips.map((tip, idx) => (
+            <motion.div
               key={idx}
-              className="bg-white border border-sage-100 rounded-xl p-4 text-sage-800 text-sm shadow animate-fade-in flex items-start gap-3"
+              custom={idx}
+              variants={fadeUp}
+              className="flex-shrink-0 w-[70vw] max-w-[260px] snap-start bg-card rounded-xl p-4 border border-border"
+              style={{ boxShadow: 'var(--shadow-card)' }}
             >
-              <span className="text-xl">{tip.match(/^[^\w\s]+/)?.[0] || "🌿"}</span>
-              <span className="text-earth-700 font-medium">{tip.replace(/^[^\w\s]+/, "")}</span>
-            </li>
+              <span className="text-2xl block mb-2">{tip.emoji}</span>
+              <p className="text-sm text-foreground/80 font-medium leading-relaxed">{tip.text}</p>
+            </motion.div>
           ))}
-        </ul>
-      </section>
+        </div>
+      </motion.section>
 
-      {/* Recipe Spotlight */}
-      <section className="mt-8 px-4">
-        <h2 className="text-lg font-semibold text-earth-700 mb-3">Mariannes Küchentipp</h2>
-        <div className="bg-gradient-to-r from-accent-50 to-sage-50 rounded-xl p-4">
-          <h3 className="text-xl font-serif font-bold text-earth-800 mb-2">
+      {/* RECIPE SPOTLIGHT */}
+      <motion.section
+        className="py-6 px-4"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+      >
+        <h2 className="text-lg font-bold text-foreground mb-3">Mariannes Küchentipp</h2>
+        <div className="bg-card rounded-xl p-4 border border-border" style={{ boxShadow: 'var(--shadow-card)' }}>
+          <h3 className="text-xl font-serif font-bold text-foreground mb-2">
             Ostfriesischer Kräuterquark
           </h3>
-          <p className="text-earth-600 mb-4 text-sm">
-            Mit allem, was der Garten hergibt: Schnittlauch, Petersilie, Dill und ein Hauch Liebstöckel. 
-            Dazu frisches Bauernbrot - so schmeckt der Sommer bei uns!
+          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+            Mit Schnittlauch, Petersilie, Dill und Liebstöckel – dazu frisches Bauernbrot.
           </p>
-          <div className="flex flex-wrap gap-4 mb-4 text-xs">
-            <div className="flex items-center text-earth-600">
-              <Calendar className="h-3 w-3 mr-1" />
-              15 Min
-            </div>
-            <div className="flex items-center text-earth-600">
-              <User className="h-3 w-3 mr-1" />
-              4 Portionen
-            </div>
-            <div className="px-2 py-1 bg-sage-100 text-sage-700 rounded-full text-xs font-medium">
-              kinderleicht
-            </div>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+            <span>⏱ 15 Min</span>
+            <span>👤 4 Portionen</span>
+            <span className="px-2 py-0.5 bg-secondary text-secondary-foreground rounded-full font-medium">kinderleicht</span>
           </div>
           <Link
             to="/rezepte"
-            className="inline-flex items-center bg-earth-600 text-white px-4 py-2 rounded-full font-medium text-sm hover:bg-earth-700 transition-colors"
+            className="inline-flex items-center bg-accent text-accent-foreground px-4 py-2 rounded-full font-medium text-sm hover:opacity-90 transition"
           >
-            Mariannes Rezepte entdecken
+            Rezepte entdecken
             <ArrowRight className="ml-2 h-3 w-3" />
           </Link>
         </div>
-      </section>
+      </motion.section>
 
-      {/* About Marianne */}
-      <section className="mt-8 px-4">
-        <h2 className="text-lg font-semibold text-earth-700 mb-3">Über mich</h2>
-        <div className="bg-white rounded-xl p-4 border border-sage-100 shadow-sm">
-          <p className="text-sage-700 mb-3 text-sm">
-            Hier in Ostfriesland, wo der Wind mal rau werden kann und die Böden ihre eigenen Launen haben, 
-            gärtnere ich seit über 20 Jahren. Was ich dabei gelernt habe? 
-          </p>
-          <p className="text-sage-700 mb-4 text-sm">
-            Dass Gärtnern kein Hexenwerk ist - man braucht nur die richtigen Tipps zur richtigen Zeit. 
-            Und genau die teile ich mit dir: ehrlich, praktisch und immer aus eigener Erfahrung.
-          </p>
+      {/* LATEST COMMENTS */}
+      <div className="[&_section]:py-6 [&_section]:px-0 [&_.max-w-4xl]:max-w-full [&_h2]:text-lg [&_h2]:px-4">
+        <LatestCommentsSection />
+      </div>
+
+      {/* ABOUT MARIANNE */}
+      <motion.section
+        className="py-6 px-4"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+      >
+        <h2 className="text-lg font-bold text-foreground mb-3">Über mich</h2>
+        <div className="bg-card rounded-xl p-4 border border-border" style={{ boxShadow: 'var(--shadow-card)' }}>
+          <div className="flex gap-3 mb-3">
+            <img
+              src={marianneImg}
+              alt="Marianne"
+              className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
+            />
+            <div>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Hier in Ostfriesland gärtnere ich seit über 20 Jahren. Was ich gelernt habe? Gärtnern ist kein Hexenwerk – man braucht die richtigen Tipps zur richtigen Zeit.
+              </p>
+            </div>
+          </div>
           <Link
             to="/about"
-            className="inline-flex items-center bg-sage-700 text-white px-4 py-2 rounded-full font-medium text-sm hover:bg-sage-800 transition-colors"
+            className="inline-flex items-center text-primary font-medium text-sm hover:gap-2.5 gap-1.5 transition-all"
           >
-            Mehr über mich
-            <ArrowRight className="ml-2 h-3 w-3" />
+            Mehr über mich <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Community CTA */}
-      <section className="mt-8 px-4 flex-1 flex flex-col justify-end mb-8">
-        <div className="bg-gradient-to-r from-sage-600 to-earth-600 rounded-xl p-6 text-center text-white">
-          <h3 className="text-lg font-semibold mb-2">
+      {/* NEWSLETTER – placed after trust-building content */}
+      <motion.section
+        className="py-6 px-4 bg-secondary/30"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="bg-card rounded-xl p-5 border border-border" style={{ boxShadow: 'var(--shadow-card)' }}>
+          <p className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
+            <span className="text-lg">🌱</span> Gartentipps direkt ins Postfach
+          </p>
+          <p className="text-xs text-muted-foreground mb-3">
+            Jeden Monat saisonale Tipps – kostenlos & jederzeit abbestellbar.
+          </p>
+          <NewsletterSignup />
+        </div>
+      </motion.section>
+
+      {/* COMMUNITY CTA */}
+      <section className="px-4 py-8">
+        <div className="bg-gradient-to-br from-primary/90 to-primary rounded-xl p-5 text-center text-primary-foreground">
+          <h3 className="text-base font-semibold mb-2">
             Lass uns zusammen gärtnern!
           </h3>
-          <p className="text-sage-100 mb-4 text-sm">
-            Tausch dich mit mir und anderen Garten-Begeisterten aus. Zeig mir deine Erfolge mit #mientuun!
+          <p className="text-primary-foreground/80 mb-4 text-xs">
+            Zeig mir deine Erfolge mit #mientuun!
           </p>
           <a
             href={siteConfig.social.instagram}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex justify-center items-center bg-gradient-to-r from-pink-400 via-red-400 to-yellow-400 text-white py-3 px-6 rounded-full font-medium text-sm shadow hover:scale-105 transition-all"
+            className="inline-flex items-center bg-background text-foreground py-2.5 px-5 rounded-full font-medium text-sm shadow hover:scale-105 transition-all"
           >
             <Instagram className="w-4 h-4 mr-2" />
             Folge @mientuun
