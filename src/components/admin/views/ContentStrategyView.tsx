@@ -9,6 +9,7 @@ import { cronJobService } from "@/services/CronJobService";
 
 const ContentStrategyView: React.FC = () => {
   const [loading, setLoading] = useState(true);
+  const [successRate, setSuccessRate] = useState(0);
   const [systemStatus, setSystemStatus] = useState({
     contentStrategy: { active: false, lastRun: null, nextRun: null },
     cronJobs: { total: 0, active: 0, failed: 0 },
