@@ -136,10 +136,11 @@ const autoPublish = pipelineCfg?.auto_publish ?? true;
 const willPublish = autoPublish && Math.round(qualityScore) >= threshold;
 
 // 8. Artikel-Objekt aufbauen
-const uniqueSlug = `${slug}-${now.getTime()}`;
+const finalSlug = generateSlug(finalTitle) || slug;
+const uniqueSlug = `${finalSlug}-${now.getTime()}`;
 const postData = {
   slug: uniqueSlug,
-  title: topicIdea,
+  title: finalTitle,
   excerpt,
   content: articleContent,
   author: "Marianne",
