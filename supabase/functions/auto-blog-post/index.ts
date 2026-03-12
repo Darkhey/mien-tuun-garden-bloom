@@ -76,8 +76,9 @@ serve(async (req) => {
 
     // 3b. Titel aus Content extrahieren falls topicIdea leer/generisch ist
     let finalTitle = topicIdea;
-    if (!finalTitle || finalTitle === "Neuer Blogartikel" || finalTitle.length < 5) {
-      const h1Match = articleContent.match(/^#\s+(.+)$/m);
+    // Always try to extract H1 from content as it's more reliable than topic idea
+    const h1Match = articleContent.match(/^#\s+(.+)$/m);
+    if (!finalTitle || finalTitle === "Neuer Blogartikel" || finalTitle.length < 15) {
       if (h1Match) {
         finalTitle = h1Match[1].trim();
       } else {
