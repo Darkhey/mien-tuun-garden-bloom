@@ -74,14 +74,27 @@ serve(async (req) => {
     const prompt = `Thema: ${topicIdea}. ${contextPrompt} Schreibe einen originellen, inspirierenden SEO-Blogartikel auf Deutsch. Baue Trends & Saisonalität ein. PFLICHT: Der Artikel muss zur Kategorie "${category}" passen und den Trend "${trend}" behandeln.`;
     const articleContent = await generateArticle(prompt);
 
+    // 3b. Titel aus Content extrahieren falls topicIdea leer/generisch ist
+    let finalTitle = topicIdea;
+    // Always try to extract H1 from content as it's more reliable than topic idea
+    const h1Match = articleContent.match(/^#\s+(.+)$/m);
+    if (!finalTitle || finalTitle === "Neuer Blogartikel" || finalTitle.length < 15) {
+      if (h1Match) {
+        finalTitle = h1Match[1].trim();
+      } else {
+        const firstLine = articleContent.split('\n').find(l => l.trim().length > 10);
+        if (firstLine) finalTitle = firstLine.replace(/^#+\s*/, '').replace(/\*+/g, '').trim().slice(0, 80);
+      }
+    }
+
     // 4. Teaser/Excerpt extrahieren
-    const excerptMatch = articleContent.split('\n').find(line => line.trim());
-    const excerpt = excerptMatch ? excerptMatch.replace(/^#+\s*/, "").slice(0, 160) : "";
+    const excerptMatch = articleContent.split('\n').find(line => line.trim() && !line.startsWith('#'));
+    const excerpt = excerptMatch ? excerptMatch.replace(/^#+\s*/, "").replace(/\*+/g, '').slice(0, 160) : "";
 
     // 5. SEO-Metadaten generieren
-    const seoTitle = topicIdea + " | Mien Tuun";
+    const seoTitle = finalTitle + " | Mien Tuun";
     const seoDescription = excerpt;
-    const seoKeywords = [topicIdea, category, season, trend];
+    const seoKeywords = [finalTitle, category, season, trend];
 
     // 6. KI-generiertes Bild erzeugen & hochladen
     let featured_image = getUnsplashFallback(category || "");
@@ -119,15 +132,16 @@ const { data: pipelineCfg } = await supabase
   .limit(1)
   .maybeSingle();
 
-const threshold = pipelineCfg?.quality_threshold ?? 80;
-const autoPublish = pipelineCfg?.auto_publish ?? false;
+const threshold = pipelineCfg?.quality_threshold ?? 60;
+const autoPublish = pipelineCfg?.auto_publish ?? true;
 const willPublish = autoPublish && Math.round(qualityScore) >= threshold;
 
 // 8. Artikel-Objekt aufbauen
-const uniqueSlug = `${slug}-${now.getTime()}`;
+const finalSlug = generateSlug(finalTitle) || slug;
+const uniqueSlug = `${finalSlug}-${now.getTime()}`;
 const postData = {
   slug: uniqueSlug,
-  title: topicIdea,
+  title: finalTitle,
   excerpt,
   content: articleContent,
   author: "Marianne",
@@ -141,7 +155,7 @@ const postData = {
   category,
   published_at: now.toISOString().slice(0,10),
   reading_time: readingTime,
-  season,
+  season: season.toLowerCase(),
   audiences: ["Automatisch"],
   content_types: ["Inspiration"],
   status: willPublish ? "veröffentlicht" : "entwurf",
@@ -154,7 +168,7 @@ const postData = {
     // 9. Thema als "used" in History loggen (inkl. context-Daten, Suffix slug)
     await logTopicAttempt(supabase, {
       slug: uniqueSlug,
-      title: topicIdea,
+      title: finalTitle,
       reason: "used",
       used_in_post: uniqueSlug,
       try_count: attempt,
@@ -165,7 +179,7 @@ const postData = {
     await logAutomationEvent(supabase, 'success', {
       action: 'auto-blog-post',
       slug: uniqueSlug,
-      title: topicIdea,
+      title: finalTitle,
       category,
       season,
       quality_score: Math.round(qualityScore),
@@ -177,7 +191,7 @@ const postData = {
     return new Response(JSON.stringify({
       status: "success",
       slug: uniqueSlug,
-      title: topicIdea,
+      title: finalTitle,
       excerpt,
       content: articleContent,
       author: "Marianne",
