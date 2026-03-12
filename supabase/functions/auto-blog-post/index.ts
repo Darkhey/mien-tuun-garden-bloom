@@ -74,9 +74,21 @@ serve(async (req) => {
     const prompt = `Thema: ${topicIdea}. ${contextPrompt} Schreibe einen originellen, inspirierenden SEO-Blogartikel auf Deutsch. Baue Trends & Saisonalität ein. PFLICHT: Der Artikel muss zur Kategorie "${category}" passen und den Trend "${trend}" behandeln.`;
     const articleContent = await generateArticle(prompt);
 
+    // 3b. Titel aus Content extrahieren falls topicIdea leer/generisch ist
+    let finalTitle = topicIdea;
+    if (!finalTitle || finalTitle === "Neuer Blogartikel" || finalTitle.length < 5) {
+      const h1Match = articleContent.match(/^#\s+(.+)$/m);
+      if (h1Match) {
+        finalTitle = h1Match[1].trim();
+      } else {
+        const firstLine = articleContent.split('\n').find(l => l.trim().length > 10);
+        if (firstLine) finalTitle = firstLine.replace(/^#+\s*/, '').replace(/\*+/g, '').trim().slice(0, 80);
+      }
+    }
+
     // 4. Teaser/Excerpt extrahieren
-    const excerptMatch = articleContent.split('\n').find(line => line.trim());
-    const excerpt = excerptMatch ? excerptMatch.replace(/^#+\s*/, "").slice(0, 160) : "";
+    const excerptMatch = articleContent.split('\n').find(line => line.trim() && !line.startsWith('#'));
+    const excerpt = excerptMatch ? excerptMatch.replace(/^#+\s*/, "").replace(/\*+/g, '').slice(0, 160) : "";
 
     // 5. SEO-Metadaten generieren
     const seoTitle = topicIdea + " | Mien Tuun";
