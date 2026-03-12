@@ -91,9 +91,9 @@ serve(async (req) => {
     const excerpt = excerptMatch ? excerptMatch.replace(/^#+\s*/, "").replace(/\*+/g, '').slice(0, 160) : "";
 
     // 5. SEO-Metadaten generieren
-    const seoTitle = topicIdea + " | Mien Tuun";
+    const seoTitle = finalTitle + " | Mien Tuun";
     const seoDescription = excerpt;
-    const seoKeywords = [topicIdea, category, season, trend];
+    const seoKeywords = [finalTitle, category, season, trend];
 
     // 6. KI-generiertes Bild erzeugen & hochladen
     let featured_image = getUnsplashFallback(category || "");
