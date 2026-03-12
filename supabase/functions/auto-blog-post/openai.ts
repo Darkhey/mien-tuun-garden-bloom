@@ -100,12 +100,16 @@ export async function generateImage({ theme, category, season, trend }: { theme:
 
 export async function generateTopicIdea(contextPrompt: string) {
   const result = await aiGenerate(
-    "Du bist eine deutschsprachige Garten-/Küchenbloggerin. Erfinde ein frisches, trendiges Blogartikel-Thema für diese Rahmenbedingungen (höchstens 10 Worte):",
+    "Du bist eine deutschsprachige Garten-/Küchenbloggerin. Antworte NUR mit einem einzigen Blogartikel-Titel (5-10 Worte). Keine Erklärung, kein Satz davor, nur der Titel. Beispiel: 'Tomaten richtig pikieren: Tipps für Anfänger'",
     contextPrompt,
     64,
     0.85
   );
-  return result.replace(/[".]/g, "").trim() || "Neuer Blogartikel";
+  // Clean up: remove quotes, dots, leading "Titel:" etc.
+  const cleaned = result.replace(/^(titel|thema|blogartikel):\s*/i, "").replace(/[".#*]/g, "").trim();
+  // Take only the first line if multiple lines returned
+  const firstLine = cleaned.split("\n")[0].trim();
+  return firstLine || "Neuer Blogartikel";
 }
 
 export async function generateArticle(prompt: string) {
