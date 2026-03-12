@@ -167,7 +167,7 @@ const postData = {
     // 9. Thema als "used" in History loggen (inkl. context-Daten, Suffix slug)
     await logTopicAttempt(supabase, {
       slug: uniqueSlug,
-      title: topicIdea,
+      title: finalTitle,
       reason: "used",
       used_in_post: uniqueSlug,
       try_count: attempt,
