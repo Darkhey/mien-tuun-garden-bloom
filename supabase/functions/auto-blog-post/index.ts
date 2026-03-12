@@ -178,7 +178,7 @@ const postData = {
     await logAutomationEvent(supabase, 'success', {
       action: 'auto-blog-post',
       slug: uniqueSlug,
-      title: topicIdea,
+      title: finalTitle,
       category,
       season,
       quality_score: Math.round(qualityScore),
