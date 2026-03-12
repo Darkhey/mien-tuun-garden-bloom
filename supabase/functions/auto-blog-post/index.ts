@@ -119,8 +119,8 @@ const { data: pipelineCfg } = await supabase
   .limit(1)
   .maybeSingle();
 
-const threshold = pipelineCfg?.quality_threshold ?? 80;
-const autoPublish = pipelineCfg?.auto_publish ?? false;
+const threshold = pipelineCfg?.quality_threshold ?? 60;
+const autoPublish = pipelineCfg?.auto_publish ?? true;
 const willPublish = autoPublish && Math.round(qualityScore) >= threshold;
 
 // 8. Artikel-Objekt aufbauen
