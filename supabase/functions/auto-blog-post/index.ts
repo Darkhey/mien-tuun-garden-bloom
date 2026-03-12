@@ -190,7 +190,7 @@ const postData = {
     return new Response(JSON.stringify({
       status: "success",
       slug: uniqueSlug,
-      title: topicIdea,
+      title: finalTitle,
       excerpt,
       content: articleContent,
       author: "Marianne",
