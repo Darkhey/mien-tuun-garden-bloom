@@ -141,7 +141,7 @@ const postData = {
   category,
   published_at: now.toISOString().slice(0,10),
   reading_time: readingTime,
-  season,
+  season: season.toLowerCase(),
   audiences: ["Automatisch"],
   content_types: ["Inspiration"],
   status: willPublish ? "veröffentlicht" : "entwurf",
