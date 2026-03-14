@@ -112,7 +112,11 @@ serve(async (req) => {
 
     // 3. Prompt zusammensetzen & Artikel generieren
     const prompt = `Thema: ${topicIdea}. ${contextPrompt} Schreibe einen originellen, inspirierenden SEO-Blogartikel auf Deutsch. Baue Trends & Saisonalität ein. PFLICHT: Der Artikel muss zur Kategorie "${category}" passen und den Trend "${trend}" behandeln.`;
-    const articleContent = await generateArticle(prompt);
+    let articleContent = await generateArticle(prompt);
+
+    // 3a. Bild-Platzhalter durch echte Unsplash-Bilder ersetzen
+    articleContent = await replaceImagePlaceholders(articleContent);
+    console.log("[auto-blog-post] Inline-Bilder eingefügt");
 
     // 3b. Titel aus Content extrahieren falls topicIdea leer/generisch ist
     let finalTitle = topicIdea;
