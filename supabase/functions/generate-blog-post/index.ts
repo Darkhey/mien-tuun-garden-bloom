@@ -278,6 +278,9 @@ FORMAT: Reines Markdown ohne Metadaten-Block, perfekt für moderne CMS-Systeme.`
       );
     }
 
+    // Replace [BILD: ...] placeholders with real Unsplash images
+    content = await replaceImagePlaceholders(content);
+    console.log("[generate-blog-post] Inline-Bilder eingefügt");
     console.log("[generate-blog-post] Enhanced OpenAI Response erhalten");
 
     const wordCount = content.split(/\s+/).length;
