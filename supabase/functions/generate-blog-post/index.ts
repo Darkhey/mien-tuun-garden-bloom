@@ -155,8 +155,10 @@ ERWEITERTE STRUKTUR:
 4. 4-6 H2-Hauptabschnitte mit praktischen, tiefgreifenden Inhalten
 5. H3-Unterabschnitte für detaillierte Aspekte
 6. Praxis-Tipps in Boxen oder Listen
-7. FAQ-Bereich (3-5 häufige Fragen)
-8. Fazit mit konkreter Handlungsaufforderung
+7. 2-3 Bild-Platzhalter zwischen Abschnitten im Format: [BILD: kurze englische Bildbeschreibung für Unsplash]
+   Beispiel: [BILD: fresh herbs growing in kitchen garden]
+8. FAQ-Bereich (3-5 häufige Fragen)
+9. Fazit mit konkreter Handlungsaufforderung
 
 SEO-OPTIMIERUNG 2025:
 - Featured Snippets optimieren
