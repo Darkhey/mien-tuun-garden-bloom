@@ -39,6 +39,33 @@ const corsHeaders = {
 // Use admin key for enhanced content generation, fallback to regular key
 const openAIApiKey = Deno.env.get("OPENAI_ADMIN_KEY") || Deno.env.get("OPENAI_API_KEY");
 const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+const UNSPLASH_ACCESS = Deno.env.get("UNSPLASH_ACCESS") || Deno.env.get("UNSPLASH_ACCESS_KEY");
+
+async function searchUnsplash(query: string): Promise<string | null> {
+  if (!UNSPLASH_ACCESS) return null;
+  try {
+    const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape`;
+    const resp = await fetch(url, { headers: { "Authorization": `Client-ID ${UNSPLASH_ACCESS}`, "Accept-Version": "v1" } });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const photo = data.results?.[Math.floor(Math.random() * Math.min(3, data.results?.length || 1))];
+    if (!photo) return null;
+    const credit = photo.user?.name || "Unsplash";
+    return `![${photo.alt_description || query}](${photo.urls?.regular || photo.urls?.small})\n*Foto: ${credit} / Unsplash*`;
+  } catch { return null; }
+}
+
+async function replaceImagePlaceholders(content: string): Promise<string> {
+  const matches = [...content.matchAll(/\[BILD:\s*(.+?)\]/g)];
+  if (!matches.length) return content;
+  const results = await Promise.all(matches.map(m => searchUnsplash(m[1].trim())));
+  let result = content;
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const m = matches[i];
+    result = result.slice(0, m.index!) + (results[i] || "") + result.slice(m.index! + m[0].length);
+  }
+  return result;
+}
 
 async function generateWithGemini(systemPrompt: string, userPrompt: string) {
   if (!geminiApiKey) {
@@ -155,8 +182,10 @@ ERWEITERTE STRUKTUR:
 4. 4-6 H2-Hauptabschnitte mit praktischen, tiefgreifenden Inhalten
 5. H3-Unterabschnitte für detaillierte Aspekte
 6. Praxis-Tipps in Boxen oder Listen
-7. FAQ-Bereich (3-5 häufige Fragen)
-8. Fazit mit konkreter Handlungsaufforderung
+7. 2-3 Bild-Platzhalter zwischen Abschnitten im Format: [BILD: kurze englische Bildbeschreibung für Unsplash]
+   Beispiel: [BILD: fresh herbs growing in kitchen garden]
+8. FAQ-Bereich (3-5 häufige Fragen)
+9. Fazit mit konkreter Handlungsaufforderung
 
 SEO-OPTIMIERUNG 2025:
 - Featured Snippets optimieren
@@ -249,6 +278,9 @@ FORMAT: Reines Markdown ohne Metadaten-Block, perfekt für moderne CMS-Systeme.`
       );
     }
 
+    // Replace [BILD: ...] placeholders with real Unsplash images
+    content = await replaceImagePlaceholders(content);
+    console.log("[generate-blog-post] Inline-Bilder eingefügt");
     console.log("[generate-blog-post] Enhanced OpenAI Response erhalten");
 
     const wordCount = content.split(/\s+/).length;

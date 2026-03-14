@@ -8,6 +8,46 @@ import { generateImage, generateTopicIdea, generateArticle } from "./openai.ts";
 import { uploadImageToSupabase, checkBlacklist, isDuplicate, saveBlogPost, logTopicAttempt, logAutomationEvent } from "./supabase-helpers.ts";
 import { getUnsplashFallback } from "../_shared/unsplash_fallbacks.ts";
 
+const UNSPLASH_ACCESS = Deno.env.get("UNSPLASH_ACCESS") || Deno.env.get("UNSPLASH_ACCESS_KEY");
+
+async function searchUnsplash(query: string): Promise<string | null> {
+  if (!UNSPLASH_ACCESS) return null;
+  try {
+    const url = `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=3&orientation=landscape`;
+    const resp = await fetch(url, {
+      headers: { "Authorization": `Client-ID ${UNSPLASH_ACCESS}`, "Accept-Version": "v1" }
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    const photo = data.results?.[Math.floor(Math.random() * Math.min(3, data.results?.length || 1))];
+    if (!photo) return null;
+    const credit = photo.user?.name || "Unsplash";
+    const imgUrl = `${photo.urls?.regular || photo.urls?.small}`;
+    return `![${photo.alt_description || query}](${imgUrl})\n*Foto: ${credit} / Unsplash*`;
+  } catch {
+    return null;
+  }
+}
+
+async function replaceImagePlaceholders(content: string): Promise<string> {
+  const placeholderRegex = /\[BILD:\s*(.+?)\]/g;
+  const matches = [...content.matchAll(placeholderRegex)];
+  if (matches.length === 0) return content;
+
+  // Search all in parallel
+  const results = await Promise.all(
+    matches.map(m => searchUnsplash(m[1].trim()))
+  );
+
+  let result = content;
+  for (let i = matches.length - 1; i >= 0; i--) {
+    const match = matches[i];
+    const replacement = results[i] || "";
+    result = result.slice(0, match.index!) + replacement + result.slice(match.index! + match[0].length);
+  }
+  return result;
+}
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -72,7 +112,11 @@ serve(async (req) => {
 
     // 3. Prompt zusammensetzen & Artikel generieren
     const prompt = `Thema: ${topicIdea}. ${contextPrompt} Schreibe einen originellen, inspirierenden SEO-Blogartikel auf Deutsch. Baue Trends & Saisonalität ein. PFLICHT: Der Artikel muss zur Kategorie "${category}" passen und den Trend "${trend}" behandeln.`;
-    const articleContent = await generateArticle(prompt);
+    let articleContent = await generateArticle(prompt);
+
+    // 3a. Bild-Platzhalter durch echte Unsplash-Bilder ersetzen
+    articleContent = await replaceImagePlaceholders(articleContent);
+    console.log("[auto-blog-post] Inline-Bilder eingefügt");
 
     // 3b. Titel aus Content extrahieren falls topicIdea leer/generisch ist
     let finalTitle = topicIdea;

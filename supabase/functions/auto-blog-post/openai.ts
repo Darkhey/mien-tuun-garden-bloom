@@ -114,7 +114,19 @@ export async function generateTopicIdea(contextPrompt: string) {
 
 export async function generateArticle(prompt: string) {
   const result = await aiGenerate(
-    "Du bist eine deutsche Garten-/Küchenbloggerin. Gib einen SEO-optimierten Artikel als Markdown zurück, mit Überschrift und Teaser. Mindestens 1200 Wörter.",
+    `Du bist eine deutsche Garten-/Küchenbloggerin. Gib einen SEO-optimierten Artikel als Markdown zurück, mit Überschrift und Teaser. Mindestens 1200 Wörter.
+
+WICHTIG – BILDER IM ARTIKEL:
+Füge zwischen den Abschnitten 2-3 Bild-Platzhalter ein. Nutze dafür exakt dieses Format:
+
+[BILD: kurze englische Bildbeschreibung für Unsplash]
+
+Beispiele:
+[BILD: fresh tomatoes growing in garden sunlight]
+[BILD: hands planting seedlings in rich soil]
+[BILD: colorful vegetable harvest basket autumn]
+
+Die Platzhalter sollen thematisch zum jeweiligen Abschnitt passen. Setze sie ZWISCHEN Abschnitte, nicht mitten in Sätze.`,
     prompt,
     3000,
     0.75

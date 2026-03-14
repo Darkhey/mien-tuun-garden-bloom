@@ -83,6 +83,7 @@ STRUKTUR:
 - Praktische Abschnitte mit konkreten Anleitungen
 - Persönliche Anekdoten einstreuen
 - Listen und Tipps für bessere Lesbarkeit
+- 2-3 Bild-Platzhalter zwischen Abschnitten einfügen im Format: [BILD: kurze englische Beschreibung]
 
 TONFALL: Wie eine erfahrene Nachbarin, die gerne ihr Wissen teilt
 `;

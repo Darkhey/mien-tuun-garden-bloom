@@ -91,14 +91,23 @@ const BlogPostContent: React.FC<BlogPostContentProps> = ({ content }) => (
             );
           }
           return (
-            <img
-              src={src}
-              alt={alt || "Blog image"}
-              loading="lazy"
-              className="rounded-lg shadow-md my-6 max-w-full h-auto bg-sage-50 object-cover"
-              {...props}
-            />
+            <figure className="my-8">
+              <img
+                src={src}
+                alt={alt || "Blog image"}
+                loading="lazy"
+                className="rounded-lg shadow-md max-w-full h-auto bg-sage-50 object-cover w-full"
+                {...props}
+              />
+            </figure>
           );
+        },
+        em: ({ node, children, ...props }) => {
+          const text = typeof children === 'string' ? children : '';
+          if (text.startsWith('Foto:')) {
+            return <span className="block text-xs text-muted-foreground mt-1 mb-4" {...props}>{children}</span>;
+          }
+          return <em {...props}>{children}</em>;
         },
       }}
     >
