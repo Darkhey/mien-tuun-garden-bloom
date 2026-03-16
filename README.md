@@ -30,7 +30,7 @@ npm run dev
 
 ## Skripte
 - `npm run dev` – lokaler Entwicklungsserver
-- `npm run build` – Produktionsbuild in `dist` (erstellt automatisch eine `sitemap.xml`)
+- `npm run build` – Produktionsbuild in `dist` (erstellt automatisch eine `sitemap.xml` und eine `404.html`)
 - `npm run sitemap` – generiert `public/sitemap.xml`
 - `npm run lint` – Codequalität prüfen
 - `npm test` – Test-Suite ausführen
