@@ -1,16 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Leaf, Sprout, Database, Plane as Plant } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Leaf, Sprout, Database, Printer, Zap } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsAdmin } from '@/hooks/useIsAdmin';
 import SowingCalendarTable from './SowingCalendarTable';
 import SowingCalendarFilters from './SowingCalendarFilters';
 import SowingCalendarLegend from './SowingCalendarLegend';
 import CompanionPlantFinder from './CompanionPlantFinder';
 import PlantGrowingTipsCard from './PlantGrowingTipsCard';
+import PlantDetailModal from './PlantDetailModal';
 import TrefleIntegration from './TrefleIntegration';
 import sowingCalendarService from '@/services/SowingCalendarService';
 import type { PlantData, SowingCategory } from '@/types/sowing';
+
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
 const CATEGORIES: SowingCategory[] = [
   { key: "directSow", color: "bg-green-500", label: "Aussaat draußen" },
@@ -20,6 +27,9 @@ const CATEGORIES: SowingCategory[] = [
 ];
 
 const ModularSowingCalendar: React.FC = () => {
+  const isMobile = useIsMobile();
+  const { isAdmin } = useIsAdmin();
+
   // State for filters
   const [search, setSearch] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('ALL');
@@ -38,9 +48,10 @@ const ModularSowingCalendar: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // State for tabs
+  // State for tabs & detail modal
   const [activeTab, setActiveTab] = useState('kalender');
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [loadingTips, setLoadingTips] = useState(false);
   const [plantTips, setPlantTips] = useState(null);
   const { toast } = useToast();
@@ -63,7 +74,7 @@ const ModularSowingCalendar: React.FC = () => {
     loadPlants();
   }, []);
 
-  // Load plant tips when a plant is selected
+  // Load plant tips when a plant is selected (for tips tab)
   useEffect(() => {
     if (!selectedPlant) {
       setPlantTips(null);
@@ -85,17 +96,13 @@ const ModularSowingCalendar: React.FC = () => {
     loadPlantTips();
   }, [selectedPlant]);
 
-  // Filter plants based on search and filters
+  // Filter plants
   const filteredPlants = useMemo(() => {
     return plants.filter(plant => {
-      // Text search
-      if (search && !plant.name.toLowerCase().includes(search.toLowerCase())) {
-        return false;
-      }
+      if (search && !plant.name.toLowerCase().includes(search.toLowerCase())) return false;
       
-      // Month filter
       if (selectedMonth !== 'ALL') {
-        const monthIndex = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'].indexOf(selectedMonth) + 1;
+        const monthIndex = MONTHS_SHORT.indexOf(selectedMonth) + 1;
         const anyCategory = CATEGORIES.some(cat => 
           categoryFilter[cat.key] && 
           (() => {
@@ -109,20 +116,9 @@ const ModularSowingCalendar: React.FC = () => {
         if (!anyCategory) return false;
       }
       
-      // Season filter
-      if (selectedSeason !== 'Alle' && !plant.season.includes(selectedSeason)) {
-        return false;
-      }
-      
-      // Type filter
-      if (selectedType !== 'Alle' && plant.type !== selectedType) {
-        return false;
-      }
-      
-      // Difficulty filter
-      if (selectedDifficulty !== 'Alle' && plant.difficulty !== selectedDifficulty) {
-        return false;
-      }
+      if (selectedSeason !== 'Alle' && !plant.season.includes(selectedSeason)) return false;
+      if (selectedType !== 'Alle' && plant.type !== selectedType) return false;
+      if (selectedDifficulty !== 'Alle' && plant.difficulty !== selectedDifficulty) return false;
       
       return true;
     });
@@ -135,30 +131,32 @@ const ModularSowingCalendar: React.FC = () => {
     setSelectedSeason('Alle');
     setSelectedType('Alle');
     setSelectedDifficulty('Alle');
-    setCategoryFilter({
-      directSow: true,
-      indoor: true,
-      plantOut: true,
-      harvest: true,
-    });
+    setCategoryFilter({ directSow: true, indoor: true, plantOut: true, harvest: true });
   };
 
-  // Handle plant selection for tips
+  // "Jetzt säen" quick filter
+  const handleSowNow = () => {
+    const currentMonthShort = MONTHS_SHORT[new Date().getMonth()];
+    setSelectedMonth(currentMonthShort);
+    setCategoryFilter({ directSow: true, indoor: true, plantOut: true, harvest: false });
+    setSearch('');
+    setSelectedSeason('Alle');
+    setSelectedType('Alle');
+    setSelectedDifficulty('Alle');
+  };
+
+  // Handle plant selection -> open detail modal
   const handlePlantSelect = (plantName: string) => {
     setSelectedPlant(plantName);
-    setActiveTab('tipps');
+    setDetailModalOpen(true);
   };
 
   // Handle adding a new plant from Trefle
   const handleAddPlant = async (plant: PlantData) => {
     try {
-      // Add plant to database
       await sowingCalendarService.addPlant(plant);
-      
-      // Refresh plants list
       const updatedPlants = await sowingCalendarService.getAllPlants();
       setPlants(updatedPlants);
-      
       toast({
         title: "Pflanze hinzugefügt",
         description: `${plant.name} wurde erfolgreich zum Aussaatkalender hinzugefügt.`,
@@ -173,6 +171,8 @@ const ModularSowingCalendar: React.FC = () => {
     }
   };
 
+  const handlePrint = () => window.print();
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -184,37 +184,63 @@ const ModularSowingCalendar: React.FC = () => {
   if (error) {
     return (
       <Alert className="bg-red-50 border-red-200 max-w-3xl mx-auto">
-        <AlertDescription className="text-red-700">
-          {error}
-        </AlertDescription>
+        <AlertDescription className="text-red-700">{error}</AlertDescription>
       </Alert>
     );
   }
 
+  // Tab config: hide Trefle from non-admins
+  const tabs = [
+    { value: 'kalender', label: 'Aussaatkalender', icon: Calendar },
+    { value: 'beetnachbarn', label: 'Beetnachbarn', icon: Leaf },
+    { value: 'tipps', label: 'Anbautipps', icon: Sprout },
+    ...(isAdmin ? [{ value: 'trefle', label: 'Trefle API', icon: Database }] : []),
+  ];
+
   return (
     <div className="space-y-6">
       <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-8">
-          <TabsTrigger value="kalender" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Aussaatkalender
-          </TabsTrigger>
-          <TabsTrigger value="beetnachbarn" className="flex items-center gap-2">
-            <Leaf className="h-4 w-4" />
-            Beetnachbarn-Finder
-          </TabsTrigger>
-          <TabsTrigger value="tipps" className="flex items-center gap-2">
-            <Sprout className="h-4 w-4" />
-            Aussaat-Tipps
-          </TabsTrigger>
-          <TabsTrigger value="trefle" className="flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Trefle API
-          </TabsTrigger>
+        <TabsList className={`grid w-full mb-8 ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} overflow-x-auto`}>
+          {tabs.map(tab => (
+            <TooltipProvider key={tab.value}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value={tab.value} className="flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-4">
+                    <tab.icon className="h-4 w-4 shrink-0" />
+                    <span className={isMobile ? 'sr-only' : ''}>{tab.label}</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                {isMobile && (
+                  <TooltipContent><p>{tab.label}</p></TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          ))}
         </TabsList>
 
         <TabsContent value="kalender">
           <div className="mb-8">
+            {/* Quick action bar */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <Button
+                onClick={handleSowNow}
+                size="sm"
+                className="bg-accent-500 hover:bg-accent-600 text-white rounded-full gap-1.5 shadow-sm"
+              >
+                <Zap className="h-4 w-4" />
+                Jetzt säen
+              </Button>
+              <Button
+                onClick={handlePrint}
+                size="sm"
+                variant="outline"
+                className="rounded-full gap-1.5 print:hidden"
+              >
+                <Printer className="h-4 w-4" />
+                <span className="hidden sm:inline">Drucken</span>
+              </Button>
+            </div>
+
             <SowingCalendarFilters
               search={search}
               setSearch={setSearch}
@@ -255,10 +281,21 @@ const ModularSowingCalendar: React.FC = () => {
           />
         </TabsContent>
 
-        <TabsContent value="trefle">
-          <TrefleIntegration onAddPlant={handleAddPlant} />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="trefle">
+            <TrefleIntegration onAddPlant={handleAddPlant} />
+          </TabsContent>
+        )}
       </Tabs>
+
+      {/* Plant Detail Modal */}
+      <PlantDetailModal
+        plantName={selectedPlant}
+        plants={plants}
+        categories={CATEGORIES}
+        open={detailModalOpen}
+        onOpenChange={setDetailModalOpen}
+      />
     </div>
   );
 };
