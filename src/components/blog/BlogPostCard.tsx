@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Tag } from "lucide-react";
+import { Calendar, Tag, Clock } from "lucide-react";
 import { unifiedImageService } from '@/services/UnifiedImageService';
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type BlogPost = {
   id: string;
@@ -40,6 +41,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   const [optimizedImageUrl, setOptimizedImageUrl] = useState<string>('');
   const [isVisible, setIsVisible] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -88,17 +90,70 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
     setOptimizedImageUrl(unifiedImageService.getFallbackImage(post.category));
   };
 
-  const getContentPreview = (content: string, maxLength: number = 150): string => {
+  const getContentPreview = (content: string, maxLength: number = 120): string => {
     if (!content || content.trim() === '') return post.excerpt || 'Inhalt wird geladen...';
     const cleanContent = content
       .replace(/#{1,6}\s+/g, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')
       .replace(/\[(.*?)\]\(.*?\)/g, '$1').replace(/<[^>]*>/g, '').replace(/\n\s*\n/g, ' ')
       .replace(/\s+/g, ' ').trim();
-    return cleanContent.length <= maxLength ? cleanContent : cleanContent.substring(0, maxLength).trim() + '...';
+    return cleanContent.length <= maxLength ? cleanContent : cleanContent.substring(0, maxLength).trim() + '…';
   };
 
   const imageSource = imgError ? unifiedImageService.getFallbackImage(post.category) : optimizedImageUrl;
 
+  // Mobile: horizontal card layout
+  if (isMobile) {
+    return (
+      <article ref={cardRef} className="group rounded-xl overflow-hidden border border-border bg-card hover:shadow-md transition-shadow">
+        <Link to={`/blog/${post.slug}`} className="flex gap-0">
+          <div className="w-28 min-w-[7rem] flex-shrink-0 overflow-hidden">
+            {isVisible ? (
+              <img
+                src={imageSource}
+                alt={post.title}
+                className="w-full h-full object-cover min-h-[8rem]"
+                onError={handleImageError}
+                loading="lazy"
+                width="112"
+                height="128"
+                decoding="async"
+              />
+            ) : (
+              <div className="w-full h-32 bg-muted animate-pulse" />
+            )}
+          </div>
+          <div className="p-3 flex-1 flex flex-col min-w-0">
+            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+              <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[10px] font-medium">
+                {post.category}
+              </span>
+              {isCurrentSeason(post.tags) && (
+                <span className="text-[10px] text-accent-foreground bg-accent/20 px-1.5 py-0.5 rounded-full">
+                  🌱 Aktuell
+                </span>
+              )}
+            </div>
+            <h3 className="text-sm font-bold leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-2 mb-1">
+              {post.title}
+            </h3>
+            <p className="text-xs text-muted-foreground line-clamp-2 flex-grow mb-1.5">
+              {getContentPreview(post.content, 80)}
+            </p>
+            <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-auto">
+              <span className="flex items-center gap-0.5">
+                <Clock className="h-2.5 w-2.5" /> {post.readingTime} min
+              </span>
+              <span className="flex items-center gap-0.5">
+                <Calendar className="h-2.5 w-2.5" /> {new Date(post.publishedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}
+              </span>
+            </div>
+          </div>
+        </Link>
+      </article>
+    );
+  }
+
+  // Desktop: vertical card layout (original)
   return (
     <article
       ref={cardRef}
@@ -118,7 +173,7 @@ const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
           />
         ) : (
           <div className="w-full h-56 bg-muted animate-pulse flex items-center justify-center">
-            <div className="w-16 h-16 bg-muted-foreground/10 rounded-lg"></div>
+            <div className="w-16 h-16 bg-muted-foreground/10 rounded-lg" />
           </div>
         )}
       </Link>
