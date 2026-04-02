@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Info } from "lucide-react";
+import { Info, Heart } from "lucide-react";
 import type { PlantData, SowingCategory } from '@/types/sowing';
 
 const MONTHS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
@@ -10,6 +10,8 @@ interface SowingCalendarMobileCardsProps {
   categories: SowingCategory[];
   categoryFilter: Record<string, boolean>;
   onPlantSelect?: (plantName: string) => void;
+  isFavorite?: (id: string) => boolean;
+  onToggleFavorite?: (id: string) => void;
 }
 
 const getMonthsForCategory = (plant: PlantData, key: string): number[] => {
@@ -23,12 +25,10 @@ const getMonthsForCategory = (plant: PlantData, key: string): number[] => {
 };
 
 const SowingCalendarMobileCards: React.FC<SowingCalendarMobileCardsProps> = ({
-  plants,
-  categories,
-  categoryFilter,
-  onPlantSelect
+  plants, categories, categoryFilter, onPlantSelect,
+  isFavorite, onToggleFavorite,
 }) => {
-  const currentMonth = new Date().getMonth(); // 0-indexed
+  const currentMonth = new Date().getMonth();
 
   if (plants.length === 0) {
     return (
@@ -53,6 +53,15 @@ const SowingCalendarMobileCards: React.FC<SowingCalendarMobileCardsProps> = ({
             {/* Header row */}
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
+                <button
+                  onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(plant.id); }}
+                  className="p-0.5"
+                  aria-label="Favorit"
+                >
+                  <Heart className={`h-4 w-4 transition-colors ${
+                    isFavorite?.(plant.id) ? 'fill-red-500 text-red-500' : 'text-sage-300'
+                  }`} />
+                </button>
                 <span className="font-semibold text-earth-800">{plant.name}</span>
                 <Info className="h-3.5 w-3.5 text-sage-400" />
               </div>
@@ -78,7 +87,6 @@ const SowingCalendarMobileCards: React.FC<SowingCalendarMobileCardsProps> = ({
               {categories.filter(cat => categoryFilter[cat.key]).map(cat => {
                 const months = getMonthsForCategory(plant, cat.key);
                 if (months.length === 0) return null;
-
                 return (
                   <div key={cat.key} className="flex items-center gap-2">
                     <span className="text-[10px] font-medium text-earth-600 w-16 shrink-0 truncate">{cat.label}</span>
@@ -106,21 +114,15 @@ const SowingCalendarMobileCards: React.FC<SowingCalendarMobileCardsProps> = ({
               })}
             </div>
 
-            {/* Month labels row */}
+            {/* Month labels */}
             <div className="flex gap-px mt-1 pl-[calc(4rem+0.5rem)]">
               {MONTHS.map((m, i) => (
-                <span
-                  key={i}
-                  className={`flex-1 text-center text-[8px] ${
-                    i === currentMonth ? 'font-bold text-accent-700' : 'text-sage-400'
-                  }`}
-                >
+                <span key={i} className={`flex-1 text-center text-[8px] ${i === currentMonth ? 'font-bold text-accent-700' : 'text-sage-400'}`}>
                   {m.charAt(0)}
                 </span>
               ))}
             </div>
 
-            {/* Notes */}
             {plant.notes && (
               <p className="text-xs text-muted-foreground mt-2 line-clamp-1">{plant.notes}</p>
             )}
