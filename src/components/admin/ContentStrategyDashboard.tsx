@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search, Loader2, Triangle as ExclamationTriangle, RefreshCcw, Database, Zap } from "lucide-react";
+import { Calendar, TrendingUp, Target, Clock, Lightbulb, AlertTriangle, Search, Loader2, Triangle as ExclamationTriangle, RefreshCcw, Database, Zap, Trash2 } from "lucide-react";
 import { contentStrategyService, ContentStrategy, ContentCalendarEntry } from "@/services/ContentStrategyService";
 import { contextAnalyzer, ContentGap } from "@/services/ContextAnalyzer";
 import { blogAnalyticsService, TrendKeyword } from "@/services/BlogAnalyticsService";
@@ -12,6 +12,7 @@ import { ContentStrategyCacheService } from "@/services/ContentStrategyCacheServ
 import { TrendSourceService, EnhancedTrend } from "@/services/TrendSourceService";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useContentStrategyData } from "@/hooks/useContentStrategyData";
 
 interface StrategyArticleResponse {
   success: boolean;
@@ -54,6 +55,7 @@ const ContentStrategyDashboard: React.FC = () => {
   const [cacheAge, setCacheAge] = useState<number | null>(null);
   const [usingCache, setUsingCache] = useState(false);
   const { toast } = useToast();
+  const { clearCache } = useContentStrategyData();
 
   const analyzeCategoryGaps = async (): Promise<CategoryContentGap[]> => {
     try {
@@ -337,11 +339,12 @@ const ContentStrategyDashboard: React.FC = () => {
     } finally {
       setCreatingArticle(null);
     }
-  };
+  }; 
 
   useEffect(() => {
     loadStrategicData();
   }, []);
+
 
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
@@ -352,6 +355,7 @@ const ContentStrategyDashboard: React.FC = () => {
       default: return 'bg-gray-500';
     }
   };
+
 
   const getUrgencyBadge = (urgency: string) => {
     const colors = {
@@ -376,19 +380,25 @@ const ContentStrategyDashboard: React.FC = () => {
             </div>
           )}
         </div>
-        <Button onClick={() => loadStrategicData(true)} disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Analysiere...
-            </>
-          ) : (
-            <>
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              Daten aktualisieren
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => loadStrategicData(true)} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Analysiere...
+              </>
+            ) : (
+              <>
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Daten aktualisieren
+              </>
+            )}
+          </Button>
+          <Button onClick={clearCache} variant="outline" disabled={loading || !usingCache}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Cache leeren
+          </Button>
+        </div>
       </div>
 
       {/* System Status Warning */}
